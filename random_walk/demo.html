@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Random Walk Simulation - Demo</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body { background-color: #000; margin: 0; overflow: hidden; }
+			canvas { width: 100%; height: 100%; }
+			#info {
+				position: absolute;
+				padding: 10px;
+				width: 100%;
+				text-align: center;
+				color: #FF0045
+			}
+			a {
+				text-decoration: underline;
+				cursor: pointer;
+			}			
+		</style>
+	</head>
+	<body onload="var rws = new RWS(); rws.initialize();">
+	
+		<div id="info">Simulación de un fotón en una estrella<br/>
+			<a href="../index.html"> <p> << Regresar a principal </a>
+		</div>	
+	
+		<!-- three.js CDN: http://cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js -->
+		<script type="text/javascript" src="three.min.js"></script>
+		<script type="text/javascript" src="OrbitControls.js"></script>
+		<script type="text/javascript" src="random-walk-simulation.js"></script>
+	</body>
+</html>

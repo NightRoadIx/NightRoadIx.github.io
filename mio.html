@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Página de inicio</title>
+  <!-- Tell the browser to be responsive to screen width -->
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+  
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>  
+  
+  <!--INICIAR LA CONFIGURACIÓN PARA OTORGAR PERMISOS CON GOOGLE-->
+  <!--Aquí se especifica el ID del cliente de la app-->
+  <meta name="google-signin-client_id" content="322045408376-jlb7881st3ro070m2mp00a1kod8se7ee.apps.googleusercontent.com">
+  
+</head>
+
+<body>
+  
+    <div class="social-auth-links text-center">
+      <p>- - - Opcional - - -</p>
+      <p> Ingresar con su cuenta correo gmail.com </p>
+      <div id="my-signin2" data-onsuccess="onSuccess" align="center">     
+      </div>
+    </div>  
+  
+  <br><br>
+<div class="row">
+	<div class="col-md-3">
+		<div id="userbox" class="callout callout-info" style="display:none">
+			<div class="pull-left">
+				<img id="usimg" class="img-circle" style="width:50px;height:50px">
+			</div>
+			<span id="usuahia"></span>
+			<span id="usuahia3"></span>
+		</div>
+	</div>
+</div>  
+  
+<!-- REQUIRED JS SCRIPTS -->
+<script>
+    function onSuccess(googleUser) {
+        var id_token = googleUser.getAuthResponse().id_token;
+        console.log('Signed in as: ' + googleUser.getBasicProfile().getName());
+        console.log('ID: ' + googleUser.getBasicProfile().getId());
+        console.log('Email: ' + googleUser.getBasicProfile().getEmail());
+        console.log('Token: ' + id_token);
+		
+		document.getElementById('userbox').style.display='block';
+		document.getElementById("usimg").src = googleUser.getBasicProfile().getImageUrl();
+		document.getElementById("usuahia").innerHTML = googleUser.getBasicProfile().getName();
+		document.getElementById("usuahia3").innerHTML = googleUser.getBasicProfile().getEmail();
+        
+        var xhr = new XMLHttpRequest();
+        var jed = 'https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=' + id_token;
+        xhr.open('POST', jed);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function() {
+            console.log('(2)Signed in as: ' + xhr.responseText);
+        };
+        xhr.send('idtoken=' + id_token);
+    }
+    function onFailure(error) {
+      console.log(error);
+    }	
+</script>  <!--Cargar la libreria de la plataforma Google--><script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
+</body>
+
+</html>
+
+
+
+
+
+
+
+

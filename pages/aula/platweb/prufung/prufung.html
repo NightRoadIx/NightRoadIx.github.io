@@ -1,0 +1,260 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Untitled Document</title>
+<style>
+* {
+    box-sizing: border-box;
+}
+
+#encabeza {
+	font-family: Baskerville, Palatino Linotype, Palatino, Century Schoolbook L, Times New Roman, serif;
+	text-align: center;
+	vertical-align: middle;
+}
+
+header {
+	padding: 1px;
+	background-color: #E5E5E5;
+	overflow: auto;
+}
+header img {
+	float: left;
+	vertical-align: middle;
+}
+nav {
+	/*border: thin solid hsla(248,100%,50%,1.00);*/
+	}	
+nav ul{
+	list-style-type: none;
+	margin: 0;
+	padding-top: 5px;
+	padding-right: 0;
+	padding-left: 0;
+	padding-bottom: 5px;
+	overflow: hidden;
+}
+nav ul li {
+	margin: 5;
+	display: inline;
+	float: right;
+	padding-right: 10px;
+}
+nav ul li a {
+	display: block;
+	padding: 20px;
+	text-align: center;
+	text-decoration: none;
+	color: #212121;
+	font-size: 12px;
+	font-weight: normal;
+}
+nav ul li a:hover {
+	border-radius: 6px;
+	background-color: #D3C9C9;
+	-webkit-box-shadow: 5px 5px 5px #8F8B8B;
+	box-shadow: 5px 5px 5px #8F8B8B;
+	color: #1620E1;
+	font-weight: bolder;
+}
+aside a{	
+    position: fixed;
+    left: -140px;
+    transition: 0.3s;
+    padding: 15px;
+    width: 150px;
+    text-decoration: none;
+    font-size: 20px;
+    color: white;
+    border-radius: 0 5px 5px 0;		
+	}
+aside a:hover{
+    left: 0;	
+}
+#about {
+    top: 300px;
+    background-color: #4CAF50;
+}
+
+#blog {
+    top: 360px;
+    background-color: #2196F3;
+}
+
+#projects {
+    top: 420px;
+    background-color: #f44336;
+}
+
+#contact {
+    top: 480px;
+    background-color: #555
+}	
+footer {
+	background-color: #BDF0EF;
+	font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-style: oblique;
+	font-weight: bolder;
+	text-align: center;
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+		
+body {
+    background-color: #f1f1f1;
+    padding: 20px;
+    font-family: Arial;
+}
+
+/* Centrar el stio web */
+.main {
+    max-width: 1000px;
+    margin: auto;
+}
+
+h1 {
+    font-size: 50px;
+    word-break: break-all;
+}
+
+.row {
+    margin: 8px -16px;
+}
+
+/* Añadir un relleno (padding) entre cada columna */
+.row,
+.row > .column {
+    padding: 8px;
+}
+
+/* Crear 4 columnas iguales que flotan una al lado de otra */
+.column {
+    float: left;
+    width: 25%;
+}
+
+/* Limpiar lo que flotan después de las filas */ 
+.row:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Contenido */
+.content {
+    background-color: white;
+    padding: 10px;
+}
+
+/* Diseño responsivo - hacer un diseño de dos columnas en lugar de las 4 columnas */
+@media screen and (max-width: 900px) {
+    .column {
+        width: 50%;
+    }
+}
+
+/* Diseño responsivo - hacer que las 2 columnas se apilen una sobre otra en lugar de una al lado de otra */
+@media screen and (max-width: 600px) {
+    .column {
+        width: 100%;
+    }
+}
+</style>	
+</head>
+
+<body>
+
+<!-- Cabecera -->
+<header>
+	<img src="../Prac/imgs/hid.png" width="128" height="128" alt=""/><h1 id="encabeza">MI PÁGINA.COM</h1>
+</header>
+
+<!-- Barra de Navegación -->
+<nav>
+  <ul>
+    <li><a href="#">Inicio</a></li>
+    <li><a href="#">Acerca de...</a></li>
+    <li><a href="#">Servicios</a></li>
+    <li><a href="#">Galería</a></li>
+	<li><a href="#">Portafolio</a></li>
+    <li><a href="#">Contacto</a></li>
+  </ul>
+</nav>	
+
+<!-- Barra de Navegación lateral-->
+<aside>
+  <a href="#" id="about">Acerca</a>
+  <a href="#" id="blog">Blog</a>
+  <a href="#" id="projects">Projectos</a>
+  <a href="#" id="contact">Contacto</a>	
+</aside>
+	
+<!-- MAIN (Sitio web centrado) -->
+<div class="main">
+
+<hr>
+
+<h2>PORTAFOLIO</h2>
+<p>Al cambiar la ventana del navegador (o dispositivo) se observa el efecto responsivo.</p>
+
+<!-- Cuadrícula de la galería portafolio -->
+<div class="row">
+  <div class="column">
+    <div class="content">
+      <img src="imgs/mountains.jpg" alt="Mountains" style="width:100%">
+      <h3>Mi Trabajo</h3>
+      <p>Lorem ipsum dolor sit amet, tempor prodesset eos no. Temporibus necessitatibus sea ei, at tantas oporteat nam. Lorem ipsum dolor sit amet, tempor prodesset eos no.</p>
+    </div>
+  </div>
+  <div class="column">
+    <div class="content">
+    <img src="imgs/lights.jpg" alt="Lights" style="width:100%">
+      <h3>Mi Trabajo</h3>
+      <p>Lorem ipsum dolor sit amet, tempor prodesset eos no. Temporibus necessitatibus sea ei, at tantas oporteat nam. Lorem ipsum dolor sit amet, tempor prodesset eos no.</p>
+    </div>
+  </div>
+  <div class="column">
+    <div class="content">
+    <img src="imgs/nature.jpg" alt="Nature" style="width:100%">
+      <h3>Mi Trabajo</h3>
+      <p>Lorem ipsum dolor sit amet, tempor prodesset eos no. Temporibus necessitatibus sea ei, at tantas oporteat nam. Lorem ipsum dolor sit amet, tempor prodesset eos no.</p>
+    </div>
+  </div>
+  <div class="column">
+    <div class="content">
+    <img src="imgs/fjord2.jpg" alt="Mountains" style="width:100%">
+      <h3>Mi Trabajo</h3>
+      <p>Lorem ipsum dolor sit amet, tempor prodesset eos no. Temporibus necessitatibus sea ei, at tantas oporteat nam. Lorem ipsum dolor sit amet, tempor prodesset eos no.</p>
+    </div>
+  </div>
+<!-- END GRID -->
+</div>
+
+<div class="content">
+  <img src="imgs/p3.jpg" alt="Bear" style="width:100%">
+  <h3>Algún otro trabajo</h3>
+  <p>Lorem ipsum dolor sit amet, tempor prodesset eos no. Temporibus necessitatibus sea ei, at tantas oporteat nam. Lorem ipsum dolor sit amet, tempor prodesset eos no.</p>
+  <p>Lorem ipsum dolor sit amet, tempor prodesset eos no. Temporibus necessitatibus sea ei, at tantas oporteat nam. Lorem ipsum dolor sit amet, tempor prodesset eos no.</p>
+</div>
+
+<div class="content">
+  <iframe width="640" height="360" src="https://www.youtube.com/embed/c0SuIMUoShI" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="border: thin solid #6CDDD8; margin-left: 17%;"></iframe>
+  <h3>Algún otro trabajo en video</h3>
+  <p>Lorem ipsum dolor sit amet, tempor prodesset eos no. Temporibus necessitatibus sea ei, at tantas oporteat nam. Lorem ipsum dolor sit amet, tempor prodesset eos no.</p>
+</div>	
+	
+<hr>	
+	
+<!-- END MAIN -->
+</div>
+	
+<!-- Pie de página -->
+<footer>
+  <p>Mi página web &copy; 2018</p>
+	<p>Desarrollada por: <span style="color: hsla(359,100%,50%,1); font-weight: bolder; font-style: normal; font-size: large;">Nombre desarrollador</span></p>
+</footer>	
+	
+</body>
+</html>

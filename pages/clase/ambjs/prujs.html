@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+	<meta charset="utf-8">
+	<title>Java Script</title>
+
+<!-- Colocar un script dentro de head para que se active -->
+<script>
+function myFunction() {
+    document.getElementById("demo4").innerHTML = "El texto ha cambiado";
+}
+</script>
+
+<script type="text/javascript">
+	document.oncontextmenu = function(){
+		// Mostrar un mensaje de que no se puede dar clic con el botón derecho
+		alert('Clic derecho deshabilitado'); 
+		// Regresar un valor falso evita que el menu contextual (oncontextmenu) se active
+		return false
+	}
+</script>
+
+<!--
+	También puede llamarse un script de un archivo externo
+<script src="myScript.js"></script>
+-->
+
+</head>
+
+<body>
+
+<!-- Primer elemento de JS -->
+<h1>¿Qué es lo que JS puede hacer?</h1>
+
+<p id="demo">JavaScript puede cambiar el contenido de un documento HTML</p>
+
+<button type="button" onclick="document.getElementById('demo').innerHTML = 'JavaScript cambia las cosas'">¡Presióname!</button>
+
+<br><hr><br>
+
+<!-- Segundo elemento de JS -->
+<p>JavaScript puede cambiar los atributos del HTML.</p>
+
+<p>En este caso, JavaScript cambia el atributo src de una imagen.</p>
+
+<button onclick="document.getElementById('myImage').src='pic_bulbon.gif'">Encender la luz</button>
+
+<img id="myImage" src="pic_bulboff.gif" style="width:100px">
+
+<button onclick="document.getElementById('myImage').src='pic_bulboff.gif'">Apagar la luz</button>
+
+<br><hr><br>
+
+<!-- Tercer elemento de JS -->
+<p id="demo3">JavaScript puede esconder o mostrar elementos.</p>
+
+<button type="button" onclick="document.getElementById('demo3').style.display='none'">Click para esconder</button>
+<button type="button" onclick="document.getElementById('demo3').style.display='block'">Click para mostrar</button>
+
+<br><hr><br>
+
+<!-- Cuarto elemento de JS -->
+<p id="demo4">Un párrafo en HTML.</p>
+
+<button type="button" onclick="myFunction()">¡Pruébame!</button>
+
+<br><hr><br>
+
+<!-- Quinto elemento de JS -->
+<p>Se puede obtener el resultado de un operación</p>
+<p>
+5 + 6 = 
+<script>
+document.write(5 + 6);
+</script>
+</p>
+
+<br><hr><br>
+
+<!-- Sexto elemento de JS -->
+5 + 6 =
+<p id="demo6"></p>
+
+<script>
+document.getElementById("demo6").innerHTML = 5 + 6;
+</script>
+
+<br><hr><br>
+
+<!-- Séptimo elemento de JS -->
+<p>Las variables en JavaScript.</p>
+
+<p>Las variables x, y, & z se les asignan los valores 5, 6, & 11:</p>
+
+<p id="demo7"></p>
+
+<script>
+var x = 5;
+var y = 6;
+var z = x + y;
+document.getElementById("demo7").innerHTML = z;
+</script>
+
+<br><hr><br>
+
+<!-- Séptimo elemento de JS -->
+<p id="myPar">Este es un párrafo.</p>
+<div id="myDiv">Esta es una div.</div>
+
+<p>
+<button type="button" onclick="myFunction2()">¡Pruébame!</button>
+</p>
+
+<script>
+function myFunction2() {
+	/*Comentarios dentro del script de JS*/
+    document.getElementById("myPar").innerHTML = "Cambia el párrafo.";
+    document.getElementById("myDiv").innerHTML = "Y la div";	// Cambiar una división
+}
+</script>
+
+<p>Cuando se da clic en el botón, cambian ambos elementos.</p>
+
+<br><hr><br>
+
+<!-- Octavo elemento de JS -->
+<script type="text/javascript">
+var d = new Date();
+document.write('Fecha: '+d.getDate(),'<br>Dia de la semana: '+d.getDay(),'<br>Mes (0 al 11): '+d.getMonth(),'<br>Año: '+d.getFullYear(),'<br>Hora: '+d.getHours(),'<br>Minutos: '+d.getMinutes(),'<br>Segundos: '+d.getSeconds());
+</script>
+
+
+<div style="float:right;">
+<script type="text/javascript">
+//<![CDATA[
+var  today = new Date();
+var m = today.getMonth() + 1;
+var mes = (m < 10) ? '0' + m : m;
+  document.write('Fecha: '+today.getDate(),'/' +mes,'/'+today.getYear());
+//]]> 
+</script></div>
+
+<br>
+<script type="text/javascript">
+//<![CDATA[
+function makeArray() {
+for (i = 0; i<makeArray.arguments.length; i++)
+this[i + 1] = makeArray.arguments[i];}
+var months = new makeArray('Enero','Febrero','Marzo','Abril','Mayo',
+'Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre');
+var date = new Date();
+var day = date.getDate();
+var month = date.getMonth() + 1;
+var yy = date.getYear();
+var year = (yy < 1000) ? yy + 1900 : yy;
+document.write("Hoy es " + day + " de " + months[month] + " del " + year);
+//]]>
+</script>
+
+<br><br>
+<script type="text/javascript">
+function startTime(){
+today=new Date();
+h=today.getHours();
+m=today.getMinutes();
+s=today.getSeconds();
+m=checkTime(m);
+s=checkTime(s);
+// Aquí es donde se coloca en donde se va a mandar el reloj
+document.getElementById('reloj').innerHTML=h+":"+m+":"+s;
+t=setTimeout('startTime()',500);}
+function checkTime(i)
+{ if (i<10) {i="0" + i;}return i; }
+window.onload=function(){ startTime(); }
+</script>
+<!-- Aquí es donde se va a colocar el reloj programado -->
+<div id="reloj" style="width:100px;text-align:center;;font-size:20px;color:blue;font-weight:bold;border-style: groove;border-width: 5px;border-color: red green blue yellow;"></div>
+
+
+
+<!-- FIN DE LOS EJEMPLOS -->
+<br><hr><hr><br>
+<a href="../inicio.html" onclick="javascript:alert('No huyas de esta página');">--REGRESAR A INICIO--</a>
+<br>
+<a href="javascript:if (confirm('¿Ingresar a inicio?')) {parent.location='../inicio.html';};">--REGRESAR A INICIO CONDICIONADO--</a>
+
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>div centrado verticalmente y horizontalmente</title>
+	<meta charset="utf-8">
+	<link href="especial.css" rel="stylesheet" type="text/css">
+	<style>
+	.centrar
+	{
+		position: absolute;
+		/*nos posicionamos en el centro del navegador*/
+		top: 50%;
+		left: 50%;
+		/*determinamos una anchura*/
+		width:400px;
+		/*indicamos que el margen izquierdo, es la mitad de la anchura*/
+		margin-left:-200px;
+		/*determinamos una altura*/
+		height:300px;
+		/*indicamos que el margen superior, es la mitad de la altura*/
+		margin-top:-150px;
+		border:1px solid #808080;
+		padding:5px;
+	}
+	</style>
+</head>
+ 
+<body>
+
+	<nav>
+	<ul>
+	  <li><a href="paginanoua.html">Home</a></li>
+	  <li><a href="pagnoua02.html">Navegar</a></li>
+	  <li><a href="pagnoua03.html">Más navegación</a></li>
+	  <!-- 
+		Elemento de la lista en el que se desplegará el menú
+		La clase es dropdown
+	  -->
+	  <li class="dropdown">
+		<a href="#" class="dropbtn">Hacia abajo...</a>
+		<div class="dropdown-content">
+		  <a href="pagnoua04.html">Seguir</a>
+		  <a href="pagnoua05.html">Centrado</a>
+		  <a href="#">Link 3</a>
+		</div>
+	  </li>
+	</ul>
+	</nav>
+
+	<h1>div centrado verticalmente y horizontalmente</h1>
+	<div class='centrar'>
+		div centrado
+	</div>
+	<br>
+	<a href="http://www.w3schools.com/css/css_positioning.asp" class="linki">Ir a posicionamiento</a>
+	<br>
+	<a href="http://www.w3schools.com/cssref/css3_pr_font-face_rule.asp" class="linki">Ir a @fontface</a>
+</body>
+</html>

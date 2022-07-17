@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+<style>
+
+div.cuadro {
+    background-color: #221100;
+    color: #CCFFCC;
+    margin: 20px 0 20px 0;
+    padding: 20px;
+	width: 45%;
+	float: left;
+}
+
+div.cuadro2 {
+    background-color: #221100;
+    color: #CCFFCC;
+    margin: 20px 0 20px 0;
+    padding: 20px;
+	width: 45%;
+	float: right;
+	text-align: right;
+} 
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #333333;
+}
+
+li {
+    float: left;
+}
+
+li a, .dropbtn {
+    display: inline-block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+li a:hover, .dropdown:hover .dropbtn {
+    background-color: red;
+}
+
+/* Clase dropdown afectando a lista */
+li.dropdown {
+    display: inline-block;
+}
+
+/* Contenido del menú desplegable (por default esta escondido) */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #F9F9F9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 8px rgba(0,0,0,0.5);
+}
+
+/* Como serán los links dentro del menú desplegable */
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+
+/* Comportamiento del link al pasar por encima */
+.dropdown-content a:hover {
+	background-color: #E1E1E1;
+	font-style: italic;
+}
+
+/* Este es el importante, pues muestra el menú desplegable al pasar por encima */
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* Para desplegar una imagen */
+.dropdownimg {
+    position: relative;
+    display: inline-block;
+}
+
+/* El contenido que será la imagen a desplegar */
+.dropdownimg-content {
+    display: none;
+    position: absolute;
+    background-color: #F9F9F9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 16px rgba(0,0,0,0.2);
+}
+
+/* MUY importante, para que se despliegue */
+.dropdownimg:hover .dropdownimg-content {
+    display: block;
+}
+
+/* Descripción de la imagen */
+.desc {
+    padding: 15px;
+    text-align: center;
+	color: #2504AA;
+}
+
+</style>
+</head>
+<body>
+
+	<nav>
+	<ul>
+	  <li><a href="paginanoua.html">Home</a></li>
+	  <li><a href="pagnoua02.html">Navegar</a></li>
+	  <li><a href="pagnoua03.html">Más navegación</a></li>
+	  <!-- 
+		Elemento de la lista en el que se desplegará el menú
+		La clase es dropdown
+	  -->
+	  <li class="dropdown">
+		<a href="#" class="dropbtn">Hacia abajo...</a>
+		<div class="dropdown-content">
+		  <a href="pagnoua04.html">Seguir</a>
+		  <a href="#">Link 2</a>
+		  <a href="#">Link 3</a>
+		</div>
+	  </li>
+	</ul>
+	</nav>
+
+	<h3>Un menú desplegable dentro de la barra de navegación</h3>
+	<p>Colocar el mouse sobre el elemento "Hacia abajo..." para observar el efecto.</p>
+	
+	<div class="cuadro">
+		<h2>Imágenes desplegables</h2>
+		<p>No solo existen menús desplegables, también es posible añadir imágenes que se desplieguen...</p>
+		<p>Pasar por la imagen para ver el efecto</p>
+		<div class="dropdownimg">
+			<img src="cat.jpg" alt="Gato" width="100" height="86">
+			<div class="dropdownimg-content">
+				<img src="cat.jpg" alt="Gato">
+				<div class="desc">Un gato</div>
+			</div>
+		</div>
+	</div>
+	
+	<div class="cuadro2">
+		<h2>Imágenes desplegables</h2>
+		<p>Y flotar también un dato a la derecha también</p>
+		<p>Pasar por la imagen para ver el efecto</p>
+		<div class="dropdownimg">
+			<img src="cat2.jpg" alt="Gato" width="138" height="86">
+			<div class="dropdownimg-content" style="right: 0;">
+				<img src="cat2.jpg" alt="Gato" width="741" height="463">
+				<div class="desc">Otro gato</div>
+			</div>
+		</div>		
+	</div>
+	
+</body>
+</html>

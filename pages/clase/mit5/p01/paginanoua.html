@@ -1,0 +1,197 @@
+<!DOCTYPE HTML>
+
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<title>HTML5</title>
+
+<style>
+body {
+    font-family: Verdana,sans-serif;
+    font-size: 0.9em;
+}
+
+/* Muy importante colocar el overflow en automático */
+header {
+    padding: 10px;
+    color: white;
+    background-color: black;
+	overflow: auto;
+}
+
+footer {
+    padding: 10px;
+    color: white;
+    background-color: black;
+}
+
+header img {
+	float: right;
+	vertical-align: middle;
+	width: 96px;
+	height: 72px;
+}
+
+section {
+    margin: 5px;
+    padding: 10px;
+    background-color: lightgrey;
+}
+
+article {
+    margin: 5px;
+    padding: 10px;
+    background-color: white;
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+nav ul li {
+    display: inline;
+    margin: 5px;
+	float: left;
+}
+li a {
+    display: block;
+    color: navy;
+    text-align: center;
+    padding: 16px;
+}
+
+li a:hover {
+    background-color: #CCCCCC;
+	border-radius: 25px;
+	box-shadow: 5px 5px 5px #888888;	
+}
+
+a:link {
+    color: green;
+    background-color: transparent;
+    text-decoration: none;
+}
+a:visited {
+    color: mediumblue;
+    background-color: transparent;
+    text-decoration: none;
+}
+a:hover {
+    color: red;
+    background-color: transparent;
+    text-decoration: underline;
+}
+a:active {
+    color: yellow;
+    background-color: #BBBBBB;
+    text-decoration: underline;
+}
+
+article.kerstman:hover {
+	color: green;
+	font-style: italic;
+	font-weight: bolder;
+}
+
+ul.jed {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 200px;	<!-- Ancho del elemento-->
+    background-color: #f1f1f1;
+}
+
+ul.jed li a {
+    display: block;
+    color: #000;
+    padding: 8px 16px;
+    text-decoration: none;
+	text-align: right;	// Alineación del texto
+}
+
+/* Cambiar el color de fondo al pasar encima */
+ul.jed li a:hover {
+    background-color: #555;
+    color: white;
+	border-radius: 0px;
+}
+
+</style>
+</head>
+
+<body>
+
+	<!-- Cabecera -->
+	<header>
+		<img src="logot.gif" />
+		<h1>Aquí va la cabecera (header)</h1>		
+	</header>
+
+	<!-- Barra de navegación -->
+	<nav>
+		<ul>
+		  <li><a href="#">Navegación 1</a></li>
+		  <li><a href="#">Navegación 2</a></li>
+		  <li><a href="#">Navegación 3</a></li>
+		  <li style="float:right"><a href="#">Acerca de...</a></li>
+		</ul>
+	</nav>
+
+	<!-- Sección de información principal -->
+	<section>
+		<h2>Aquí va una Sección (section)</h2>
+		
+		<article>
+			<h2>Artículo 1 (article)</h2>
+			  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+			  <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+			  <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+			  <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+		</article>
+		
+		<article>
+			<h2>Artículo 2</h2>
+			  <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+			  <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.</p>
+			  <p>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</p>
+			  <p>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?</p>
+		</article>
+		
+		<article class="kerstman">
+			<h2>Doet het paard</h2>
+			<p>Un nuevo párrafo ha sido agregado y tiene cambios</p>
+		</article>
+		
+		<article>
+			<h2>Barra de Navegación Vertical</h2>
+			<ul class="jed">
+			  <li><a href="pagnoua02.html">Navegar...</a></li>
+			  <li><a href="#">Elemento 2</a></li>
+			  <li><a href="#">Elemento 3</a></li>
+			  <li><a href="#">Elemento 4</a></li>
+			</ul>			
+		</article>
+		
+		<!--<article>
+			<h2>Seguir trabaando con divisiones y otras</h2>
+			<p>En el caso de las divisiones es posible realizar ajustes interesantes:</p>
+		</article>-->
+		
+		<article>
+			<a href="resultado.html">Regresar a HTML5</a>
+		</article>
+		
+	</section>
+
+	<!-- Pie con la información principal -->
+	<footer>
+		<p>Pie de la página (footer) <a href="../../inicio.html">&copy; 2016 DataHoek.<a> All rights reserved.</p>
+	</footer>
+
+</body>
+</html>
+

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Página de inicio</title>
+  <!-- LINEA MUY IMPORTANTE PARA QUE EL SITIO WEB SE AUTOAJUSTE PARA CUALQUIER DISPOSITIVO -->
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+  <!-- Bootstrap 3.3.6 -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>  
+    
+  <!--INICIAR LA CONFIGURACIÓN PARA OTORGAR PERMISOS CON GOOGLE-->
+  <!--Aquí se especifica el ID del cliente de la app-->
+  <!--  !!!!! M U Y  I M P O R T A N T E !!!!!  -->
+  <!-- MODIFICAR EL "CONTENT" CON EL ID DE CLIENTE GENERADO EN LA CONSOLA DE DESARROLLO DE GOOGLE -->
+  <meta name="google-signin-client_id" content="322045408376-jlb7881st3ro070m2mp00a1kod8se7ee.apps.googleusercontent.com">
+  
+</head>
+
+<body>
+
+	<!-- Incrustar el botón de inicio de sesión con Google-->
+	<div class="social-auth-links text-center">
+      <p>- - - Opcional - - -</p>
+      <p> Ingresar con su cuenta correo gmail.com </p>
+	  <!-- Aquí se manda a llamar el botón de Google -->
+      <div id="my-signin2" data-onsuccess="onSuccess" align="center">     
+      </div>
+	</div>
+
+<br>	
+	
+<!-- ESTA SECCIÓN APARECE CUANDO SE INICIA SESIÓN -->
+<!-- Observar con mucha atención los identificadores "id" -->
+<div class="row">
+	<div class="col-md-3">
+		<div id="userbox" class="callout callout-info" style="display:none">
+			<div class="pull-left">
+				<img id="usimg" class="img-circle" style="width:50px;height:50px">
+			</div>
+			<span id="usuahia"></span>
+			<span id="usuahia3"></span>
+		</div>
+	</div>
+</div>
+
+<!-- REQUIRED JS SCRIPTS -->
+<script>
+    function onSuccess(googleUser) {
+        var id_token = googleUser.getAuthResponse().id_token;
+        console.log('Signed in as: ' + googleUser.getBasicProfile().getName());
+        console.log('ID: ' + googleUser.getBasicProfile().getId());
+        console.log('Email: ' + googleUser.getBasicProfile().getEmail());
+        console.log('Token: ' + id_token);
+		
+		// Elementos a mostrar
+		document.getElementById('userbox').style.display='block';
+		// Imagen del usuario
+		document.getElementById("usimg").src = googleUser.getBasicProfile().getImageUrl();
+		// Nombre del usuario 
+		document.getElementById("usuahia").innerHTML = googleUser.getBasicProfile().getName();
+		// Correo del usuario 
+		document.getElementById("usuahia3").innerHTML = googleUser.getBasicProfile().getEmail();
+        
+    }
+    function onFailure(error) {
+      console.log(error);
+    }	
+    function renderButton() {
+      gapi.signin2.render('my-signin2', {
+        'scope': 'profile email',	// Inicio de sesión con gmail
+        'width': 280,				// Ancho del botón
+        'height': 36,				// Alto del botón
+        'longtitle': true,			// Título del botón largo
+        'theme': 'dark',			// Color del tema (light  / dark)
+        'onsuccess': onSuccess,		// Cuando se inicia sesión correctamente
+        'onfailure': onFailure		// Un fallo en el incio de sesión
+      });
+    }
+	
+</script>
+
+<!--Cargar la libreria de la plataforma Google-->
+<script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>	  
+	  
+</body>
+
+</html>

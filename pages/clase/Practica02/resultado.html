@@ -1,0 +1,28 @@
+<!DOCTYPE HTML>
+
+<html lang="es">
+
+<head>	
+	<meta charset="UTF-8">
+	<!--Otra forma de colocarlo <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />-->
+	<meta name="description" content="Primera página de prueba HTML">
+	<meta name="keywords" content="HTML, HTML5, CSS3, JavaScript, Bootstrap">
+	<meta name="revised" content="Tutorial HTML, 18/09/2016">
+	<meta name="author" content="Ix NightRoad">
+	<link rel="shortcut icon" type="image/x-icon" href="RBKCUBE.ICO" />
+	<title>Contenido de Marcos</title>
+
+</head>
+
+<frameset cols="15%,85%">	<!--En caso de querer  un marco horizontal, basta con sustituir por rows-->
+	<frame name="ezquerra" src="guia_left.html" frameborder="1" noresize scrolling="auto" marginwidth="5" marginheight="0">
+	<frameset rows="10%,90%">	<!--En caso de querer  un marco vertical, basta con sustituir por cols-->
+		<frame name="superior" src="guia_top.html" frameborder="1" noresize scrolling="no" marginwidth="10" marginheight="10">
+		<frame name="cuerpo" src="centralia.html" frameborder="1" noresize scrolling="auto" marginwidth="20" marginheight="5">
+	</frameset>
+	<noframes>
+		<p>Este mensaje aparecerá cuando el navegador no soporte utilizar marcos</p>
+	</noframes>
+</frameset>
+
+</html>

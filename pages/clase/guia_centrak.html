@@ -1,0 +1,332 @@
+<!DOCTYPE HTML>
+
+<html lang="es">
+
+<head>	
+	<meta charset="UTF-8">
+</head>
+
+
+<body bgcolor="#FFFFFF">
+
+	<br><br><br>
+	<h1><mark>Sugerencia: Ver código fuente de esta página</mark></h1>
+	<h3><mark>En este caso dar clic derecho sobre el marco y buscar ver código fuente del marco</mark></h3>
+	<h3><mark>Ya que si no, dará información de la página que controla los marcos</mark></h3>
+	<br>
+	<center>Alternar entre día y <a href="guia_centrak2.html">noche</a></center>
+	
+	<br><br><br><br><br><br><br><br>
+	<center>Este es el marco central de la página</center>
+	
+	
+<HR>
+<BR><BR>
+
+Es posible adoptar simultáneamente una división tanto en columnas como en filas, de manera que se cree una ventana dividida en varios marcos. Veamos cómo debemos intervenir en el código HTML del documento según el número y la posición de los marcos que queremos crear.<BR><BR>
+
+<table border=0>
+<td width=170>
+<IMG SRC="guida_frame_3.gif" WIDTH=144 HEIGHT=108 BORDER=0><BR>
+</td>
+
+<td align=top>
+<B><I><FONT SIZE=1 FACE="ARIAL" COLOR="#800000">
+
+&lt;frameset rows="100,*"&gt;
+
+    <ul>&lt;frame name="alto" src="top.html"&gt;</ul>     
+
+&lt;frameset cols="150,*"&gt;
+<BR><ul>
+    &lt;frame name="sx" src="sx.html"&gt;<BR>
+    &lt;frame name="central" src="central.html"&gt;
+</ul>
+&lt;/frameset&gt;
+<BR><BR>
+&lt;/frameset&gt; 
+
+</b></i></font>
+</td>
+</table>
+
+<BR><BR>
+
+<HR><BR><BR>
+
+
+<table border=0>
+<td width=170>
+<IMG SRC="guida_frame_4.gif" WIDTH=144 HEIGHT=108 BORDER=0><BR>
+</td>
+
+<td align=top>
+<B><I><FONT SIZE=1 FACE="ARIAL" COLOR="#800000">
+
+
+&lt;frameset cols="120,*"&gt;
+    
+    <ul>&lt;frame name="sx" src="sx.html"&gt;</ul>
+
+&lt;frameset rows="100,*"&gt;
+<ul>
+    &lt;frame name="alto" src="top.html"&gt;     
+<br>
+    &lt;frame name="central" src="central.html"&gt;
+</ul>
+&lt;/frameset&gt;
+<BR><BR>
+&lt;/frameset&gt; 
+
+</b></i></font>
+</td>
+</table>
+
+<HR><BR><BR>
+
+
+<table border=0>
+<td width=170>
+<IMG SRC="guida_frame_5.gif" WIDTH=144 HEIGHT=108 BORDER=0><BR>
+</td>
+
+<td align=top>
+<B><I><FONT SIZE=1 FACE="ARIAL" COLOR="#800000">
+
+
+&lt;frameset cols="120,*"&gt;
+    
+    <ul>&lt;frame name="sx" src="sx.html"&gt;</ul>
+
+&lt;frameset rows="20%,60%,20%,*"&gt;
+<ul>
+    &lt;frame name="alto" src="top.html"&gt;     
+<br>
+    &lt;frame name="central" src="central.html"&gt;
+<BR>
+    &lt;frame name="bajo" src="basso.html"&gt;
+</ul>
+&lt;/frameset&gt;
+<BR><BR>
+&lt;/frameset&gt; 
+
+</b></i></font>
+</td>
+</table>
+
+<HR><BR><BR>
+
+
+<table border=0>
+<td width=170>
+<IMG SRC="guida_frame_6.gif" WIDTH=144 HEIGHT=108 BORDER=0><BR>
+</td>
+
+<td align=top>
+<B><I><FONT SIZE=1 FACE="ARIAL" COLOR="#800000">
+
+
+&lt;frameset cols="75%,25%"&gt;
+    <BR><BR>
+&lt;frameset rows="20%,80%*"&gt;
+<ul>
+    &lt;frame name="alto" src="top.html"&gt;     
+<br>
+    &lt;frame name="central" src="central.html"&gt;
+
+</ul>
+&lt;/frameset&gt;
+   
+<ul>&lt;frame name="dx" src="dx.html"&gt;</ul>
+
+&lt;/frameset&gt; 
+
+</b></i></font>
+</td>
+</table>
+
+<HR><BR><BR>
+
+
+<table border=0>
+<td width=170>
+<IMG SRC="guida_frame_7.gif" WIDTH=144 HEIGHT=108 BORDER=0><BR>
+</td>
+
+<td align=top>
+<B><I><FONT SIZE=1 FACE="ARIAL" COLOR="#800000">
+
+
+&lt;frameset cols="75%,25%"&gt;
+<BR><BR>
+&lt;frameset rows="20%,80%*"&gt;
+
+<ul>&lt;frame name="alto" src="top.html"&gt;</ul>
+ 
+&lt;frameset cols="20%,80%*"&gt;
+<ul>
+    &lt;frame name="sx" src="sx.html"&gt;<BR>
+    &lt;frame name="central" src="central.html"&gt;
+
+</ul>
+&lt;/frameset&gt;
+&lt;/frameset&gt;
+   
+<ul>&lt;frame name="dx" src="dx.html"&gt;</ul>
+
+&lt;/frameset&gt; 
+
+</b></i></font>
+</td>
+</table>
+
+<HR><BR><BR>
+
+
+<table border=0>
+<td width=170>
+<IMG SRC="guida_frame_8.gif" WIDTH=144 HEIGHT=108 BORDER=0><BR>
+</td>
+
+<td align=top>
+<B><I><FONT SIZE=1 FACE="ARIAL" COLOR="#800000">
+
+
+&lt;frameset cols="75%,25%"&gt;
+<BR><BR>
+&lt;frameset rows="20%,80%*"&gt;
+
+<ul>&lt;frame name="alto" src="top.html"&gt;<BR>
+ 
+    &lt;frame name="central" src="central.html"&gt;
+</ul>
+
+&lt;/frameset&gt;
+   
+&lt;frameset rows="24%,76%"&gt;
+<ul>
+    &lt;frame name="top" src="top2.html"&gt; 
+    &lt;frame name="dx" src="dx.html"&gt; 
+</ul>
+&lt;/frameset&gt; 
+
+&lt;/frameset&gt; 
+
+</b></i></font>
+</td>
+</table>
+
+<HR><BR><BR>
+
+<table border=0>
+<td width=170>
+<IMG SRC="guida_frame_10.gif" WIDTH=144 HEIGHT=108 BORDER=0><BR>
+<font size=2>
+</td>
+
+<td align=top>
+<B><I><FONT SIZE=1 FACE="ARIAL" COLOR="#800000">
+
+
+&lt;frameset cols="25%,75%"&gt;
+<BR><BR>    
+&lt;frameset rows="80%,20%"&gt;
+<ul>
+    &lt;frame name="alto" src="top.html"&gt;     
+<BR>
+    &lt;frame name="bajo" src="basso.html"&gt; 
+</ul>
+&lt;/frameset&gt;
+<ul>
+    &lt;frame name="central" src="central.html"&gt;
+</ul>
+&lt;/frameset&gt; 
+
+</b></i></font>
+</td>
+</table>
+
+<HR><BR><BR>
+
+<table border=0>
+<td width=170>
+<IMG SRC="guida_frame_11.gif" WIDTH=144 HEIGHT=108 BORDER=0><BR>
+<font size=2>
+</td>
+
+<td align=top>
+<B><I><FONT SIZE=1 FACE="ARIAL" COLOR="#800000">
+
+
+&lt;frameset rows="20%,60%,20%"&gt;
+<ul>
+    &lt;frame name="alto" src="top.html"&gt;<BR>     
+    &lt;frame name="central" src="central.html"&gt;<BR>
+    &lt;frame name="bajo" src="basso.html"&gt;
+</ul>
+&lt;/frameset&gt; 
+
+</b></i></font>
+</td>
+</table>
+
+<HR><BR><BR>
+
+<table border=0>
+<td width=170>
+<IMG SRC="guida_frame_9.gif" WIDTH=144 HEIGHT=108 BORDER=0><BR>
+</td>
+
+<td align=top>
+<B><I><FONT SIZE=1 FACE="ARIAL" COLOR="#800000">
+
+
+&lt;frameset cols="20%,60%,20%"&gt;
+<ul>
+    &lt;frame name="sx" src="sx.html"&gt; <BR>     
+    &lt;frame name="central" src="central.html"&gt;<BR>
+    &lt;frame name="dx" src="dx.html"&gt; 
+</ul>
+&lt;/frameset&gt; 
+
+</b></i></font>
+</td>
+</table>
+
+</i>
+<BR><BR>
+<HR>
+<BR><BR>	
+
+Para eliminar el borde gris de los marcos, se debe insertar el siguiente código:<BR>
+
+<FONT COLOR="#800000">&lt;frameset cols="20%,60%,20%" <B>border=0</B>&gt;</font>
+
+<BR><BR>
+
+Para impedir que los marcos sean redimensionados por el visitante:<BR>
+
+<FONT COLOR="#800000">&lt;frame name="alto" src="top.html" <B>noresize</B>&gt;</font> 
+
+<BR><BR>
+<FONT SIZE=2 FACE="ARIAL">
+Para eliminar <U>siempre</U> las barras de desplazamiento (scrollbars): <BR>
+<FONT COLOR="#800000">&lt;frame name="alto" src="top.html" <B>scrolling="no"</B>&gt;</font><BR><BR>
+
+Para mostrarlas siempre:<BR>  
+<FONT COLOR="#800000">&lt;frame name="alto" src="top.html" <B>scrolling="yes"</B>&gt;</font><BR><BR>
+
+Para mostrarlas sólo cuando son necesarias:<BR>  
+<FONT COLOR="#800000">&lt;frame name="alto" src="top.html" <B>scrolling="auto"</B>&gt;</font><BR><BR>
+
+Para regular la distancia del contenido del marco al margen superior (marginheight) y a los márgenes izquierdo y derecho (marginwidth):<BR>  
+<FONT COLOR="#800000">&lt;frame name="alto" src="top.html" <B> marginheight=2 marginwidth=5</B>&gt;</font><BR><BR>
+
+<BR><BR><HR><BR><BR>
+
+
+
+	
+</body>
+
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE HTML>
+
+<html lang="es">
+
+<head>	
+	<meta charset="UTF-8">
+<!--Lo siguiente modifica la forma en que se comportan los enlaces y las tablas-->
+<style>
+a:link {
+    color: green;
+    background-color: transparent;
+    text-decoration: none;
+}
+a#altro:link {
+    color: darkturquoise;
+    background-color: transparent;
+    text-decoration: none;
+}
+a:visited {
+    color: mediumblue;
+    background-color: transparent;
+    text-decoration: none;
+}
+a#altro:visited {
+    color: maroon;
+    background-color: transparent;
+    text-decoration: none;
+}
+a:hover {
+    color: red;
+    background-color: transparent;
+    text-decoration: underline;
+}
+a#altro:hover {
+    color: purple;
+    background-color: transparent;
+    text-decoration: underline;
+}
+a:active {
+    color: yellow;
+    background-color: transparent;
+    text-decoration: underline;
+}
+a#altro:active {
+    color: lime;
+    background-color: transparent;
+    text-decoration: underline;
+}
+
+<!--Sección que modifica las tablas-->
+table {
+    width:100%;
+}
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+    text-align: left;
+}
+table#t01 tr:nth-child(even) {
+    background-color: #eee;
+}
+table#t01 tr:nth-child(odd) {
+   background-color:#fff;
+}
+table#t01 th {
+    background-color: black;
+    color: white;
+}
+
+</style>	
+	
+</head>
+
+
+<body style="background-color:#CCCCFF">
+
+	<br><br><br>
+	<center><font size="6" color="#333300"><b>En esta página se mostrarán todas las acciones que pueden efectuarse en HTML5:</font></b></center>
+	<br><hr>
+	<a href="../comienza.html">Ir a la página de inicio</a>
+	<p><a href="../comienza.html" target="_top" id="altro">Ir a la página de inicio, pero con el target diferente</a></p>
+	
+	<!-- Manejo de tablas -->
+	<br><hr>
+	<table>
+	  <tr>
+	    <th>Nombre</th>
+	    <th>Apellido</th>
+	    <th>Edad</th>
+	  </tr>
+	  <tr>
+		<td>Charly</td>
+		<td>García</td>
+		<td>64</td>
+	  </tr>
+	  <tr>
+		<td>Gustavo</td>
+		<td>Cerati</td>
+		<td>55</td>
+	  </tr>
+	  <tr>
+		<td>Federico</td>
+		<td>Moura</td>
+		<td>37</td>
+	  </tr>
+	</table>
+	<br>
+
+	<table id="t01">
+	  <tr>
+	    <th>Nombre</th>
+	    <th>Apellido</th>
+	    <th>Edad</th>
+	  </tr>
+	  <tr>
+		<td>Charly</td>
+		<td>García</td>
+		<td>64</td>
+	  </tr>
+	  <tr>
+		<td>Gustavo</td>
+		<td>Cerati</td>
+		<td>55</td>
+	  </tr>
+	  <tr>
+		<td>Federico</td>
+		<td>Moura</td>
+		<td>37</td>
+	  </tr>
+	</table>
+		
+	<br>
+	<a href="masnuevo.html">Seguir con el HTML5</a>
+</body>
+
+</html>

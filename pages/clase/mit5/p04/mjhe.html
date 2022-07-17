@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Formas</title>
+
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+	<!-- Optional theme -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+
+</head>
+
+<body>
+
+<!-- 
+	El atributo action define la acción a ser realizada cuando se envía la forma,
+	se puede utilizar el método GET | POST
+	método GET úsese solo cuando se envían datos no sensibles, pequeños (ya que tienen una limitación)
+	método POST al contrario permite enviar datos sensibles y una mayor cantidad de información
+-->
+
+<!--<form action="action_page.php">-->
+<form>
+	<fieldset>
+	<legend>Información personal:</legend>
+	  Primer Nombre:<br>
+	  <input type="text" name="firstname" value="Cosme">
+	  <br>
+	  Segundo nombre:<br>
+	  <input type="text" name="lastname" value="Fulanito">
+	  <br>
+	  Contraseña:<br>
+	  <input type="password" name="pswd" required>	  
+	  <br>
+	  <input type="radio" name="gender" value="male" checked> Hombre <br>
+	  <input type="radio" name="gender" value="female"> Mujer <br>
+	  <input type="radio" name="gender" value="other"> Otro 
+	  <br>
+	  <h3>País</h3>
+	  <select name="pais">
+		<option value="spain">España</option>
+		<option value="portugal">Portugal</option>
+		<option value="italy">Italia</option>
+		<option value="sweden">Suecia</option>
+	  </select>
+	  <br>
+	  Seleccione su color favorito
+	  <input type="color" name="favcolor">
+	  <br>
+	  Una cantidad entre 1 y 5	  
+	  <input type="number" name="quantity" min="1" max="5">
+	  <br>
+	  Fecha de nacimiento
+	  <input type="date" name="bday">
+	  <br>
+	  Correo electrónico	  
+	  <input type="email" name="email">
+	  <br>
+	  Textos fijos o deshabilitados
+	  <input type="text" name="textos" value="Algun texto fijo" readonly>
+	  <input type="text" name="stexto" value="Texto deshabilitado" disabled>
+	  
+	  <br><br><br>
+	  <input type="submit" value="Enviarr">
+	  <input type="reset">
+	</fieldset>
+</form>
+
+<br>
+<a href="ramus.html">Ir a método GET/POST</a>
+
+</body>
+</html>

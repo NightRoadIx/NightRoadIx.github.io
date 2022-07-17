@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Programación Avanzada</title>
+  <!-- Create a favicon -->
+  <link rel="shortcut icon" type="image/x-icon" href="../../../BART26.ico" />
+  <!-- Tell the browser to be responsive to screen width -->
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+  <!-- Bootstrap 3.3.6 -->
+  <link rel="stylesheet" href="../../../bootstrap/css/bootstrap.min.css">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <!-- Ionicons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="../../../dist/css/AdminLTE.min.css">
+  <!-- AdminLTE Skins. Choose a skin from the css/skins
+       folder instead of downloading all of them to reduce the load. -->
+  <link rel="stylesheet" href="../../../dist/css/skins/_all-skins.min.css">
+
+  <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+</head>
+<body class="hold-transition skin-blue sidebar-mini">
+<div class="wrapper">
+
+  <header class="main-header">
+    <!-- Logo -->
+    <a href="../../../index.html" class="logo">
+      <!-- mini logo for sidebar mini 50x50 pixels -->
+      <span class="logo-mini"><b>D</b>hk</span>
+      <!-- logo for regular state and mobile devices -->
+      <span class="logo-lg"><b>DATA</b>hoek</span>
+    </a>
+
+    <!-- Header Navbar: style can be found in header.less -->
+    <nav class="navbar navbar-static-top">
+      <!-- Sidebar toggle button-->
+      <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
+        <span class="sr-only">Toggle navigation</span>
+      </a>
+      <!-- Navbar Right Menu -->
+      <div class="navbar-custom-menu">
+        <ul class="nav navbar-nav">
+          <!-- Messages: style can be found in dropdown.less-->
+          <li class="dropdown messages-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <i class="fa fa-envelope-o"></i>
+              <span class="label label-success">666</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li class="header">Tienes 666 mensajes</li>
+              <li>
+                <!-- inner menu: contains the actual data -->
+                <ul class="menu">
+                  <li><!-- start message -->
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user2-160x160.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Equipo de soporte
+                        <small><i class="fa fa-clock-o"></i> 5 mins</small>
+                      </h4>
+                      <p>¿Por qué no construyes un nuevo tema?</p>
+                    </a>
+                  </li>
+                  <!-- end message -->
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user3-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Equipo de diseño
+                        <small><i class="fa fa-clock-o"></i> 2 hours</small>
+                      </h4>
+                      <p>¿Por qué no diseñas un nuevo tema?</p>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user4-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Desarrolladores
+                        <small><i class="fa fa-clock-o"></i> Hoy</small>
+                      </h4>
+                      <p>¿Por qué no terminamos el nuevo tema?</p>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user3-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Departamento de ventas
+                        <small><i class="fa fa-clock-o"></i> Ayer</small>
+                      </h4>
+                      <p>¿Por qué no vendemos un nuevo tema?</p>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user4-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Revisores
+                        <small><i class="fa fa-clock-o"></i> Hace 2 días</small>
+                      </h4>
+                      <p>¿Por qué no funciona el nuevo tema?</p>
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <li class="footer"><a href="#">Ver todos los temas</a></li>
+            </ul>
+          </li>
+          <!-- Notifications: style can be found in dropdown.less -->
+          <li class="dropdown notifications-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <i class="fa fa-bell-o"></i>
+              <span class="label label-warning">666</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li class="header">Tienes 666 notificaciones</li>
+              <li>
+                <!-- inner menu: contains the actual data -->
+                <ul class="menu">
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-users text-aqua"></i> 5 miembros nuevos en el equipo
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-warning text-yellow"></i> Aquí se coloca una descripción muy grande que no cabe en el tema y
+                      puede ocasionar problemas de diseño
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-users text-red"></i> 5 nuevos miembros
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-shopping-cart text-green"></i> 25 ventas realizadas
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-user text-red"></i> Cambio su nombre de usuario
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <li class="footer"><a href="#">Ver todo</a></li>
+            </ul>
+          </li>
+          <!-- Tasks: style can be found in dropdown.less -->
+          <li class="dropdown tasks-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <i class="fa fa-flag-o"></i>
+              <span class="label label-danger">666</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li class="header">Tienes 666 tareas nuevas</li>
+              <li>
+                <!-- inner menu: contains the actual data -->
+                <ul class="menu">
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Diseñar algunos botones
+                        <small class="pull-right">20%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-aqua" style="width: 20%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">20% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Crear un tema muy "nice"
+                        <small class="pull-right">40%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-green" style="width: 40%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">40% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Algunas tareas que tengo que completar
+                        <small class="pull-right">60%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-red" style="width: 60%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">60% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Realizar transiciones bonitas
+                        <small class="pull-right">80%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-yellow" style="width: 80%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">80% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                </ul>
+              </li>
+              <li class="footer">
+                <a href="#">Ver todas las tareas</a>
+              </li>
+            </ul>
+          </li>
+          <!-- User Account: style can be found in dropdown.less -->
+          <li class="dropdown user user-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <img src="../../../dist/img/Lego_Kylo_Ren.png" class="user-image" alt="User Image">
+              <span class="hidden-xs">Luis Quintanar</span>
+            </a>
+            <ul class="dropdown-menu">
+              <!-- User image -->
+              <li class="user-header">
+                <img src="../../../dist/img/Lego_Kylo_Ren.png" class="img-circle" alt="User Image">
+
+                <p>
+                  Luis Quintanar - Entidad
+                  <small>Miembro desde Junio 1996</small>
+                </p>
+              </li>
+              <!-- Menu Body -->
+              <li class="user-body">
+                <div class="row">
+                  <div class="col-xs-4 text-center">
+                    <a href="#">Seguidores</a>
+                  </div>
+                  <div class="col-xs-4 text-center">
+                    <a href="#">Ventas</a>
+                  </div>
+                  <div class="col-xs-4 text-center">
+                    <a href="#">Amigos</a>
+                  </div>
+                </div>
+                <!-- /.row -->
+              </li>
+              <!-- Menu Footer-->
+              <li class="user-footer">
+                <div class="pull-left">
+                  <a href="https://www.researchgate.net/profile/Luis_Quintanar" class="btn btn-default btn-flat">Perfil</a>
+                </div>
+                <div class="pull-right">
+                  <a href="#" class="btn btn-default btn-flat">Salir sesión</a>
+                </div>
+              </li>
+            </ul>
+          </li>
+          <!-- Control Sidebar Toggle Button -->
+          <li>
+            <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+  
+  <!-- Left side column. contains the logo and sidebar -->
+  <aside class="main-sidebar">
+    <!-- sidebar: style can be found in sidebar.less -->
+    <section class="sidebar">
+      <!-- Sidebar user panel -->
+      <div class="user-panel">
+        <div class="pull-left image">
+          <img src="../../../dist/img/Lego_Kylo_Ren.png" class="img-circle" alt="User Image">
+        </div>
+        <div class="pull-left info">
+          <p>Luis Quintanar</p>
+          <a href="https://www.researchgate.net/profile/Luis_Quintanar"><i class="fa fa-circle text-success"></i> Perfil Researchgate</a>
+        </div>
+      </div>
+      <!-- search form -->
+      <form action="#" method="get" class="sidebar-form">
+        <div class="input-group">
+          <input type="text" name="q" class="form-control" placeholder="Search...">
+              <span class="input-group-btn">
+                <button type="submit" name="search" id="search-btn" class="btn btn-flat"><i class="fa fa-search"></i>
+                </button>
+              </span>
+        </div>
+      </form>
+      <!-- /.search form -->
+      <!-- sidebar menu: : style can be found in sidebar.less -->
+      <ul class="sidebar-menu">
+        <li class="header">NAVEGACIÓN PRINCIPAL</li>
+        <li class="active treeview">
+          <a href="#">
+            <i class="fa fa-dashboard"></i> <span>Dashboard</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li class="active"><a href="../../../index.html"><i class="fa fa-circle-o"></i> Dashboard v1</a></li>
+            <li><a href="../../../principal2.html"><i class="fa fa-circle-o"></i> Dashboard v2</a></li>
+          </ul>
+        </li>
+        <li class="treeview">
+          <a href="#">
+            <i class="fa fa-laptop"></i>
+            <span>UI Elements</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../UI/icons.html"><i class="fa fa-circle-o"></i> Iconos</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="../../calendar.html">
+            <i class="fa fa-calendar"></i> <span>Calendario</span>
+            <span class="pull-right-container">
+              <small class="label pull-right bg-red">3</small>
+              <small class="label pull-right bg-blue">17</small>
+            </span>
+          </a>
+        </li>
+        <li> <!-- Sección BLOG -->
+          <a href="blog.html">
+            <i class="fa fa-fw fa-commenting"></i> <span>Blog</span>
+            <span class="pull-right-container">
+            </span>
+          </a>
+        </li>
+        <li> <!-- Sección Arquitectura de Computadoras -->
+          <a href="#">
+            <i class="fa fa-desktop text-yellow"></i>
+			<span>Arq. de Computadoras</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/arqcomp/inicio.html"><i class="fa fa-archive text-yellow"></i> Introducción</a></li>
+          </ul>		  
+        </li>		
+        <li> <!-- Sección Microprocesadores y periféricos -->
+          <a href="#">
+            <i class="fa fa-microchip text-aqua"></i>
+			<span>MicrosyPerif.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/myp/inicio.html"><i class="fa fa-archive text-aqua"></i> Introducción</a></li>
+          </ul>		  
+        </li>		
+        <li> <!-- Sección Introducción de la Programación -->
+          <a href="#">
+            <i class="fa fa-keyboard-o text-red"></i>
+			<span>IntrodelaProga.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/introprogra/inicio.html"><i class="fa fa-archive text-red"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Fundamentos de Programación -->
+          <a href="#">
+            <i class="fa fa-laptop text-green"></i>
+			<span>FundamProgra.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/fundprogra/inicio.html"><i class="fa fa-archive text-green"></i> Introducción</a></li>
+			<li><a href="../fundprogra/inicio2.html"><i class="fa fa-archive text-green"></i> Prácticas</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sección Herramientas Computacionales -->
+          <a href="#">
+            <i class="fa fa-cogs text-yellow"></i>
+			<span>HerramComput.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/herram/inicio.html"><i class="fa fa-archive text-yellow"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sección Análisis y diseño de programas -->
+          <a href="#">
+            <i class="fa fa-pencil-square-o text-aqua"></i>
+			<span>AnDiseñodeProgramas.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../adprogramas/inicio.html"><i class="fa fa-archive text-aqua"></i> Introducción</a></li>
+          </ul>
+        </li>
+        <li> <!-- Sección Metodos Numéricos -->
+          <a href="#">
+            <i class="fa fa-sort-numeric-asc text-red"></i>
+			<span>MetNumericos.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../metodos/inicio.html"><i class="fa fa-archive text-red"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sección Programación Avanzada -->
+          <a href="#">
+            <i class="fa fa-file-archive-o text-green"></i>
+			<span>ProgrAvanzada.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../progravanzada/inicio.html"><i class="fa fa-archive text-green"></i> Introducción</a></li>
+			<li><a href="../progravanzada/inicio2.html"><i class="fa fa-archive text-green"></i> Prácticas I</a></li>
+			<li><a href="../progravanzada/inicio3.html"><i class="fa fa-archive text-green"></i> Prácticas II</a></li>
+			<li><a href="../progravanzada/inicio4.html"><i class="fa fa-archive text-green"></i> Prácticas IIb</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sistemas de Visión Artificial -->
+          <a href="#">
+            <i class="fa fa-eye text-light-blue"></i>
+			<span>SistemVisArtif.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/vision/inicio.html"><i class="fa fa-archive text-light-blue"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sección biofotónica -->
+          <a href="#">
+            <i class="fa fa-lightbulb-o text-red"></i>
+			<span>Fotobiología</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../../fotobiology/introduction.html"><i class="fa fa-university text-red"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+		<li class="treeview"> <!-- Diseño Web -->
+          <a href="#">		
+			<i class="fa fa-code text-orange"></i> <span>Diseño Web</span>			
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>	
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../clase/inicio.html"><i class="fa fa-file-code-o text-orange"></i> Diseño Web | Inicio</a></li>
+			<li><a href="../platweb/inicio.html"><i class="fa fa-file-code-o text-orange"></i> Plataformas Web</a></li>
+          </ul>
+		</li>
+		<li class="treeview"> <!-- Programación -->
+          <a href="#">		
+			<i class="fa fa-keyboard-o text-aqua"></i> <span> Programación</span>			
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>	
+          </a>
+          <ul class="treeview-menu">
+            <li>
+				<a href="#"> <i class="fa fa-folder text-aqua"></i> Java
+					<span class="pull-right-container">
+					  <i class="fa fa-angle-left pull-right"></i>
+					</span>					
+				</a>
+				<ul class="treeview-menu">
+					<li><a href="https://github.com/NightRoadIx/Java"><i class="fa fa-fw fa-github"></i> Java Básico</a></li>
+					<li><a href="https://github.com/NightRoadIx/JavaFinal"><i class="fa fa-fw fa-github"></i> Ejercicio Final</a></li>
+				</ul>			
+				<a href="#"> <i class="fa fa-folder text-aqua"></i> Ejemplos three.js
+					<span class="pull-right-container">
+					  <i class="fa fa-angle-left pull-right"></i>
+					</span>					
+				</a>
+				<ul class="treeview-menu">
+					<li><a href="../../../threejst.html"><i class="fa fa-circle-o"></i> Tabla Periódica</a></li>
+					<li><a href="../../../brain_network/plasma.html"><i class="fa fa-circle-o"></i> Colores</a></li>
+				</ul>
+				<a href="#"> <i class="fa fa-folder text-aqua"></i> Ejemplos
+					<span class="pull-right-container">
+					  <i class="fa fa-angle-left pull-right"></i>
+					</span>					
+				</a>
+				<ul class="treeview-menu">
+					<li><a href="../../../index3.html"><i class="fa fa-circle-o"></i> Login Oauth Google</a></li>
+				</ul>				
+			</li>
+          </ul>
+		</li>
+        <li class="treeview"> <!-- Simulación -->
+          <a href="#">
+            <i class="fa fa-cubes text-yellow"></i> <span>Simulación</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+			<li><a href="../../../random_walk/demo.html"><i class="fa fa-circle-o"></i> Random Walk</a></li>
+			<li><a href="../../../threejst2.html"><i class="fa fa-circle-o"></i> Tela</a></li>
+			<li><a href="../../../nonsiamo/adtogail3.html"><i class="fa fa-circle-o"></i> Objeto</a></li>
+			<li><a href="../../../planets/examples/earth.html"><i class="fa fa-circle-o"></i> Planetas</a></li>
+			<li><a href="../../../lumin/lumi.html"><i class="fa fa-circle-o"></i> Iluminación</a></li>
+			<li><a href="../../../brain_network/nnetwork.html"><i class="fa fa-circle-o"></i> Red Neuronal I</a></li>
+			<li><a href="../../../JSRobot/index.html"><i class="fa fa-circle-o"></i> Robot</a></li>			
+			<li><a href="../../../explosion/explosive.html"><i class="fa fa-circle-o"></i> Explosion</a></li>
+          </ul>	  
+        </li>
+        <li> <!-- Sección Lingüística -->
+          <a href="#">
+            <i class="fa fa-globe text-red"></i> <span>Lingüística</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../langues/indoeuropean.html"><i class="fa fa-university text-red"></i> Lenguas Indoeuropeas</a></li>
+          </ul>
+        </li>
+        <li class="treeview"> <!-- Modificar idioma -->
+          <a href="#">
+            <i class="fa fa-globe text-green"></i> <span>Modificar Idioma</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+			<li><a href="../../langues/ca404.html"><i class="fa fa-language"></i> Català</a></li>
+			<li><a href="../../langues/da404.html"><i class="fa fa-language"></i> Dansk</a></li>
+			<li><a href="../../langues/de404.html"><i class="fa fa-language"></i> Deutsch</a></li>
+            <li><a href="../../langues/en404.html"><i class="fa fa-language"></i> English</a></li>
+            <li><a href="../../langues/fr404.html"><i class="fa fa-language"></i> Français</a></li>
+			<li><a href="../../langues/ga404.html"><i class="fa fa-language"></i> Gaeilge</a></li>
+			<li><a href="../../langues/it404.html"><i class="fa fa-language"></i> Italiano</a></li>
+			<li><a href="../../langues/nl404.html"><i class="fa fa-language"></i> Nederlands</a></li>
+			<li><a href="../../langues/pt404.html"><i class="fa fa-language"></i> Português</a></li>
+			<li><a href="../../langues/ro404.html"><i class="fa fa-language"></i> Română</a></li>
+			<li><a href="../../langues/ru404.html"><i class="fa fa-language"></i> Pуcский</a></li>
+			<li><a href="../../langues/sv404.html"><i class="fa fa-language"></i> Sverige</a></li>
+          </ul>
+        </li>		
+        <li class="header">ETIQUETAS</li>
+        <li><a href="#"><i class="fa fa-circle-o text-red"></i> <span>Importante</span></a></li>
+        <li><a href="#"><i class="fa fa-circle-o text-yellow"></i> <span>Peligro</span></a></li>
+        <li><a href="#"><i class="fa fa-circle-o text-aqua"></i> <span>Información</span></a></li>
+      </ul>
+    </section>
+    <!-- /.sidebar -->
+  </aside>
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <h1>
+        Programación Avanzada
+      </h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+	<h4>
+		Entrega límite de prácticas 16/03/2020 a las 11:59:59 pm, <b>sin prórroga</b>, esto quiere decir que quedan solo:
+		<font color="red"><b><h3> 
+		<div id="countdown" align="center">¡Hora de aventura... digo de entregar proyecto!</div>
+		<script>
+			var end = new Date('03/16/2020 11:59 PM');
+
+				var _second = 1000;
+				var _minute = _second * 60;
+				var _hour = _minute * 60;
+				var _day = _hour * 24;
+				var timer;
+
+				function showRemaining() {
+					var now = new Date();
+					var distance = end - now;
+					if (distance < 0) {
+
+						clearInterval(timer);
+						document.getElementById('countdown').innerHTML = '¡Tiempo finalizado!';
+
+						return;
+					}
+					var days = Math.floor(distance / _day);
+					var hours = Math.floor((distance % _day) / _hour);
+					var minutes = Math.floor((distance % _hour) / _minute);
+					var seconds = Math.floor((distance % _minute) / _second);
+
+					document.getElementById('countdown').innerHTML = days + ' dias, ';
+					document.getElementById('countdown').innerHTML += hours + ' horas, ';
+					document.getElementById('countdown').innerHTML += minutes + ' minutos y ';
+					document.getElementById('countdown').innerHTML += seconds + ' segundos';
+				}
+
+				timer = setInterval(showRemaining, 1000);
+			</script>
+		</b></h2></font>
+	</h4>
+	
+	  <div class="box box-danger">
+		<div class="box-header">
+			<h1 class="box-title" style="font-weight:bold"> Prácticas II</h1><h5>(Segundo nivel, veamos si como roncan duermen jeje)</h5>
+			<h5><font color="blue">{Recordar que estos ejercicios se resolverán en Google Collaboratory}</font><h5>
+        </div>
+			<ol>
+				<h4>- - - Generación de Python Scripts super dañados - - -</h4>
+				<li> Programa que permita cifrar un texto ingresado por medio del algoritmo RSA <a href="https://elprofedefisica.naukas.com/2018/01/22/asi-funciona-el-algoritmo-rsa/" target="_blank"><b>Así funciona el algoritmo RSA</b></a> y <a href="https://cs.uns.edu.ar/~ldm/mypage/data/ss/info/ejemplo-rsa.pdf" target="_blank"><b>Ejemplo algoritmo RSA</b></a>. Para este programa se debe de generar una función de <b>cifrado</b> y otra de <b>descifrado</b>, en donde la primera reciba una cadena de texto y almacene un arhcio (.txt) con la cadena cifrada y lo necesario para descifrar, mientras que la función de descifrado debe recibir el archivo cifrado y obtener la cadena original</li>
+				<li> Programa que permita obtener el perímetro y el área de ciertas figuras geométricas: cuadrado, rectángulo, triángulo (de cualquier tipo), círculo, rombo, trapecio, polígono regular. el programa debe utilizar Programación Orientada a Objetos en donde cada una de las figuras será una clase que contenga los atributos necesarios para lograr el cálculo tanto del área como del perímetro</li>
+				<li> Programa que reciba un número digitado por el usuario y que muestre su representación en texto en pantalla y además, mediante la librería gTTS (Google Text To Speech) mande el audio del número. El número puede mostrarse en alguno de los idiomas mostrados en la siguiente tabla: <a href="https://www.dropbox.com/s/mfq9mw5ugdgpw9l/Numeraciones.pdf?dl=0" target="_blank"><b>Numeración en diferentes idiomas</b></a></li>
+				<li> Del programa del ejercicio 22 de la primera tanda, aumentar para que muestre el histograma con la frecuencia de aparición de las letras del alfabeto en el texto ingresado
+				<li> Programa que pemita obtener el RFC <b>con homoclave</b> de una persona, solicitando los datos necesarios (Nombre, Apellidos, Fecha de Nacimiento), siguiendo para ello las instrucciones proporcionadas por la SHCP <a href="https://www.dropbox.com/s/knefl1rxxgu36wu/IFAI%200610100135506%20065%20Algoritmo%20para%20generar%20el%20RFC%20con%20homoclave%20para%20personas%20fisicas%20y%20morales.odt?dl=0" target="_blank"><b>¿Cómo generar el RFC?</b></a></li>
+				<li> Programa que permita obtener el CURP <b>completo</b> de una persona, solicitando los datos necesarios (Nombre, Apellidos, Fecha de Nacimiento, lugar de nacimiento), siguiendo para ello las instrucciones proporcionadas en el DOF <a href="https://www.dof.gob.mx/nota_detalle.php?codigo=5526717&fecha=18/06/2018" target="_blank"><b>Normativa para generar el CURP, DOF</b></a> </li>
+				<li> Programa que permita mostrar la gráfica de un tiro parabólico para el cual se le ingresen los valores de la velocidad incial v<sub>0</sub>, el ángulo inicial &theta;<sub>0</sub>, la altura inicial de donde saldrá el proyectil h<sub>0</sub> y la aceleración de la gravedad que afectará al proyectil, así como los pasos &delta;t que se tomarán para realizar la simulación, la cual deberá detenerse cuando el proyectil llegue al suelo <i>y = 0</i>. Los datos de la simulación deben de guardarse a su vez en un archivo de texto (.txt) con formato de tabla <i>|i	x	y	t |</i>, donde i es el paso, la posición en (x,y) y el tiempo t de vuelo del proyectil</li>
+				<li> Programa que permita calcular n números de la serie de Fibonacci, con valores de n en el intervalo [1, 10000] </li>
+				<h4>- - - Solución de Métodos Numéricos - - -</h4>
+				<h6>Se puede utilizar como apoyo este libro: <a href="http://artemisa.unicauca.edu.co/~cardila/Chapra.pdf" target="_blank">Métodos numéricos para ingenieros</a></h6></b>
+				<h6>O este otro que es técnicamente resolver sus ejercicios: <a href="https://libgen.rocks/ads.php?md5=8F89791F3C9338F2E23EEC2C7BF5403B" target="_blank">Munerical Methods in Engineering with Python 3</a></h6></b>
+				<li> Programa que permita ingresar una función <i>f(x)</i> cualquiera y mediante el <a href="http://repositorio.uned.ac.cr/multimedias/metodos_numericos_ensenanza/modulo2/descripcionmetodo.html" target="_blank"><b>Método de bisección</b></a> obtener una de las raíces de la función, por lo que en primer lugar se debe mostrar al usuario una gráfica que permita inducir el intervalo de valores <i>[a, b]</i> que debe ingresarse. El programa también debe mostrar y guardar en un archivo de texto (.txt) la tabla con los siguientes valores: <b><i>|i		a		b		x<sub>i</sub>			&epsilon;|</i></b>, donde i es el número de iteración, a y b son los valores del intervalo, x<sub>i</sub> es el valor de la raíz calculado y &epsilon; el error. Finalmente se debe mostrar el valor de la raíz y la gráfica de la vecindad donde se localiza la raíz</li>
+				<li> Programa que permita ingresar una función <i>f(x)</i> cualquiera y mediante el <a href="http://test.cua.uam.mx/MN/Methods/Raices/NewtonRaphson/NewtonRaphson.php" target="_blank"><b>Método de Newton-Raphson</b></a> obtener una de las raíces de la función, por lo que en primer lugar se debe mostrar al usuario una gráfica que permita inducir el valor incial <i>x<sub>0</sub></i> que debe ingresarse. El programa también debe mostrar y guardar en un archivo de texto (.txt) la tabla con los siguientes valores: <b><i>|i		x<sub>i</sub>			&epsilon;|</i></b>, donde i es el número de iteración, x<sub>i</sub> es el valor de la raíz calculado y &epsilon; el error. Finalmente se debe mostrar el valor de la raíz y la gráfica de la vecindad donde se localiza la raíz</li>
+				<li> Programa que permita ingresar una función <i>f(x)</i> polinomial cualquiera y mediante el <a href="http://metnum-utp01.blogspot.com/p/lin-bairstow.html" target="_blank"><b>Método de Lin-Bairstow</b></a> obtener todas las ráices de la función polinomial una de las raíces de la función, por lo que en primer lugar se deben introducir los valores <i>r<sub>0</sub></i> y <i>s<sub>0</sub></i> que debe ingresarse. El programa también debe mostrar y guardar en un archivo de texto (.txt) la tabla con los siguientes valores: <b><i>|i		r<sub>i</sub>		s<sub>i</sub>	&epsilon;<sub>r</sub>	&epsilon;<sub>s</sub>|</i></b>, donde i es el número de iteración, factores r<sub>i</sub> y s<sub>i</sub> y los errores de los factores &epsilon;<sub>r</sub> &epsilon;<sub>s</sub></li>
+				<li> Programa que permita ingresra una función y mediante el <a href="http://test.cua.uam.mx/MN/Methods/Raices/NewtonRaphson/NewtonRaphson.php" target="_blank"><b>Método de Trapecios o Trapezoidal</b></a> obtener la integral definida en el intervalo <i>[a, b]</i>El programa también debe mostrar y guardar en un archivo de texto (.txt) la tabla con los siguientes valores: <b><i>|i		h		Valor_Integral	&epsilon;|</i></b></li>
+				<li> Programa que permita realizar la simulación del <a href="https://www.dropbox.com/s/xbt4cps31zf3liv/Simulaci%C3%B3n%20del%20camino%20aleatorio.docx?dl=0" target="_blank"><b>Camino o Paseo Aleatorio (Random Walk) o caminata del borracho</b></a> solicitando cuántos pasos (n) se efectuarán y de que longitud (L(), mostrando al finalizar la gráfica en 2D tras efectuar los n pasos</li>
+			</ol>
+			<p>&ensp;
+			</p>
+      </div>
+
+
+	  	 	 
+	<!-- /.content -->
+	</section>
+  <!-- /.content-wrapper -->
+  </div>
+  
+  <footer class="main-footer">
+    <div class="pull-right hidden-xs">
+      <b>Version</b> 6.6.6
+    </div>
+    <strong>Copyright &copy; 2016 <a href="http://www.datahoek.comli.com">Datahoek</a>.</strong> All rights
+    reserved.
+  </footer>
+
+  <!-- Control Sidebar -->
+  <aside class="control-sidebar control-sidebar-dark">
+    <!-- Create the tabs -->
+    <ul class="nav nav-tabs nav-justified control-sidebar-tabs">
+      <li><a href="#control-sidebar-home-tab" data-toggle="tab"><i class="fa fa-home"></i></a></li>
+      <li><a href="#control-sidebar-settings-tab" data-toggle="tab"><i class="fa fa-gears"></i></a></li>
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+      <!-- Home tab content -->
+      <div class="tab-pane" id="control-sidebar-home-tab">
+        <h3 class="control-sidebar-heading">Actividad Reciente</h3>
+        <ul class="control-sidebar-menu">
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-birthday-cake bg-red"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Día de Star Wars</h4>
+
+                <p>Será el 4 de Mayo</p>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-user bg-yellow"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Frodo Baggins actualizó su perfil</h4>
+
+                <p>Nuevo número +1(800)555-1234</p>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-envelope-o bg-light-blue"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Khan se unió al la lista de E-Mail</h4>
+
+                <p>khan@star-trek.com</p>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-file-code-o bg-green"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Cron Job 254 Ejecutado</h4>
+
+                <p>Tiempo de ejecución 5 segundos</p>
+              </div>
+            </a>
+          </li>
+        </ul>
+        <!-- /.control-sidebar-menu -->
+
+        <h3 class="control-sidebar-heading">Progreso de la Tarea</h3>
+        <ul class="control-sidebar-menu">
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Diseño de plantilla personalizada
+                <span class="label label-danger pull-right">70%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-danger" style="width: 70%"></div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Actualización
+                <span class="label label-success pull-right">95%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-success" style="width: 95%"></div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Integración de Laravel
+                <span class="label label-warning pull-right">50%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-warning" style="width: 50%"></div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Back End Framework
+                <span class="label label-primary pull-right">68%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-primary" style="width: 68%"></div>
+              </div>
+            </a>
+          </li>
+        </ul>
+        <!-- /.control-sidebar-menu -->
+
+      </div>
+      <!-- /.tab-pane -->
+
+      <!-- Settings tab content -->
+      <div class="tab-pane" id="control-sidebar-settings-tab">
+        <form method="post">
+          <h3 class="control-sidebar-heading">Ajustes Generales</h3>
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Uso del panel de reporte
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+
+            <p>
+              Información acerca de las opciones de configuración generales
+            </p>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Permitir redireccionamiento de e-mail
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+
+            <p>
+              Otras opciones están disponibles
+            </p>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Mostrar el nombre del autor en los posts
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+
+            <p>
+              Permitir al usuario mostrar su nombre en los posts del blog
+            </p>
+          </div>
+          <!-- /.form-group -->
+
+          <h3 class="control-sidebar-heading">Propiedades del chat</h3>
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Mostrarme como online
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Apagar notificaciones
+              <input type="checkbox" class="pull-right">
+            </label>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Borrar el historial del chat
+              <a href="javascript:void(0)" class="text-red pull-right"><i class="fa fa-trash-o"></i></a>
+            </label>
+          </div>
+          <!-- /.form-group -->
+        </form>
+      </div>
+      <!-- /.tab-pane -->
+    </div>
+  </aside>
+  <!-- /.control-sidebar -->
+  <!-- Add the sidebar's background. This div must be placed
+       immediately after the control sidebar -->
+  <div class="control-sidebar-bg"></div>
+
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery 2.2.3 -->
+<script src="../../../plugins/jQuery/jquery-2.2.3.min.js"></script>
+<!-- Bootstrap 3.3.6 -->
+<script src="../../../bootstrap/js/bootstrap.min.js"></script>
+<!-- Slimscroll -->
+<script src="../../../plugins/slimScroll/jquery.slimscroll.min.js"></script>
+<!-- FastClick -->
+<script src="../../../plugins/fastclick/fastclick.js"></script>
+<!-- AdminLTE App -->
+<script src="../../../dist/js/app.min.js"></script>
+<!-- AdminLTE for demo purposes -->
+<script src="../../../dist/js/demo.js"></script>
+</body>
+</html>

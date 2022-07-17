@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Fundamentos de Programación</title>
+  <!-- Create a favicon -->
+  <link rel="shortcut icon" type="image/x-icon" href="../../../BART26.ico" />
+  <!-- Tell the browser to be responsive to screen width -->
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+  <!-- Bootstrap 3.3.6 -->
+  <link rel="stylesheet" href="../../../bootstrap/css/bootstrap.min.css">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <!-- Ionicons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="../../../dist/css/AdminLTE.min.css">
+  <!-- AdminLTE Skins. Choose a skin from the css/skins
+       folder instead of downloading all of them to reduce the load. -->
+  <link rel="stylesheet" href="../../../dist/css/skins/_all-skins.min.css">
+
+  <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+</head>
+<body class="hold-transition skin-blue sidebar-mini">
+<div class="wrapper">
+
+  <header class="main-header">
+    <!-- Logo -->
+    <a href="../../../index.html" class="logo">
+      <!-- mini logo for sidebar mini 50x50 pixels -->
+      <span class="logo-mini"><b>D</b>hk</span>
+      <!-- logo for regular state and mobile devices -->
+      <span class="logo-lg"><b>DATA</b>hoek</span>
+    </a>
+
+    <!-- Header Navbar: style can be found in header.less -->
+    <nav class="navbar navbar-static-top">
+      <!-- Sidebar toggle button-->
+      <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
+        <span class="sr-only">Toggle navigation</span>
+      </a>
+      <!-- Navbar Right Menu -->
+      <div class="navbar-custom-menu">
+        <ul class="nav navbar-nav">
+          <!-- Messages: style can be found in dropdown.less-->
+          <li class="dropdown messages-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <i class="fa fa-envelope-o"></i>
+              <span class="label label-success">666</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li class="header">Tienes 666 mensajes</li>
+              <li>
+                <!-- inner menu: contains the actual data -->
+                <ul class="menu">
+                  <li><!-- start message -->
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user2-160x160.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Equipo de soporte
+                        <small><i class="fa fa-clock-o"></i> 5 mins</small>
+                      </h4>
+                      <p>¿Por qué no construyes un nuevo tema?</p>
+                    </a>
+                  </li>
+                  <!-- end message -->
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user3-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Equipo de diseño
+                        <small><i class="fa fa-clock-o"></i> 2 hours</small>
+                      </h4>
+                      <p>¿Por qué no diseñas un nuevo tema?</p>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user4-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Desarrolladores
+                        <small><i class="fa fa-clock-o"></i> Hoy</small>
+                      </h4>
+                      <p>¿Por qué no terminamos el nuevo tema?</p>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user3-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Departamento de ventas
+                        <small><i class="fa fa-clock-o"></i> Ayer</small>
+                      </h4>
+                      <p>¿Por qué no vendemos un nuevo tema?</p>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user4-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Revisores
+                        <small><i class="fa fa-clock-o"></i> Hace 2 días</small>
+                      </h4>
+                      <p>¿Por qué no funciona el nuevo tema?</p>
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <li class="footer"><a href="#">Ver todos los temas</a></li>
+            </ul>
+          </li>
+          <!-- Notifications: style can be found in dropdown.less -->
+          <li class="dropdown notifications-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <i class="fa fa-bell-o"></i>
+              <span class="label label-warning">666</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li class="header">Tienes 666 notificaciones</li>
+              <li>
+                <!-- inner menu: contains the actual data -->
+                <ul class="menu">
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-users text-aqua"></i> 5 miembros nuevos en el equipo
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-warning text-yellow"></i> Aquí se coloca una descripción muy grande que no cabe en el tema y
+                      puede ocasionar problemas de diseño
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-users text-red"></i> 5 nuevos miembros
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-shopping-cart text-green"></i> 25 ventas realizadas
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-user text-red"></i> Cambio su nombre de usuario
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <li class="footer"><a href="#">Ver todo</a></li>
+            </ul>
+          </li>
+          <!-- Tasks: style can be found in dropdown.less -->
+          <li class="dropdown tasks-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <i class="fa fa-flag-o"></i>
+              <span class="label label-danger">666</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li class="header">Tienes 666 tareas nuevas</li>
+              <li>
+                <!-- inner menu: contains the actual data -->
+                <ul class="menu">
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Diseñar algunos botones
+                        <small class="pull-right">20%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-aqua" style="width: 20%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">20% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Crear un tema muy "nice"
+                        <small class="pull-right">40%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-green" style="width: 40%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">40% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Algunas tareas que tengo que completar
+                        <small class="pull-right">60%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-red" style="width: 60%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">60% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Realizar transiciones bonitas
+                        <small class="pull-right">80%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-yellow" style="width: 80%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">80% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                </ul>
+              </li>
+              <li class="footer">
+                <a href="#">Ver todas las tareas</a>
+              </li>
+            </ul>
+          </li>
+          <!-- User Account: style can be found in dropdown.less -->
+          <li class="dropdown user user-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <img src="../../../dist/img/Lego_Kylo_Ren.png" class="user-image" alt="User Image">
+              <span class="hidden-xs">Luis Quintanar</span>
+            </a>
+            <ul class="dropdown-menu">
+              <!-- User image -->
+              <li class="user-header">
+                <img src="../../../dist/img/Lego_Kylo_Ren.png" class="img-circle" alt="User Image">
+
+                <p>
+                  Luis Quintanar - Entidad
+                  <small>Miembro desde Junio 1996</small>
+                </p>
+              </li>
+              <!-- Menu Body -->
+              <li class="user-body">
+                <div class="row">
+                  <div class="col-xs-4 text-center">
+                    <a href="#">Seguidores</a>
+                  </div>
+                  <div class="col-xs-4 text-center">
+                    <a href="#">Ventas</a>
+                  </div>
+                  <div class="col-xs-4 text-center">
+                    <a href="#">Amigos</a>
+                  </div>
+                </div>
+                <!-- /.row -->
+              </li>
+              <!-- Menu Footer-->
+              <li class="user-footer">
+                <div class="pull-left">
+                  <a href="https://www.researchgate.net/profile/Luis_Quintanar" class="btn btn-default btn-flat">Perfil</a>
+                </div>
+                <div class="pull-right">
+                  <a href="#" class="btn btn-default btn-flat">Salir sesión</a>
+                </div>
+              </li>
+            </ul>
+          </li>
+          <!-- Control Sidebar Toggle Button -->
+          <li>
+            <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+  
+  <!-- Left side column. contains the logo and sidebar -->
+  <aside class="main-sidebar">
+    <!-- sidebar: style can be found in sidebar.less -->
+    <section class="sidebar">
+      <!-- Sidebar user panel -->
+      <div class="user-panel">
+        <div class="pull-left image">
+          <img src="../../../dist/img/Lego_Kylo_Ren.png" class="img-circle" alt="User Image">
+        </div>
+        <div class="pull-left info">
+          <p>Luis Quintanar</p>
+          <a href="https://www.researchgate.net/profile/Luis_Quintanar"><i class="fa fa-circle text-success"></i> Perfil Researchgate</a>
+        </div>
+      </div>
+      <!-- search form -->
+      <form action="#" method="get" class="sidebar-form">
+        <div class="input-group">
+          <input type="text" name="q" class="form-control" placeholder="Search...">
+              <span class="input-group-btn">
+                <button type="submit" name="search" id="search-btn" class="btn btn-flat"><i class="fa fa-search"></i>
+                </button>
+              </span>
+        </div>
+      </form>
+      <!-- /.search form -->
+      <!-- sidebar menu: : style can be found in sidebar.less -->
+      <ul class="sidebar-menu">
+        <li class="header">NAVEGACIÓN PRINCIPAL</li>
+        <li class="active treeview">
+          <a href="#">
+            <i class="fa fa-dashboard"></i> <span>Dashboard</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li class="active"><a href="../../../index.html"><i class="fa fa-circle-o"></i> Dashboard v1</a></li>
+            <li><a href="../../../principal2.html"><i class="fa fa-circle-o"></i> Dashboard v2</a></li>
+          </ul>
+        </li>
+        <li class="treeview">
+          <a href="#">
+            <i class="fa fa-laptop"></i>
+            <span>UI Elements</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../UI/icons.html"><i class="fa fa-circle-o"></i> Iconos</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="../../calendar.html">
+            <i class="fa fa-calendar"></i> <span>Calendario</span>
+            <span class="pull-right-container">
+              <small class="label pull-right bg-red">3</small>
+              <small class="label pull-right bg-blue">17</small>
+            </span>
+          </a>
+        </li>
+        <li> <!-- Sección Contacto -->
+          <a href="#">
+            <i class="fa fa-rocket text-red"></i>
+			<span>Adicionales</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+			<li><a href="http://independent.academia.edu/LuisFelipedeJesúsHernándezQuintanar" target="_blank"><i class="fa fa-fw fa-flask text-light-blue"></i> Academia</a></li>
+            <li><a href="../../../blog.html"><i class="fa fa-fw fa-commenting text-yellow"></i> Blog</a></li>
+			<li><a href="https://www.researchgate.net/profile/Luis_Quintanar" target="_blank"><i class="fa fa-fw fa-flask text-green"></i> ResearchGate</a></li>
+			<li><a href="https://www.youtube.com/channel/UC4ZOUyoqYbZaMl4lszAtr1Q" target="_blank"><i class="fa fa-fw fa-youtube text-red"></i> Youtube</a></li>
+          </ul>
+        </li>
+        <li class="treeview"> <!-- Modificar idioma -->
+          <a href="#">
+            <i class="fa fa-globe text-green"></i> <span>Modificar Idioma</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+			<li><a href="../../langues/ca404.html"><i class="fa fa-language"></i> Català</a></li>
+			<li><a href="../../langues/da404.html"><i class="fa fa-language"></i> Dansk</a></li>
+			<li><a href="../../langues/de404.html"><i class="fa fa-language"></i> Deutsch</a></li>
+            <li><a href="../../langues/en404.html"><i class="fa fa-language"></i> English</a></li>
+            <li><a href="../../langues/fr404.html"><i class="fa fa-language"></i> Français</a></li>
+			<li><a href="../../langues/ga404.html"><i class="fa fa-language"></i> Gaeilge</a></li>
+			<li><a href="../../langues/it404.html"><i class="fa fa-language"></i> Italiano</a></li>
+			<li><a href="../../langues/nl404.html"><i class="fa fa-language"></i> Nederlands</a></li>
+			<li><a href="../../langues/pt404.html"><i class="fa fa-language"></i> Português</a></li>
+			<li><a href="../../langues/ro404.html"><i class="fa fa-language"></i> Română</a></li>
+			<li><a href="../../langues/ru404.html"><i class="fa fa-language"></i> Pуcский</a></li>
+			<li><a href="../../langues/sv404.html"><i class="fa fa-language"></i> Sverige</a></li>
+			<li><a href="#"><i class="fa fa-language"></i> Türkçe</a></li>
+          </ul>
+        </li>
+		
+        <li class="header">INFORMACIÓN</li>
+        <li> <!-- Sección Análisis y diseño de programas -->
+          <a href="#">
+            <i class="fa fa-pencil-square-o text-aqua"></i>
+			<span>AnDiseñodeProgramas.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../adprogramas/inicio.html"><i class="fa fa-archive text-aqua"></i> Introducción</a></li>
+          </ul>
+        </li>
+        <li> <!-- Sección Análisis de señales y sistemas -->
+          <a href="#">
+            <i class="fa fa-pencil-square-o text-red"></i>
+			<span>AnSeñalesySistemas.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../ansenasistemas/inicio.html"><i class="fa fa-archive text-aqua"></i> Introducción</a></li>
+          </ul>
+        </li>
+        <li> <!-- Sección Arquitectura de Computadoras -->
+          <a href="#">
+            <i class="fa fa-desktop text-yellow"></i>
+			<span>Arq. de Computadoras</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../arqcomp/inicio.html"><i class="fa fa-archive text-yellow"></i> Introducción</a></li>
+          </ul>
+        </li>
+		<li class="treeview"> <!-- Diseño Web -->
+          <a href="#">		
+			<i class="fa fa-code text-green"></i> <span>Diseño Web</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>	
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../clase/inicio.html"><i class="fa fa-file-code-o text-green"></i> Diseño Web | Inicio</a></li>
+			<li><a href="../platweb/inicio.html"><i class="fa fa-file-code-o text-green"></i> Plataformas Web</a></li>
+          </ul>
+		</li>
+        <li> <!-- Sección Fotobiología -->
+          <a href="#">
+            <i class="fa fa-lightbulb-o text-red"></i>
+			<span>Fotobiología</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../../fotobiology/introduction.html"><i class="fa fa-university text-red"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Fundamentos de Programación -->
+          <a href="#">
+            <i class="fa fa-laptop text-green"></i>
+			<span>FundamProgra.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="inicio.html"><i class="fa fa-archive text-orange"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sección Herramientas Computacionales -->
+          <a href="#">
+            <i class="fa fa-cogs text-yellow"></i>
+			<span>HerramComput.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../herram/inicio.html"><i class="fa fa-archive text-yellow"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sección Introducción de la Programación -->
+          <a href="#">
+            <i class="fa fa-keyboard-o text-red"></i>
+			<span>IntrodelaProga.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../introprogra/inicio.html"><i class="fa fa-archive text-red"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sección Lingüística -->
+          <a href="#">
+            <i class="fa fa-globe text-light-blue"></i> <span>Lingüística</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../langues/indoeuropean.html"><i class="fa fa-university text-light-blue"></i> Lenguas Indoeuropeas</a></li>
+          </ul>
+        </li>
+        <li> <!-- Sección Metodos Numéricos -->
+          <a href="#">
+            <i class="fa fa-sort-numeric-asc text-yellow"></i>
+			<span>MetNumericos.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../metodos/inicio.html"><i class="fa fa-archive text-yellow"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sección Microprocesadores y periféricos -->
+          <a href="#">
+            <i class="fa fa-microchip text-red"></i>
+			<span>MicrosyPerif.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../myp/inicio.html"><i class="fa fa-archive text-red"></i> Introducción</a></li>
+          </ul>
+        </li>
+        <li> <!-- Sección Programación Avanzada -->
+          <a href="#">
+            <i class="fa fa-file-archive-o text-green"></i>
+			<span>ProgrAvanzada.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../progravanzada/inicio.html"><i class="fa fa-archive text-green"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sistemas de Visión Artificial -->
+          <a href="#">
+            <i class="fa fa-eye text-light-blue"></i>
+			<span>SistemVisArtif.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../vision/inicio.html"><i class="fa fa-archive text-light-blue"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+		
+		<li class="header">EJEMPLOS</li>
+		<li class="treeview"> <!-- Programación -->
+          <a href="#">		
+			<i class="fa fa-keyboard-o text-aqua"></i> <span> Programación</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>	
+          </a>
+          <ul class="treeview-menu">
+            <li>
+				<a href="#"> <i class="fa fa-folder text-aqua"></i> Java
+					<span class="pull-right-container">
+					  <i class="fa fa-angle-left pull-right"></i>
+					</span>					
+				</a>
+				<ul class="treeview-menu">
+					<li><a href="https://github.com/NightRoadIx/Java"><i class="fa fa-fw fa-github"></i> Java Básico</a></li>
+					<li><a href="https://github.com/NightRoadIx/JavaFinal"><i class="fa fa-fw fa-github"></i> Ejercicio Final</a></li>
+				</ul>			
+				<a href="#"> <i class="fa fa-folder text-aqua"></i> Ejemplos three.js
+					<span class="pull-right-container">
+					  <i class="fa fa-angle-left pull-right"></i>
+					</span>					
+				</a>
+				<ul class="treeview-menu">
+					<li><a href="../../../threejst.html"><i class="fa fa-circle-o"></i> Tabla Periódica</a></li>
+					<li><a href="../../../brain_network/plasma.html"><i class="fa fa-circle-o"></i> Colores</a></li>
+				</ul>
+				<a href="#"> <i class="fa fa-folder text-aqua"></i> Ejemplos 
+					<span class="pull-right-container">
+					  <i class="fa fa-angle-left pull-right"></i>
+					</span>					
+				</a>
+				<ul class="treeview-menu">
+					<li><a href="../../../index3.html"><i class="fa fa-circle-o"></i> Login Oauth Google</a></li>
+				</ul>				
+			</li>
+          </ul>
+		</li>
+        <li class="treeview"> <!-- Simulación -->
+          <a href="#">
+            <i class="fa fa-cubes text-red"></i> <span>Simulación</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+			<li><a href="../../../random_walk/demo.html"><i class="fa fa-circle-o"></i> Random Walk</a></li>
+			<li><a href="../../../threejst2.html"><i class="fa fa-circle-o"></i> Tela</a></li>
+			<li><a href="../../../nonsiamo/adtogail3.html"><i class="fa fa-circle-o"></i> Objeto</a></li>
+			<li><a href="../../../planets/examples/earth.html"><i class="fa fa-circle-o"></i> Planetas</a></li>
+			<li><a href="../../../lumin/lumi.html"><i class="fa fa-circle-o"></i> Iluminación</a></li>
+			<li><a href="../../../brain_network/nnetwork.html"><i class="fa fa-circle-o"></i> Red Neuronal I</a></li>
+			<li><a href="../../../JSRobot/index.html"><i class="fa fa-circle-o"></i> Robot</a></li>			
+			<li><a href="../../../explosion/explosive.html"><i class="fa fa-circle-o"></i> Explosion</a></li>
+          </ul>	  
+        </li>
+
+        <li class="header">ETIQUETAS</li>
+        <li><a href="#"><i class="fa fa-circle-o text-red"></i> <span>Importante</span></a></li>
+        <li><a href="#"><i class="fa fa-circle-o text-yellow"></i> <span>Peligro</span></a></li>
+        <li><a href="#"><i class="fa fa-circle-o text-aqua"></i> <span>Información</span></a></li>
+      </ul>
+    </section>
+    <!-- /.sidebar -->
+  </aside>
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <h1>
+        Fundamentos de Programación
+      </h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">	  
+      <!--<div class="callout callout-info">-->
+	  <!--<div class="bg-white color-palette">
+        <h3>Temario</h3>		
+			<ul>
+				<li>Descargar el Temario <a href="https://www.dropbox.com/s/efi06dmt5e0p0zb/Temario%20Arquitectura%20de%20Computadoras.pdf?dl=0" target="_blank"> --DropBox AQUI-- </a></li>
+			</ul>
+			<p>&ensp;</p>
+      </div>-->
+
+      <div class="row">
+		<!--Primera Columna-->
+		<div class="col-md-6">
+			<!--Caja 1-->
+			<div class="box box-danger">
+				<div class="box-header with-border">
+				  <h3 class="box-title">1. Introducción a la programación</h3>
+				</div>
+				<!-- /.box-header -->
+				<div class="box-body no-padding">
+					<table class="table table-condensed">
+						<tr>
+							<td>
+								<ol>
+									<li>Sistemas operativos. Definición, características y función de un sistema operativo. Análisis comparativo de Sistemas Operativos (
+									<a href="https://disenowebakus.net/historia-de-unix.php" target="_blank">UNIX</a>, 
+									<a href="https://www.profesionalreview.com/2018/03/24/ms-dos-historia-del-sistema-operativo/" target="_blank">MS-DOS</a>, 
+									<a href="https://hipertextual.com/2015/11/historia-de-windows" target="_blank">Windows</a>, 
+									<a href="http://www.maestrosdelweb.com/historia-y-evolucion-del-sistema-operativo-mac-os/" target="_blank">MacOS</a>, 
+									<a href="https://www.xataka.com/basics/cual-es-la-diferencia-entre-linux-y-gnu-linux" target="_blank">GNU-Linux</a>, 
+									<a href="https://www.xatakandroid.com/sistema-operativo/historia-y-evolucion-de-android-como-un-sistema-operativo-para-camaras-digitales-acabo-conquistando-los-moviles" target="_blank">Android</a>
+									)</li>
+									<li>Evolución de los lenguajes de programación. Definición, características y funciones de los lenguajes de programación</li>							
+									<li>Intérpretes, Compiladores. Definición de Intérpretes y Compiladores. Ambiente integral del lenguaje C</li>
+								</ol>
+							</td>
+							<td>
+								<ul class="list-unstyled">
+									<li><a href="https://www.udg.co.cu/cmap/sistemas_operativos/sistema_operativo/historia/historia.html" target="_blank"><span class="badge bg-green">Historia Sistemas Operativos </span></a></li>
+									<li>&ensp; </li>
+									<li>&ensp; </li>
+									<li><a href="https://www.preceden.com/timelines/310321-evoluci-n-de-los-lenguajes-de-programacion" target="_blank"><span class="badge bg-red">Evolución Lenguajes de Programación </span></a></li>
+									<li>&ensp; </li>
+									<li><a href="http://josesanchezsantos.blogspot.com/2012/05/compilador-e-interprete.html" target="_blank"><span class="badge bg-cyan">Compilación </span></a></li>
+								</ul>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+			<!--Caja 2-->
+			<div class="box box-info">
+				<div class="box-header with-border">
+				  <h3 class="box-title">2. Fundamentos de programación</h3>
+				</div>
+				<!-- /.box-header -->
+				<div class="box-body no-padding">
+					<table class="table table-condensed">
+						<tr>
+							<td>
+								<ol>
+									<li>Estructura general de un programa</li>
+									<li>Tipos de datos y operadores</li>
+									<li>Tipos de arreglos</li>
+									<ol type="a">
+										<li>Tamaños, Declaración, Modificadores</li>
+										<li>Operadores lógicos, aritméticos y de asignación</li>
+									</ol>							
+									<li>Funciones de biblioteca</li>
+									<ol type="a">
+										<li>Funciones de entrada y salida</li>
+										<li>Funciones Matemáticas</li>
+									</ol>
+									<li>Funciones generadas por el usuario</li>
+									<ol type="a">
+										<li>Argumentos y parámetros formales</li>
+										<li>Funciones con y sin argumentos</li>
+										<li>Funciones que regresan valores</li>
+									</ol>
+								</ol>
+							</td>
+							<td>
+								<ul class="list-unstyled">
+									<li><a href="https://github.com/NightRoadIx/Curso-C/blob/master/estrucgralC.c" target="_blank"><span class="badge bg-black">Programa <i class="fa fa-fw fa-github"></i></span></a></li>
+									<li><a href="http://platea.pntic.mec.es/vgonzale/cyr_0204/cyr_01/control/lengua_C/variables.htm" target="_blank"><span class="badge bg-yellow">Las variables </span></a></li>
+									<li>&ensp; </li>
+									<li>&ensp; </li>
+									<li>&ensp; </li>
+									<li>&ensp; </li>
+									<li>&ensp; </li>
+									<li>&ensp; </li>
+									<li>&ensp; </li>
+									<li><a href="https://www.mheducation.es/bcv/guide/capitulo/8448148681.pdf" target="_blank"><span class="badge bg-blue">Las funciones </span></a></li>
+								</ul>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+			<!--Caja 3-->
+			<div class="box box-success">
+				<div class="box-header with-border">
+				  <h3 class="box-title">3. Estructura de flujo programático</h3>
+				</div>
+				<!-- /.box-header -->
+				<div class="box-body no-padding">
+					<table class="table table-condensed">
+						<tr>
+							<td>
+								<ol>
+									<li>Estructuras de decisión</li>
+									<ol type="a">
+										<li>Simple</li>
+
+										<li>Ramificada</li>
+									</ol>
+									<li>Estructuras de iteración</li>
+									<ol type="a">
+										<li>Pre y Post Condicional</li>
+										<li>Contador y acumuladores</li>
+									</ol>
+									<li>Estructuras de control</li>
+									<ol type="a">
+										<li>Ruptura de un lazo</li>
+									</ol>
+								</ol>
+							</td>
+							<td>
+								<ul class="list-unstyled">
+									<li><a href="http://jcgonzalezfundamentosdeprogramacion.mex.tl/1066812_Estructura-General-de-un-Programa.html" target="_blank"><span class="badge bg-green"> Estructuras de Programación </span></a></li>
+								</ul>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>	
+		</div>
+		<!--Segunda Columna-->
+		<div class="col-md-6">
+			<!--Caja 4-->
+			<div class="box box-warning">
+				<div class="box-header with-border">
+				  <h3 class="box-title">4. Estructura de datos</h3>
+				</div>
+				<!-- /.box-header -->
+				<div class="box-body no-padding">
+					<table class="table table-condensed">
+						<tr>
+							<td>
+								<ol>
+									<li>Arreglos unidimensionales</li>
+									<ol type="a">
+										<li>Concepto y forma general</li>
+										<li>Arreglos numéricos y de caractéres</li>
+									</ol>
+									<li>Arreglos bidimensionales</li>
+									<ol type="a">
+										<li>Concepto y forma general</li>
+										<li>Arreglos numéricos y de caractéres</li>
+									</ol>
+									<li>Apuntadores</li>
+									<ol type="a">
+										<li>Concepto</li>
+										<li>Tipos de apuntadores</li>
+										<li>Operaciones con apuntadores</li>
+										<li>Relación de apuntadores con arreglos</li>
+									</ol>
+								</ol>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>				
+			<!--Caja 5-->
+			<div class="box box-success">
+				<div class="box-header with-border">
+					<h3 class="box-title">5. Aplicaciones</h3>
+				</div>
+				<!-- /.box-header -->
+				<div class="box-body no-padding">
+					<table class="table table-condensed">
+						<tr>
+							<td>
+								<ol>
+									<li>Análisis del problema y elaboración del algoritmo</li>
+									<li>Codificación e implementación</li>
+									<li>Pruebas modulares e integrales</li>
+									<li>Mantenimiento</li>
+								</ol>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
+	  </div>
+	
+
+	
+	  <div class="box">
+		<div class="box-header">
+			<h3 class="box-title">Material adicional</h3>
+        </div>
+		<table class="table table-condensed">
+			<tr>
+				<td>
+					<ul>
+						<li><span> ¿Qué es un algoritmo? </span> <i class="fa fa-fw fa-youtube-play"></i> <a href="https://www.youtube.com/watch?v=U3CGMyjzlvM" target="_blank"> --Ir a Youtube-- </a></li>
+						<li><span> Space Travel, un SO ¿por un juego? </span> <i class="fa fa-fw fa-youtube-play"></i> <a href="https://www.youtube.com/watch?v=rMCsKxx2VKc" target="_blank"> --Ir a Youtube-- </a></li>
+						<li><span> Historia de los lenguajes de programación </span> <i class="fa fa-fw fa-youtube-play"></i> <a href="https://www.youtube.com/watch?v=WZcISqf5_6w" target="_blank"> --Ir a Youtube-- </a></li>
+						<li><span> IEEE Spectrum, Los lenguajes de programación Top </span> <a href="https://spectrum.ieee.org/ns/IEEE_TPL_2018/index/2018/1/1/1/1/1/50/1/50/1/50/1/30/1/30/1/30/1/20/1/20/1/5/1/5/1/20/1/100/" target="_blank"> --Ir a Sitio-- </a></li>
+						<li><span> La Realidad Aumentada en la Industria Automotriz </span> <i class="fa fa-fw fa-youtube-play"></i><a href="https://www.youtube.com/watch?v=VEwIZ7zwA0w" target="_blank"> --Ir a Youtube-- </a></li>
+						<li><span> Tecnologías detrás del Automóvil Conectado </span>  <a href="https://sg.com.mx/revista/55/tecnologias-detras-del-automovil-conectado" target="_blank"> --Ir a Sitio-- </a></li>
+					</ul>
+				</td>
+				<td>
+					<ul style="list-style-type:georgian">
+						<li>Presentación 000 <a href="https://www.dropbox.com/s/ecu57j8c7spig2p/Fundam000.pptx?dl=0" target="_blank">--DESCARGAR--</a> </li>
+						<li>Presentación 001 <a href="https://www.dropbox.com/s/xnjmab4qo8ob8es/Fundam001.pptx?dl=0" target="_blank">--DESCARGAR--</a> </li>
+						<li>Presentación 002 <a href="https://www.dropbox.com/s/hx34ammrngf3gun/Fundam002.pptx?dl=0" target="_blank">--DESCARGAR--</a> </li>
+						<li>Presentación 003 <a href="https://www.dropbox.com/s/dj98nbto3ylivsb/Fundam003.pptx?dl=0" target="_blank">--DESCARGAR--</a> </li>
+						<li>Presentación 004 <a href="https://www.dropbox.com/s/tfjvy1vac13d6r2/Fundam004.pptx?dl=0" target="_blank">--DESCARGAR--</a> </li>
+					</ul>
+				</td>
+				<td>
+					<ul style="list-style-type:cjk-ideographic">
+						<li><span>Códigos en GitHub</span><i class="fa fa-fw fa-github"></i> <a href="https://github.com/NightRoadIx/Curso-C" target="_blank"> --Ir al repositorio-- </a></li>
+						<li><span>Codificación en repl.it</span><a href="https://repl.it" target="_blank"> --Ir al sitio-- </a></li>
+						<li><span>Códigos ejemplo en GeeksforGeeks</span><a href="https://www.geeksforgeeks.org/c-programming-language/" target="_blank"> --Ir al sitio-- </a></li>
+					</ul>
+				</td>
+			</tr>
+		</table>
+      </div>
+ 
+	  <div class="bg-gray color-palette">
+        <h3>Librerías estándar en C</h3>		
+			<ul style="none">
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/stdlib_h.htm" target="_blank"> stdlib.h </a> Librería estándar con variables, MACROS y funciones para desarrollar diferentes operaciones</li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/stdio_h.htm" target="_blank"> stdlib.h </a> Librería estándar con variables, MACROS y funciones para los dispositivos estándar de entrada/salida</li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/limits_h.htm" target="_blank"> limits.h </a> Librería estándar que define varias MACROS que proporcionan los límites de las variables utilizadas en C</li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/math_h.htm" target="_blank"> math.h </a> Librería estándar que define funciones matemáticas y una MACRO. Todas las funciones en esta librería toman un <em><b>double</b></em> como argumento y regresan un <em><b>double</b></em></li>				
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/string_h.htm" target="_blank"> string.h </a> Librería estándar que define un tipo de variable, una MACRO y variad funciones para la manipulación de arreglos de caracteres</li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/ctype_h.htm" target="_blank"> ctype.h </a> Librería estándar que define varias funciones para probar y mapear caracteres</li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/time_h.htm" target="_blank"> time.h </a> Librería estándar que define 4 tipos de variables, dos MACROSy funciones para manipular el tiempo</li>
+				<li><a href="https://en.wikibooks.org/wiki/C_Programming/complex.h/Function_reference" target="_blank"> complex.h </a> Librería estándar similar a math.h que define y permite el uso de números complejos</li>
+			</ul>
+			<p>&ensp;</p>
+      </div>
+ 
+	  <div class="bg-black color-palette">
+        <h3>Bibliografía</h3>		
+			<ul>
+				<li>C++ para ingeniería y ciencias, Bronson Gary J., International Thompson Editores, México 2000 disponible en <a href="https://datospdf.com/download/c-para-ingenieria-y-ciencias-2da-ed-_5a4c05b3b7d7bcb74fdc1d5a_pdf" target="_blank"> --DatosPDF AQUI-- </a></li>
+				<li>Metodología de la Programación, Cairo Osvaldo, Ed. Alfaomega 3a impresión, México, 2005 disponible en línea <a href="https://es.slideshare.net/jpc0306/metodologia-de-laprogramacion3raedicionosvaldocairobattistutti-51892888" target="_blank"> --Slideshare AQUI-- </a></li>
+				<li>Como programar en C/C++, Deitel P.J., Deitel H.M., Ed. Prentice Hall 2a edición, México 2009 disponible en <a href="https://robertij0.files.wordpress.com/2010/10/como-programa-en-c-c-plus-plus-deitel-ed-prentice-hall.pdf" target="_blank"> --Wordpress AQUI-- </a></li>
+				<li>Como programar en C++, Deitel P.J., Deitel H.M., Ed. Prentice Hall 6a impresión, México 2009 </li>
+				<li>Como programar en C++, Deitel P.J., Deitel H.M., Ed. Prentice Hall 2a impresión, México 2007 </li>				
+				<li>Fundamentos de programación, Joyanes Aguilar Luis, Ed. Mc Graw Hill, 4a impresión, España 2008 disponible en <a href="http://combomix.net/wp-content/uploads/2017/03/Fundamentos-de-programaci%C3%B3n-4ta-Edici%C3%B3n-Luis-Joyanes-Aguilar-2.pdf" target="_blank"> --Combomix AQUI-- </a></li>
+				<li>Estructura de datos orientado a objetos con C++, Guardati Silva, Ed. Prentice, México 2007 disponible en <a href="https://dadospdf.com/download/estructura-de-datos-oientada-a-objetos-_5a44ec6ab7d7bc891f91318f_pdf" target="_blank"> --DatosPDF.com AQUI-- </a></li>
+				<li>The cartoon guide to computer science, disponible para lectura <a href="https://archive.org/details/TheCartoonGuideToComputerScience" target="_blank"> --Archive.org AQUI-- </a></li>
+			</ul>
+			<p>&ensp;</p>
+      </div>
+	  
+	  <div class="bg-navy color-palette"">
+        <h3>Herramientas</h3>		
+			<ul type="square">
+				<li>Raptor, <i>software de diseño de Diagramas de Flujo</i> <a href="https://raptor.martincarlisle.com/" target="_blank"> PÁGINA OFICIAL </a></li>
+				<li>Dev-C++, <i>software de desarrollo de programas en C/C++</i> <a href="https://dev-c.waxoo.com/" target="_blank"> ENLACE A PÁGINA DE DESCARGA </a> </li>
+				<li>Code Lite, <i>software de desarrollo de programas en C/C++</i> <a href="https://codelite.org/" target="_blank"> ENLACE A PÁGINA DE DESCARGA </a> </li>
+				<li>Code::Blocks, <i>software de desarrollo de programas en C/C++</i> <a href="http://www.codeblocks.org/downloads/" target="_blank"> ENLACE A PÁGINA DE DESCARGA (WINDOWS, LINUX, MAC) </a> </li>
+				<li>JDoodle, <i>Compilador C On-line</i> <a href="https://www.jdoodle.com/c-online-compiler" target="_blank"> (JDOODLE C Compiler) </a></li>
+				<li>Codenza, <i>repositorio de programas (Dispositivos móviles)</i> <a href="https://www.jdoodle.com/c-online-compiler" target="_blank"> (Codenza App) </a></li>
+				<li>CPP Droid, <i>app para programación en C/C++</i><a href="https://play.google.com/store/apps/details?id=name.antonsmirnov.android.cppdroid&hl=es", target ="_blank"> (CPP Droid) </a></li>
+				<li>DosBox, <i>emulador de MS-DOS</i> <a href="https://www.dosbox.com/download.php?main=1" target="_blank"> ENLACE DE DESCARGA </a> </li>
+				<li>Notepad++, <i>Editor de texto, con opción a varios lenguajes de programación</i><a href="https://notepad-plus-plus.org/download" target="_blank"> ENLACE DE DESCARGA </a> &ensp; <a href="http://portableapps.com/apps/development/notepadpp_portable" target="_blank"> VERSIÓN PORTABLE</a> </li>
+			</ul>
+			<p>&ensp;</p>
+      </div>
+	  	 	 
+	<!-- /.content -->
+	</section>
+  <!-- /.content-wrapper -->
+  </div>
+  
+  <footer class="main-footer">
+    <div class="pull-right hidden-xs">
+      <b>Version</b> 6.6.6
+    </div>
+    <strong>Copyright &copy; 2016 <a href="../../../index.html">Datahoek</a>.</strong> All rights
+    reserved.
+  </footer>
+
+  <!-- Control Sidebar -->
+  <aside class="control-sidebar control-sidebar-dark">
+    <!-- Create the tabs -->
+    <ul class="nav nav-tabs nav-justified control-sidebar-tabs">
+      <li><a href="#control-sidebar-home-tab" data-toggle="tab"><i class="fa fa-home"></i></a></li>
+      <li><a href="#control-sidebar-settings-tab" data-toggle="tab"><i class="fa fa-gears"></i></a></li>
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+      <!-- Home tab content -->
+      <div class="tab-pane" id="control-sidebar-home-tab">
+        <h3 class="control-sidebar-heading">Actividad Reciente</h3>
+        <ul class="control-sidebar-menu">
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-birthday-cake bg-red"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Día de Star Wars</h4>
+
+                <p>Será el 4 de Mayo</p>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-user bg-yellow"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Frodo Baggins actualizó su perfil</h4>
+
+                <p>Nuevo número +1(800)555-1234</p>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-envelope-o bg-light-blue"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Khan se unió al la lista de E-Mail</h4>
+
+                <p>khan@star-trek.com</p>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-file-code-o bg-green"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Cron Job 254 Ejecutado</h4>
+
+                <p>Tiempo de ejecución 5 segundos</p>
+              </div>
+            </a>
+          </li>
+        </ul>
+        <!-- /.control-sidebar-menu -->
+
+        <h3 class="control-sidebar-heading">Progreso de la Tarea</h3>
+        <ul class="control-sidebar-menu">
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Diseño de plantilla personalizada
+                <span class="label label-danger pull-right">70%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-danger" style="width: 70%"></div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Actualización
+                <span class="label label-success pull-right">95%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-success" style="width: 95%"></div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Integración de Laravel
+                <span class="label label-warning pull-right">50%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-warning" style="width: 50%"></div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Back End Framework
+                <span class="label label-primary pull-right">68%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-primary" style="width: 68%"></div>
+              </div>
+            </a>
+          </li>
+        </ul>
+        <!-- /.control-sidebar-menu -->
+
+      </div>
+      <!-- /.tab-pane -->
+
+      <!-- Settings tab content -->
+      <div class="tab-pane" id="control-sidebar-settings-tab">
+        <form method="post">
+          <h3 class="control-sidebar-heading">Ajustes Generales</h3>
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Uso del panel de reporte
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+
+            <p>
+              Información acerca de las opciones de configuración generales
+            </p>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Permitir redireccionamiento de e-mail
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+
+            <p>
+              Otras opciones están disponibles
+            </p>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Mostrar el nombre del autor en los posts
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+
+            <p>
+              Permitir al usuario mostrar su nombre en los posts del blog
+            </p>
+          </div>
+          <!-- /.form-group -->
+
+          <h3 class="control-sidebar-heading">Propiedades del chat</h3>
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Mostrarme como online
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Apagar notificaciones
+              <input type="checkbox" class="pull-right">
+            </label>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Borrar el historial del chat
+              <a href="javascript:void(0)" class="text-red pull-right"><i class="fa fa-trash-o"></i></a>
+            </label>
+          </div>
+          <!-- /.form-group -->
+        </form>
+      </div>
+      <!-- /.tab-pane -->
+    </div>
+  </aside>
+  <!-- /.control-sidebar -->
+  <!-- Add the sidebar's background. This div must be placed
+       immediately after the control sidebar -->
+  <div class="control-sidebar-bg"></div>
+
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery 2.2.3 -->
+<script src="../../../plugins/jQuery/jquery-2.2.3.min.js"></script>
+<!-- Bootstrap 3.3.6 -->
+<script src="../../../bootstrap/js/bootstrap.min.js"></script>
+<!-- Slimscroll -->
+<script src="../../../plugins/slimScroll/jquery.slimscroll.min.js"></script>
+<!-- FastClick -->
+<script src="../../../plugins/fastclick/fastclick.js"></script>
+<!-- AdminLTE App -->
+<script src="../../../dist/js/app.min.js"></script>
+<!-- AdminLTE for demo purposes -->
+<script src="../../../dist/js/demo.js"></script>
+</body>
+</html>

@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Fundamentos de Programación</title>
+  <!-- Create a favicon -->
+  <link rel="shortcut icon" type="image/x-icon" href="../../../BART26.ico" />
+  <!-- Tell the browser to be responsive to screen width -->
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+  <!-- Bootstrap 3.3.6 -->
+  <link rel="stylesheet" href="../../../bootstrap/css/bootstrap.min.css">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <!-- Ionicons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="../../../dist/css/AdminLTE.min.css">
+  <!-- AdminLTE Skins. Choose a skin from the css/skins
+       folder instead of downloading all of them to reduce the load. -->
+  <link rel="stylesheet" href="../../../dist/css/skins/_all-skins.min.css">
+
+  <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+</head>
+<body class="hold-transition skin-blue sidebar-mini">
+<div class="wrapper">
+
+  <header class="main-header">
+    <!-- Logo -->
+    <a href="../../../index.html" class="logo">
+      <!-- mini logo for sidebar mini 50x50 pixels -->
+      <span class="logo-mini"><b>D</b>hk</span>
+      <!-- logo for regular state and mobile devices -->
+      <span class="logo-lg"><b>DATA</b>hoek</span>
+    </a>
+
+    <!-- Header Navbar: style can be found in header.less -->
+    <nav class="navbar navbar-static-top">
+      <!-- Sidebar toggle button-->
+      <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
+        <span class="sr-only">Toggle navigation</span>
+      </a>
+      <!-- Navbar Right Menu -->
+      <div class="navbar-custom-menu">
+        <ul class="nav navbar-nav">
+          <!-- Messages: style can be found in dropdown.less-->
+          <li class="dropdown messages-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <i class="fa fa-envelope-o"></i>
+              <span class="label label-success">666</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li class="header">Tienes 666 mensajes</li>
+              <li>
+                <!-- inner menu: contains the actual data -->
+                <ul class="menu">
+                  <li><!-- start message -->
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user2-160x160.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Equipo de soporte
+                        <small><i class="fa fa-clock-o"></i> 5 mins</small>
+                      </h4>
+                      <p>¿Por qué no construyes un nuevo tema?</p>
+                    </a>
+                  </li>
+                  <!-- end message -->
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user3-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Equipo de diseño
+                        <small><i class="fa fa-clock-o"></i> 2 hours</small>
+                      </h4>
+                      <p>¿Por qué no diseñas un nuevo tema?</p>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user4-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Desarrolladores
+                        <small><i class="fa fa-clock-o"></i> Hoy</small>
+                      </h4>
+                      <p>¿Por qué no terminamos el nuevo tema?</p>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user3-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Departamento de ventas
+                        <small><i class="fa fa-clock-o"></i> Ayer</small>
+                      </h4>
+                      <p>¿Por qué no vendemos un nuevo tema?</p>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <div class="pull-left">
+                        <img src="../../../dist/img/user4-128x128.jpg" class="img-circle" alt="User Image">
+                      </div>
+                      <h4>
+                        Revisores
+                        <small><i class="fa fa-clock-o"></i> Hace 2 días</small>
+                      </h4>
+                      <p>¿Por qué no funciona el nuevo tema?</p>
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <li class="footer"><a href="#">Ver todos los temas</a></li>
+            </ul>
+          </li>
+          <!-- Notifications: style can be found in dropdown.less -->
+          <li class="dropdown notifications-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <i class="fa fa-bell-o"></i>
+              <span class="label label-warning">666</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li class="header">Tienes 666 notificaciones</li>
+              <li>
+                <!-- inner menu: contains the actual data -->
+                <ul class="menu">
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-users text-aqua"></i> 5 miembros nuevos en el equipo
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-warning text-yellow"></i> Aquí se coloca una descripción muy grande que no cabe en el tema y
+                      puede ocasionar problemas de diseño
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-users text-red"></i> 5 nuevos miembros
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-shopping-cart text-green"></i> 25 ventas realizadas
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#">
+                      <i class="fa fa-user text-red"></i> Cambio su nombre de usuario
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <li class="footer"><a href="#">Ver todo</a></li>
+            </ul>
+          </li>
+          <!-- Tasks: style can be found in dropdown.less -->
+          <li class="dropdown tasks-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <i class="fa fa-flag-o"></i>
+              <span class="label label-danger">666</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li class="header">Tienes 666 tareas nuevas</li>
+              <li>
+                <!-- inner menu: contains the actual data -->
+                <ul class="menu">
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Diseñar algunos botones
+                        <small class="pull-right">20%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-aqua" style="width: 20%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">20% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Crear un tema muy "nice"
+                        <small class="pull-right">40%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-green" style="width: 40%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">40% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Algunas tareas que tengo que completar
+                        <small class="pull-right">60%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-red" style="width: 60%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">60% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                  <li><!-- Task item -->
+                    <a href="#">
+                      <h3>
+                        Realizar transiciones bonitas
+                        <small class="pull-right">80%</small>
+                      </h3>
+                      <div class="progress xs">
+                        <div class="progress-bar progress-bar-yellow" style="width: 80%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+                          <span class="sr-only">80% Completo</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                  <!-- end task item -->
+                </ul>
+              </li>
+              <li class="footer">
+                <a href="#">Ver todas las tareas</a>
+              </li>
+            </ul>
+          </li>
+          <!-- User Account: style can be found in dropdown.less -->
+          <li class="dropdown user user-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              <img src="../../../dist/img/Lego_Kylo_Ren.png" class="user-image" alt="User Image">
+              <span class="hidden-xs">Luis Quintanar</span>
+            </a>
+            <ul class="dropdown-menu">
+              <!-- User image -->
+              <li class="user-header">
+                <img src="../../../dist/img/Lego_Kylo_Ren.png" class="img-circle" alt="User Image">
+
+                <p>
+                  Luis Quintanar - Entidad
+                  <small>Miembro desde Junio 1996</small>
+                </p>
+              </li>
+              <!-- Menu Body -->
+              <li class="user-body">
+                <div class="row">
+                  <div class="col-xs-4 text-center">
+                    <a href="#">Seguidores</a>
+                  </div>
+                  <div class="col-xs-4 text-center">
+                    <a href="#">Ventas</a>
+                  </div>
+                  <div class="col-xs-4 text-center">
+                    <a href="#">Amigos</a>
+                  </div>
+                </div>
+                <!-- /.row -->
+              </li>
+              <!-- Menu Footer-->
+              <li class="user-footer">
+                <div class="pull-left">
+                  <a href="https://www.researchgate.net/profile/Luis_Quintanar" class="btn btn-default btn-flat">Perfil</a>
+                </div>
+                <div class="pull-right">
+                  <a href="#" class="btn btn-default btn-flat">Salir sesión</a>
+                </div>
+              </li>
+            </ul>
+          </li>
+          <!-- Control Sidebar Toggle Button -->
+          <li>
+            <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+  
+  <!-- Left side column. contains the logo and sidebar -->
+  <aside class="main-sidebar">
+    <!-- sidebar: style can be found in sidebar.less -->
+    <section class="sidebar">
+      <!-- Sidebar user panel -->
+      <div class="user-panel">
+        <div class="pull-left image">
+          <img src="../../../dist/img/Lego_Kylo_Ren.png" class="img-circle" alt="User Image">
+        </div>
+        <div class="pull-left info">
+          <p>Luis Quintanar</p>
+          <a href="https://www.researchgate.net/profile/Luis_Quintanar"><i class="fa fa-circle text-success"></i> Perfil Researchgate</a>
+        </div>
+      </div>
+      <!-- search form -->
+      <form action="#" method="get" class="sidebar-form">
+        <div class="input-group">
+          <input type="text" name="q" class="form-control" placeholder="Search...">
+              <span class="input-group-btn">
+                <button type="submit" name="search" id="search-btn" class="btn btn-flat"><i class="fa fa-search"></i>
+                </button>
+              </span>
+        </div>
+      </form>
+      <!-- /.search form -->
+      <!-- sidebar menu: : style can be found in sidebar.less -->
+      <ul class="sidebar-menu">
+        <li class="header">NAVEGACIÓN PRINCIPAL</li>
+        <li class="active treeview">
+          <a href="#">
+            <i class="fa fa-dashboard"></i> <span>Dashboard</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li class="active"><a href="../../../index.html"><i class="fa fa-circle-o"></i> Dashboard v1</a></li>
+            <li><a href="../../../principal2.html"><i class="fa fa-circle-o"></i> Dashboard v2</a></li>
+          </ul>
+        </li>
+        <li class="treeview">
+          <a href="#">
+            <i class="fa fa-laptop"></i>
+            <span>UI Elements</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../UI/icons.html"><i class="fa fa-circle-o"></i> Iconos</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="../../calendar.html">
+            <i class="fa fa-calendar"></i> <span>Calendario</span>
+            <span class="pull-right-container">
+              <small class="label pull-right bg-red">3</small>
+              <small class="label pull-right bg-blue">17</small>
+            </span>
+          </a>
+        </li>
+        <li> <!-- Sección Arquitectura de Computadoras -->
+          <a href="#">
+            <i class="fa fa-desktop text-yellow"></i>
+			<span>Arq. de Computadoras</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/arqcomp/inicio.html"><i class="fa fa-archive text-yellow"></i> Introducción</a></li>
+          </ul>		  
+        </li>		
+        <li> <!-- Sección Microprocesadores y periféricos -->
+          <a href="#">
+            <i class="fa fa-microchip text-aqua"></i>
+			<span>MicrosyPerif.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/myp/inicio.html"><i class="fa fa-archive text-aqua"></i> Introducción</a></li>
+          </ul>		  
+        </li>		
+        <li> <!-- Sección Introducción de la Programación -->
+          <a href="#">
+            <i class="fa fa-keyboard-o text-red"></i>
+			<span>IntrodelaProga.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/introprogra/inicio.html"><i class="fa fa-archive text-red"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Fundamentos de Programación -->
+          <a href="#">
+            <i class="fa fa-laptop text-green"></i>
+			<span>FundamProgra.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="inicio.html"><i class="fa fa-archive text-green"></i> Introducción</a></li>
+			<li><a href="inicio2.html"><i class="fa fa-archive text-green"></i> Prácticas</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sección Herramientas Computacionales -->
+          <a href="#">
+            <i class="fa fa-cogs text-yellow"></i>
+			<span>HerramComput.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/herram/inicio.html"><i class="fa fa-archive text-yellow"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sistemas de Visión Artificial -->
+          <a href="#">
+            <i class="fa fa-eye text-light-blue"></i>
+			<span>SistemVisArtif.</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="/pages/aula/vision/inicio.html"><i class="fa fa-archive text-light-blue"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+        <li> <!-- Sección biofotónica -->
+          <a href="#">
+            <i class="fa fa-lightbulb-o text-red"></i>
+			<span>Fotobiología</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>			
+            </span>
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../../fotobiology/introduction.html"><i class="fa fa-university text-red"></i> Introducción</a></li>
+          </ul>		  
+        </li>
+		<li class="treeview"> <!-- Diseño Web -->
+          <a href="#">		
+			<i class="fa fa-code text-orange"></i> <span>Diseño Web</span>			
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>	
+          </a>
+          <ul class="treeview-menu">
+            <li><a href="../../clase/inicio.html"><i class="fa fa-file-code-o text-orange"></i> Diseño Web | Inicio</a></li>
+			<li><a href="../platweb/inicio.html"><i class="fa fa-file-code-o text-orange"></i> Plataformas Web</a></li>
+          </ul>
+		</li>
+		<li class="treeview"> <!-- Programación -->
+          <a href="#">		
+			<i class="fa fa-keyboard-o text-aqua"></i> <span> Programación</span>			
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>	
+          </a>
+          <ul class="treeview-menu">
+            <li>
+				<a href="#"> <i class="fa fa-folder text-aqua"></i> Java
+					<span class="pull-right-container">
+					  <i class="fa fa-angle-left pull-right"></i>
+					</span>					
+				</a>
+				<ul class="treeview-menu">
+					<li><a href="https://github.com/NightRoadIx/Java"><i class="fa fa-fw fa-github"></i> Java Básico</a></li>
+					<li><a href="https://github.com/NightRoadIx/JavaFinal"><i class="fa fa-fw fa-github"></i> Ejercicio Final</a></li>
+				</ul>			
+				<a href="#"> <i class="fa fa-folder text-aqua"></i> Ejemplos three.js
+					<span class="pull-right-container">
+					  <i class="fa fa-angle-left pull-right"></i>
+					</span>					
+				</a>
+				<ul class="treeview-menu">
+					<li><a href="../../../threejst.html"><i class="fa fa-circle-o"></i> Tabla Periódica</a></li>
+					<li><a href="../../../brain_network/plasma.html"><i class="fa fa-circle-o"></i> Colores</a></li>
+				</ul>
+				<a href="#"> <i class="fa fa-folder text-aqua"></i> Ejemplos
+					<span class="pull-right-container">
+					  <i class="fa fa-angle-left pull-right"></i>
+					</span>					
+				</a>
+				<ul class="treeview-menu">
+					<li><a href="../../../index3.html"><i class="fa fa-circle-o"></i> Login Oauth Google</a></li>
+				</ul>				
+			</li>
+          </ul>
+		</li>
+        <li class="treeview"> <!-- Simulación -->
+          <a href="#">
+            <i class="fa fa-cubes text-yellow"></i> <span>Simulación</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+			<li><a href="../../../random_walk/demo.html"><i class="fa fa-circle-o"></i> Random Walk</a></li>
+			<li><a href="../../../threejst2.html"><i class="fa fa-circle-o"></i> Tela</a></li>
+			<li><a href="../../../nonsiamo/adtogail3.html"><i class="fa fa-circle-o"></i> Objeto</a></li>
+			<li><a href="../../../planets/examples/earth.html"><i class="fa fa-circle-o"></i> Planetas</a></li>
+			<li><a href="../../../lumin/lumi.html"><i class="fa fa-circle-o"></i> Iluminación</a></li>
+			<li><a href="../../../brain_network/nnetwork.html"><i class="fa fa-circle-o"></i> Red Neuronal I</a></li>
+			<li><a href="../../../JSRobot/index.html"><i class="fa fa-circle-o"></i> Robot</a></li>			
+			<li><a href="../../../explosion/explosive.html"><i class="fa fa-circle-o"></i> Explosion</a></li>
+          </ul>	  
+        </li>
+        <li class="treeview"> <!-- Modificar idioma -->
+          <a href="#">
+            <i class="fa fa-globe text-green"></i> <span>Modificar Idioma</span>
+            <span class="pull-right-container">
+              <i class="fa fa-angle-left pull-right"></i>
+            </span>
+          </a>
+          <ul class="treeview-menu">
+			<li><a href="../../langues/ca404.html"><i class="fa fa-language"></i> Català</a></li>
+			<li><a href="../../langues/da404.html"><i class="fa fa-language"></i> Dansk</a></li>
+			<li><a href="../../langues/de404.html"><i class="fa fa-language"></i> Deutsch</a></li>
+            <li><a href="../../langues/en404.html"><i class="fa fa-language"></i> English</a></li>
+            <li><a href="../../langues/fr404.html"><i class="fa fa-language"></i> Français</a></li>
+			<li><a href="../../langues/ga404.html"><i class="fa fa-language"></i> Gaeilge</a></li>
+			<li><a href="../../langues/it404.html"><i class="fa fa-language"></i> Italiano</a></li>
+			<li><a href="../../langues/nl404.html"><i class="fa fa-language"></i> Nederlands</a></li>
+			<li><a href="../../langues/pt404.html"><i class="fa fa-language"></i> Português</a></li>
+			<li><a href="../../langues/ro404.html"><i class="fa fa-language"></i> Română</a></li>
+			<li><a href="../../langues/ru404.html"><i class="fa fa-language"></i> Pуcский</a></li>
+			<li><a href="../../langues/sv404.html"><i class="fa fa-language"></i> Sverige</a></li>
+          </ul>
+        </li>		
+        <li class="header">ETIQUETAS</li>
+        <li><a href="#"><i class="fa fa-circle-o text-red"></i> <span>Importante</span></a></li>
+        <li><a href="#"><i class="fa fa-circle-o text-yellow"></i> <span>Peligro</span></a></li>
+        <li><a href="#"><i class="fa fa-circle-o text-aqua"></i> <span>Información</span></a></li>
+      </ul>
+    </section>
+    <!-- /.sidebar -->
+  </aside>
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <h1>
+        Fundamentos de Programación
+      </h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+	<h4>
+		El proyecto final deberá ser entregado funcionando al 100% a más tardar el día 25/11/2019, <b>sin prórroga</b>, esto quiere decir que quedan solo:
+		<font color="red"><b><h3>
+		<div id="countdown" align="center">¡Tiempo finalizado!</div>
+		<script>
+			var end = new Date('10/14/2019 11:59 PM');
+
+				var _second = 1000;
+				var _minute = _second * 60;
+				var _hour = _minute * 60;
+				var _day = _hour * 24;
+				var timer;
+
+				function showRemaining() {
+					var now = new Date();
+					var distance = end - now;
+					if (distance < 0) {
+
+						clearInterval(timer);
+						document.getElementById('countdown').innerHTML = '¡Tiempo finalizado!';
+
+						return;
+					}
+					var days = Math.floor(distance / _day);
+					var hours = Math.floor((distance % _day) / _hour);
+					var minutes = Math.floor((distance % _hour) / _minute);
+					var seconds = Math.floor((distance % _minute) / _second);
+
+					document.getElementById('countdown').innerHTML = days + ' dias, ';
+					document.getElementById('countdown').innerHTML += hours + ' horas, ';
+					document.getElementById('countdown').innerHTML += minutes + ' minutos y ';
+					document.getElementById('countdown').innerHTML += seconds + ' segundos';
+				}
+
+				timer = setInterval(showRemaining, 1000);
+			</script>
+		</b></h3></font>
+	</h4>
+      <!--<div class="callout callout-info">-->
+	  <!--<div class="bg-white color-palette">
+        <h3>Temario</h3>		
+			<ul>
+				<li>Descargar el Temario <a href="https://www.dropbox.com/s/efi06dmt5e0p0zb/Temario%20Arquitectura%20de%20Computadoras.pdf?dl=0" target="_blank"> --DropBox AQUI-- </a></li>
+			</ul>
+			<p>&ensp;</p>
+      </div>-->
+
+	  <div class="box box-success">
+		<div class="box-header">
+			<h2 class="box-title" style="font-weight:bold"> Prácticas FINALES </h2><h5>(Lo más enfermo de lo enfermo)</h5>
+        </div>
+			<ol>
+				<b><h4>- - - Desarrollo de Programas - - -</h4></b>
+				<li> Diseñar el diagrama de flujo para calcular y mostrar el área de un rectángulo. El diagrama deberá solicitar los datos necesarios (en metros) y mostrar el resultado (en metros cuadrados) </li>
+				<li> Es jueves por la noche y su equipo de fundamentos de programación decide quedarse a estudiar en casa de uno de sus componentes para el examen final, sin embargo, el hambre comienza a hacer estragos en todos los integrantes. Una pizza suena bien, pero lamentablemente, el dinero es un pequeño problema, por lo que se llama a varias pizzerías. En una de ellas, venden una pizza redonda de 20 cm de diámetro a $60, mientras que en otra venden una cuadrada de 25 cm por lado a $79. Diseñe un diagrama de flujo en donde se ingresen estas cantidades, y se muestre la cantidad de pizza, en área, de cada una para poder decidir cuál es la indicada</li>
+				<li> Diseñe un diagrama de flujo que, al recibir como datos la clave numérica del empleado (6 dígitos decimales) y los seis sueldos que percibe al año, además de calcular el ingreso total semestral y el promedio mensual. Como datos de salida, se deben de imprimir: la clave del empleado, el ingreso total y el promedio mensual</li>
+				<li> Diseñar un diagrama de flujo que permita ingresar los datos de un cilindro de altura H y radio de la base R y calcular tanto el área total como el volumen de este</li>
+				<li> Diseñar el diagrama de flujo que permita ingresar el valor de una temperatura expresada en grados Celsius °C y como salida, muestre esta misma temperatura en °C, pero también expresada en grados Fahrenheit °F, Kelvin K y grados Rankine °R</li>
+				<li> Generar el algoritmo que indique si al ingresar un número entero positivo, este es par o impar </li>
+				<li> Generar un algoritmo que restrinja el ingreso de un número entero y positivo <i>(Estas restricciones son importantes, puesto que permiten el "guiar" a los usuarios y esto resulta en programas más intuitivos</i> </li>
+				<li> Generar el algoritmo que indique si al ingresar un año como un número entero positivo, este sea o no bisiesto. Un año es bisiesto si es múltiplo de 4, exceptuando los múltiplos de 100, que sólo son bisiestos cuando son múltiplos además de 400, por ejemplo el año 1900 no fue bisiesto, pero el año 2000 si lo es. </li>
+				<li> Generar un algoritmo que si se ingresan 3 números positivos, se establezca que si son longitudes de líneas rectas, estás puedan formar un triángulo. Solamente se forma un triángulo, cuando la suma de las 2 longitudes de las rectas es mayor que la otra. </li>
+				<li> Generar el algoritmo que obtenga el Máximo Común Divisor (MCD) y el mínimo común múltiplo de un par de números enteros positivos. (Existe un algoritmo ya establecido para este caso, se le conoce como algoritmo de Euclídes) </li>
+				<!--<li> Generar el algoritmo que pregunte al usuario si desea convertir un valor de temperatura en: (1) De °C a °F o (2) De °F a °C. Mostrar el resultado al usuario de la equivalencia. Tomar en cuenta los intervalos de temperatura (por ejemplo, para los °C, la temperatura no puede ser inferior a -273.15 °C y la superior podría quedarse como 1000°C) </li>
+				<li> Generar un algoritmo que permita imprimir los números de la serie de Fibonacci, cuando se ingrese el número de elementos a desplegar. Considerar que el primer número (0) será el elemento 0 de la serie, y seguriá como 0,1,1,2,3,5,8,13,21,34,...</li>
+				<li> Generar un algoritmo que permita obtener y desplegar los N primeros números primos, en donde N es un número entero positivo que ingresa el usuario. Recordar que los números primos son aquellos que solo son divisibles entre si mismos y entre 1. </li>
+				<li> Generar un algoritmo que permita el ingreso de un número entero positivo, y representarlo como la suma de sus unidades, decenas, centenas..., esto es, si se ingresa el valor de 1942 este debe de ser igual a 2 + 40 + 900 + 1000.</li>
+				<li> Generar un algoritmo que permita obtener una cantidad N de números pseudoaleatorios (donde N es un número entero, mayor a 0) utilzando para ello el método/algoritmo de Generación de números congruencial. En el siguiente documento se encuentra información junto con ejemplos para probar el algoritmo <a href="https://www.dropbox.com/s/c31wk8l5maltt8a/Generador%20de%20N%C3%BAmeros%20aleatorios%20congruencial.doc?dl=0" target="_blank">--Documento--</a></li>				
+				<li> <a href="https://www.dropbox.com/s/jqtq7trzqimyx7p/Ejercicio.docx?dl=0" target="_blank"> -.-.-,-,- EJERCICIO TRAS EL EXAMEN -,-,-.-.- </a></li>-->
+			</ol>
+			<p>&ensp;
+				<!--<b><a href="https://github.com/NightRoadIx/Raptor" target="_blank">- - - Solución a los problemas del primer parcial - - -</a></b>-->
+			</p>
+		<div class="box-header">
+			<h2 class="box-title" style="font-weight:bold"> Prácticas II </h2><h5>(un tanto laboriosas)</h6>
+        </div>
+			<ol>
+				<b><h4>- - - Desarrollo de Programas - - -</h4></b>
+				<li> Generar un algoritmo que permita calcular el factorial de un número N ingresado por el usuario, debe tomarse en cuenta que el usuario solo puede ingresar números enteros y positivos </li>
+				<li> Generar un algoritmo que permita imprimir los números de la serie de Fibonacci, cuando se ingrese el número de elementos a desplegar N, como valor entero y positivo. Considerar que el primer número (0) será el primer elemento de la serie, y seguriá como 0,1,1,2,3,5,8,13,21,34,...</li>
+				<li> Generar un algoritmo que permita obtener y desplegar los N primeros números primos, en donde N es un número entero positivo que ingresa el usuario. Recordar que los números primos son aquellos que solo son divisibles entre si mismos y entre 1. </li>
+				<li> Generar un algoritmo que permita Imprimir los N números de la <a href="https://es.wikipedia.org/wiki/Sucesi%C3%B3n_de_Padovan"> Serie de Padovan </a>, donde N es un número entero positivo que el usuario debe ingresar para obtener la serie.</li>
+				<li> Generar un algoritmo que permita el ingreso de un número entero positivo, y representarlo como la suma de sus unidades, decenas, centenas..., esto es, si se ingresa el valor de 1942 este debe de ser igual a 2 + 40 + 900 + 1000.</li>
+			</ol>
+			<p>&ensp;
+			</p>
+		<div class="box-header">
+			<h2 class="box-title" style="font-weight:bold"> Prácticas III </h2><h5>(mejor me hubiera puesto un 7 de calificación)</h5>
+        </div>
+			<ol>
+				<b><h4>- - - Desarrollo de Programas - - -</h4></b>
+				<li> Generar un algoritmo que permita calcular el dígito de control del código de barras EAN-8, las instrucciones para generarlo se encuentran en: <a href="https://www.dropbox.com/s/jkl97z04rkepmdz/Ejercicio.docx?dl=0">Instrucciones disponibles</a> </li>
+				<li> Generar un algoritmo que permita obtener una cantidad N de números pseudoaleatorios (donde N es un número entero, mayor a 0) utilizando para ello el método/algoritmo de generación de números congruencial. En el siguiente documento se encuentra información junto con ejemplos para probar el algoritmo <a href="https://www.dropbox.com/s/c31wk8l5maltt8a/Generador%20de%20N%C3%BAmeros%20aleatorios%20congruencial.doc?dl=0" target="_blank">--Documento--</a></li>				
+				<li> Programa para generar un triángulo de Pascal <a href="https://www.estadisticaparatodos.es/taller/triangulo/triangulo.html" target="_blank">(¿Qué es el triángulo de Pascal o Tartaglia?)</a>, en donde el usuario ingrese el número de filas que desea observar del triángulo</li>
+				<li> Programa para aproximar el valor del coseno de un ángulo por medio de una serie numérica <em><a href="https://www.dropbox.com/s/visp3aqrhn7mv1c/SerieCoseno.docx?dl=0" target="_blank"> -|-|-Instrucciones-|-|- </a></em> </li>
+				<li> Programa para la generación de figuras con * <em><a href="https://www.dropbox.com/s/7jme0322yrbd719/EjerciciosIII.docx?dl=0" target="_blank"> -|-|-Instrucciones-|-|- </a></em></li>
+			</ol>
+			<p>&ensp;
+			</p>
+		<div class="box-header">
+			<h2 class="box-title" style="font-weight:bold"> Prácticas IV </h2><h5>(¿esto es verdad? ¿acaso esto existe?)</h5>
+        </div>
+			<ol>
+				<b><h4>- - - Desarrollo de Programas - - -</h4></b>
+				<li> Programa con un menú para seleccionar entre la obtención de áreas o volúmenes de figuras. En la parte de áreas se podrá calcular el área de un cuadrado, de un rectángulo, de un círculo, triángulo (conociendo sus lados), elipse y polígono de n lados (donde el usuario podrá ingresar el número "n" de lados). Por otro lado, en el caso de los volúmenes, se podrá calcular el volúmen de una esfera, un cubo, pirámide, paralelepípedo y un elipsoide. </li>
+				<li> Programa que obtenga los 256 caracteres ASCII imprimibles y los coloque en una tabla muy similar a la que se presenta en esta página <a href="https://elcodigoascii.com.ar/" target="_blank"> El Código ASCII </a></li>
+				<li> Programa que reciba como entrada el mes y el año en formato numérico (enteros positivos del 1 al 12 para meses y entero positivo para el año) y que indique cuántos días tiene dicho mes y que estación en el hemisferio norte corresponde a dicha fecha </a></li>
+				<li> Programa que pida por el teclado la fecha de nacimiento de una persona (día, mes y año), verifique que la fecha es válida (por ejemplo no debe permitir ingresar fechas como 32 de septiembre, o 29 de febrero cuando no haya sido año bisiesto) y calcule su número de la suerte. El número de la suerte se calcula sumando el dia, mes y año de la fecha de nacimiento y a continuación, sumar las cifras obtenidas de la suma. Por ejemplo, para una persona nacida el 13 de septiembre del 2019, la suma es 13 + 9 + 2019 = 2041, luego sumar 2 + 0 + 4 + 1 = 7, que sería el número de la suerte de dicha persona</li>
+				<li> Programa que calcule el doble factorial de un número entero positivo </li>
+			</ol>
+			<p>&ensp;
+			</p>
+		<div class="box-header">
+			<h2 class="box-title" style="font-weight:bold"> Prácticas V </h2><h5>(aquí es cuando uno juega con trucos, en caso contrario no hay forma)</h5>
+        </div>
+			<ol>
+				<b><h4>- - - Desarrollo de Programas - - -</h4></b>
+				<li> Programa que reciba una fecha en formato numérico (verificando que esta sea válida, por ejemplo <b>6 - 6 - 2006</b>), calcule el día de la semana (Lunes-Domingo) que sea dicha fecha e imprima en pantalla el nombre del día, así como el nombre del mes. Por ejemplo, la fecha debe mostrarse: <b> La fecha ingresada es: Martes 6 de junio de 2006</b>. </li>
+				<li> Programa que muestre en pantalla el reloj real de la computadora. </li>
+				<li> Programa que simule una máquina tragamonedas de un casino, en donde al presionar una tecla (puede seleccionarse cualquiera de las letras <u>minúsculas</u> del teclado) muestre 4 números del 0 al 9 de forma aleatoria. Para cada oportunidad de juego se utilizará una "moneda", siendo que, cada inicio de programa, el jugador recibirá 10 monedas. El jugador ganará una moneda si se obtiene un par de números iguales, 3 monedas por una tercia de números iguales, y si los 4 son iguales se ganará 5 monedas. El programa debe llevar el conteo de monedas, así como detener el juego cuando al jugador se le terminen sus monedas. </li>
+				<li> Programa que permita a un usuario ingresar los valores reales de 2 vectores (de longitud mínima 1 y máxima 10) y obtenga tanto el producto punto como el producto cruz de ambos vectores. </li>
+				<li> Programa que permita a un usuario ingresar un texto de máximo 100 caracteres y lo codifique, sumando 5 a los valores ASCII. El programa debe mostrar tanto el texto original como el texto codificado. </li>
+			</ol>
+			<p>&ensp;
+			</p>
+      </div>
+<!--
+	  <div class="box box-warning">
+		<div class="box-header">
+			<h3 class="box-title" style="font-weight:bold"> Prácticas II </h3>
+        </div>
+			<p><i class="fa fa-lightbulb-o text-red"></i><a href="https://github.com/NightRoadIx/IntraLenguaje" target="_blank"> - - ->Ejemplos en varios lenguajes de programación</a></p>
+			<ol type="i">
+				<b>--- Programación en C ---</b>
+				<li>Programa de algoritmo (3) número par - impar</li>
+				<li>Programa de tabla de multiplicar de un número ingresado por el usuario </li>
+				<li>Programa de algoritmo (4) Cálculo del año bisiesto</li>				
+				<li>Programa de algoritmo (6) Formación de triángulo</li>
+				<li>Programa de algoritmo (5) MCM y mcd</li>
+				<li>Programa de algoritmo (7) Serie de Fibonacci</li>
+				<li>Programa que permita mostrar en una tabla el código ASCII (formato de texto) &nbsp &nbsp &nbsp &nbsp &nbsp<a href="https://elcodigoascii.com.ar/" target="_blank"><span class="badge bg-black">Tabla de código ASCII </span></a> &nbsp &nbsp &nbsp &nbsp &nbsp<a href="https://github.com/NightRoadIx/Curso-C/blob/master/asciisencil.c" target="_blank"><span class="badge bg-gray">Programa sencillo </span></a></li>
+				<li>Programa de algoritmo (8) Número primos</li>
+				<li>Programa de algoritmo (10) Generación de números pseudoaleatorios, método congruencial</li>
+				<li>Programa de algoritmo (9) Separación de factores de número entero  &nbsp &nbsp &nbsp &nbsp &nbsp<a href="https://github.com/NightRoadIx/Curso-C/blob/master/factorizacion.c" target="_blank"><span class="badge bg-yellow">Programa sencillo </span></a></li>
+				<li>Programa de algoritmo (11) Separación de factores de número decimal</li>
+				<li><em>Programa ejemplo de manejo de caracteres</em>  &nbsp &nbsp &nbsp &nbsp &nbsp<a href="https://github.com/NightRoadIx/Curso-C/blob/master/caracteres.c" target="_blank"><span class="badge bg-red">Programa ejemplo </span></a></li>
+				<li><em>Programa ejemplo de manejo de caracteres II: Menú de opciones</em>  &nbsp &nbsp &nbsp &nbsp &nbsp<a href="https://github.com/NightRoadIx/Curso-C/blob/master/menu.c" target="_blank"><span class="badge bg-blue">Programa ejemplo </span></a></li>
+				<li>Programa para la generación de pirámides con * <em><a href="https://www.dropbox.com/s/7jme0322yrbd719/EjerciciosIII.docx?dl=0" target="_blank"> -|-|-Instrucciones-|-|- </a></em></li>
+				<li>Programa para mostrar la fecha y hora actuales con los nombres de los meses y días de la semana  &nbsp &nbsp &nbsp &nbsp &nbsp<a href="https://github.com/NightRoadIx/Curso-C/blob/master/fechas.c" target="_blank"><span class="badge bg-green">Programa ejemplo </span></a></li>
+				<li><em>Programa ejemplo de manejo de arreglos numéricos</em>  &nbsp &nbsp &nbsp &nbsp &nbsp<a href="https://github.com/NightRoadIx/Curso-C/blob/master/polinomio.c" target="_blank"><span class="badge bg-white">Programa ejemplo </span></a></li>
+			</ol>
+			
+      </div>
+
+	  <div class="box box-danger">
+		<div class="box-header">
+			<h3 class="box-title" style="font-weight:bold"> Prácticas III </h3>
+        </div>
+			<ol type="i">
+				<li>Programa que permite hallar la raíz de un polinomio mediante el método de bisección &nbsp &nbsp &nbsp &nbsp &nbsp<a href="https://github.com/NightRoadIx/Curso-C/blob/master/mBiseccion.c" target="_blank"><span class="badge bg-gray">Programa ejemplo </span></a></li>
+			</ol>
+			
+      </div>
+	  
+	 	  <div class="bg-gray color-palette">
+        <h3>Librerías estándar en C</h3>		
+			<ul style="none">
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/stdlib_h.htm" target="_blank"> stdlib.h </a> Librería estándar con variables, MACROS y funciones para desarrollar diferentes operaciones</li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/stdio_h.htm" target="_blank"> stdio.h </a> Librería estándar con variables, MACROS y funciones para los dispositivos estándar de entrada/salida</li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/limits_h.htm" target="_blank"> limits.h </a> Librería estándar que define varias MACROS que proporcionan los límites de las variables utilizadas en C</li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/math_h.htm" target="_blank"> math.h </a> Librería estándar que define funciones matemáticas y una MACRO. Todas las funciones en esta librería toman un <em><b>double</b></em> como argumento y regresan un <em><b>double</b></em></li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/time_h.htm" target="_blank"> time.h </a> Librería estándar que define 4 tipos de variables, dos MACROSy funciones para manipular el tiempo</li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/string_h.htm" target="_blank"> string.h </a> Librería estándar que define un tipo de variable, una MACRO y variad funciones para la manipulación de arreglos de caracteres</li>
+				<li><a href="https://www.tutorialspoint.com/c_standard_library/ctype_h.htm" target="_blank"> ctype.h </a> Librería estándar que define varias funciones para probar y mapear caracteres</li>
+			</ul>
+			<p>&ensp;</p>
+      </div>
+
+	<!-- /.content -->
+	</section>
+  <!-- /.content-wrapper -->
+  </div>
+  
+  <footer class="main-footer">
+    <div class="pull-right hidden-xs">
+      <b>Version</b> 6.6.6
+    </div>
+    <strong>Copyright &copy; 2016 <a href="http://www.datahoek.comli.com">Datahoek</a>.</strong> All rights
+    reserved.
+  </footer>
+
+  <!-- Control Sidebar -->
+  <aside class="control-sidebar control-sidebar-dark">
+    <!-- Create the tabs -->
+    <ul class="nav nav-tabs nav-justified control-sidebar-tabs">
+      <li><a href="#control-sidebar-home-tab" data-toggle="tab"><i class="fa fa-home"></i></a></li>
+      <li><a href="#control-sidebar-settings-tab" data-toggle="tab"><i class="fa fa-gears"></i></a></li>
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+      <!-- Home tab content -->
+      <div class="tab-pane" id="control-sidebar-home-tab">
+        <h3 class="control-sidebar-heading">Actividad Reciente</h3>
+        <ul class="control-sidebar-menu">
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-birthday-cake bg-red"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Día de Star Wars</h4>
+
+                <p>Será el 4 de Mayo</p>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-user bg-yellow"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Frodo Baggins actualizó su perfil</h4>
+
+                <p>Nuevo número +1(800)555-1234</p>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-envelope-o bg-light-blue"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Khan se unió al la lista de E-Mail</h4>
+
+                <p>khan@star-trek.com</p>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <i class="menu-icon fa fa-file-code-o bg-green"></i>
+
+              <div class="menu-info">
+                <h4 class="control-sidebar-subheading">Cron Job 254 Ejecutado</h4>
+
+                <p>Tiempo de ejecución 5 segundos</p>
+              </div>
+            </a>
+          </li>
+        </ul>
+        <!-- /.control-sidebar-menu -->
+
+        <h3 class="control-sidebar-heading">Progreso de la Tarea</h3>
+        <ul class="control-sidebar-menu">
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Diseño de plantilla personalizada
+                <span class="label label-danger pull-right">70%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-danger" style="width: 70%"></div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Actualización
+                <span class="label label-success pull-right">95%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-success" style="width: 95%"></div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Integración de Laravel
+                <span class="label label-warning pull-right">50%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-warning" style="width: 50%"></div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)">
+              <h4 class="control-sidebar-subheading">
+                Back End Framework
+                <span class="label label-primary pull-right">68%</span>
+              </h4>
+
+              <div class="progress progress-xxs">
+                <div class="progress-bar progress-bar-primary" style="width: 68%"></div>
+              </div>
+            </a>
+          </li>
+        </ul>
+        <!-- /.control-sidebar-menu -->
+
+      </div>
+      <!-- /.tab-pane -->
+
+      <!-- Settings tab content -->
+      <div class="tab-pane" id="control-sidebar-settings-tab">
+        <form method="post">
+          <h3 class="control-sidebar-heading">Ajustes Generales</h3>
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Uso del panel de reporte
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+
+            <p>
+              Información acerca de las opciones de configuración generales
+            </p>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Permitir redireccionamiento de e-mail
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+
+            <p>
+              Otras opciones están disponibles
+            </p>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Mostrar el nombre del autor en los posts
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+
+            <p>
+              Permitir al usuario mostrar su nombre en los posts del blog
+            </p>
+          </div>
+          <!-- /.form-group -->
+
+          <h3 class="control-sidebar-heading">Propiedades del chat</h3>
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Mostrarme como online
+              <input type="checkbox" class="pull-right" checked>
+            </label>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Apagar notificaciones
+              <input type="checkbox" class="pull-right">
+            </label>
+          </div>
+          <!-- /.form-group -->
+
+          <div class="form-group">
+            <label class="control-sidebar-subheading">
+              Borrar el historial del chat
+              <a href="javascript:void(0)" class="text-red pull-right"><i class="fa fa-trash-o"></i></a>
+            </label>
+          </div>
+          <!-- /.form-group -->
+        </form>
+      </div>
+      <!-- /.tab-pane -->
+    </div>
+  </aside>
+  <!-- /.control-sidebar -->
+  <!-- Add the sidebar's background. This div must be placed
+       immediately after the control sidebar -->
+  <div class="control-sidebar-bg"></div>
+
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery 2.2.3 -->
+<script src="../../../plugins/jQuery/jquery-2.2.3.min.js"></script>
+<!-- Bootstrap 3.3.6 -->
+<script src="../../../bootstrap/js/bootstrap.min.js"></script>
+<!-- Slimscroll -->
+<script src="../../../plugins/slimScroll/jquery.slimscroll.min.js"></script>
+<!-- FastClick -->
+<script src="../../../plugins/fastclick/fastclick.js"></script>
+<!-- AdminLTE App -->
+<script src="../../../dist/js/app.min.js"></script>
+<!-- AdminLTE for demo purposes -->
+<script src="../../../dist/js/demo.js"></script>
+</body>
+</html>

@@ -1,2 +1,2 @@
 # NightRoadIx.github.io
-Pa´gina web de NightRoadIx
+Página web de NightRoadIx con información importante
