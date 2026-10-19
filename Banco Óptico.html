@@ -1,0 +1,320 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco Óptico</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Layout: índice en cuatro bloques, uno por modelo de la luz; rejilla de montajes que
+   baja a una columna en el teléfono. Mismo sistema visual que los montajes. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;
+  --cy:      #5fa8d8;
+  --ok:      #52b87c;
+  --vi:      #a888d8;
+  --or:      #e0743c;
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.wrap { max-width: 1060px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 44px; }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 7px;
+}
+
+h1 {
+  font-size: clamp(27px, 6vw, 42px);
+  font-weight: 600; letter-spacing: -.022em;
+  margin: 0 0 12px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 60ch; font-size: 15px; }
+.lede b { color: var(--fg); font-weight: 500; }
+
+.meter {
+  display: flex; align-items: baseline; gap: 10px;
+  margin: 22px 0 0;
+  font-family: var(--mono); font-size: 12px; color: var(--dim);
+}
+.meter .bar {
+  flex: 1; height: 5px; border-radius: 3px; min-width: 0;
+  background: var(--panel-2); border: 1px solid var(--line); overflow: hidden;
+}
+.meter .bar i { display: block; height: 100%; background: var(--acc); }
+
+/* ---------- bloques ---------- */
+section { margin-top: 38px; }
+
+.head {
+  display: flex; align-items: baseline; gap: 12px;
+  padding-bottom: 9px; margin-bottom: 15px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.head h2 {
+  font-size: 18px; font-weight: 600; margin: 0;
+  letter-spacing: -.01em;
+}
+.head .when {
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--dim); margin-left: auto;
+}
+.head .rule { width: 26px; height: 3px; border-radius: 2px; flex: none; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+  gap: 11px;
+}
+
+.card {
+  display: block; text-decoration: none; color: inherit;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 9px; padding: 14px 15px 15px;
+  min-width: 0;
+  transition: border-color .15s, background .15s, transform .15s;
+}
+a.card:hover {
+  border-color: var(--acc); background: var(--panel-2); transform: translateY(-1px);
+}
+a.card:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.card .top {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 9px; margin-bottom: 5px;
+}
+.card h3 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -.005em; min-width: 0; }
+.card p { font-size: 12.5px; color: var(--dim); margin: 0; line-height: 1.45; }
+
+.pill {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .09em;
+  text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
+  flex: none; white-space: nowrap;
+}
+.pill.listo { background: rgba(242,196,84,.14); color: var(--acc); border: 1px solid rgba(242,196,84,.3); }
+.pill.pend  { background: var(--panel-2); color: var(--dim); border: 1px solid var(--line); }
+
+.card.todo { opacity: .55; }
+.card.todo h3 { font-weight: 500; }
+
+.what {
+  font-family: var(--mono); font-size: 11px; color: var(--dim);
+  margin: 8px 0 0; padding-top: 7px; border-top: 1px solid rgba(34,48,68,.6);
+}
+.what b { color: var(--cy); font-weight: 500; }
+
+footer {
+  margin-top: 46px; padding-top: 16px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 72ch;
+}
+footer p { margin: 0 0 8px; }
+footer code { font-family: var(--mono); font-size: 11.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  a.card:hover { transform: none; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Fundamentos de Óptica · Posgrado · Optomecatrónica</p>
+    <h1>Banco óptico</h1>
+    <p class="lede">Montajes interactivos para los conceptos del curso que no sobreviven al papel. En cada uno se mueve un control y <b>el sistema responde al instante</b>, con los números al lado.</p>
+    <div class="meter">
+      <span>18 de 18 montajes</span>
+      <span class="bar"><i style="width:100%"></i></span>
+      <span>100 %</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="head">
+      <span class="rule" style="background:var(--ok)"></span>
+      <h2>Oscilaciones</h2>
+      <span class="when">puente · repaso</span>
+    </div>
+    <div class="grid">
+
+      <a class="card" href="Banco de Oscilaciones.html">
+        <div class="top"><h3>Banco de oscilaciones</h3><span class="pill listo">listo</span></div>
+        <p>El fasor y la fase como ángulo, la suma de dos oscilaciones con su visibilidad, las dos periodicidades de una onda, y los batidos de donde sale la longitud de coherencia. Sin óptica: sirve igual para un péndulo o un circuito RLC.</p>
+        <p class="what">Aprendes: <b>qué es oscilar, antes de que la luz sea una onda</b></p>
+      </a>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="rule" style="background:var(--acc)"></span>
+      <h2>Geometría de la luz</h2>
+    </div>
+    <div class="grid">
+
+      <a class="card" href="https://claude.ai/artifact/6X9mqCtGpcQnoe46BPVGMu">
+        <div class="top"><h3>Banco de radiometría</h3><span class="pill listo">listo</span></div>
+        <p>El esterorradián, potencia e intensidad, irradiancia, radiancia, el puente V(λ) y el étendue, en unidades radiométricas y fotométricas a la vez.</p>
+        <p class="what">Aprendes: <b>a repartir la luz entre direcciones y superficies</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/5VzPnt7VwmLexCBoxHqifh">
+        <div class="top"><h3>Banco de refracción</h3><span class="pill listo">listo</span></div>
+        <p>Snell y el ángulo crítico, los coeficientes de Fresnel con el ángulo de Brewster, y el cono de aceptación de una fibra.</p>
+        <p class="what">Aprendes: <b>cuándo hay refracción y cuándo sólo reflexión</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/Sb3WcaJpgjgNdJrRESVVt2">
+        <div class="top"><h3>Banco de la imagen</h3><span class="pill listo">listo</span></div>
+        <p>La construcción con los tres rayos y la ecuación de los conjugados, de dónde sale la focal a partir de los radios y el espesor, y los espejos esféricos.</p>
+        <p class="what">Aprendes: <b>dónde se forma la imagen y de qué clase es</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/REQHjEMLo1WpJWczWk5HK7">
+        <div class="top"><h3>Banco de matrices</h3><span class="pill listo">listo</span></div>
+        <p>El vector de rayo y las dos matrices elementales, el orden del producto con sus dos trazados, y los puntos cardinales de un sistema de dos lentes.</p>
+        <p class="what">Aprendes: <b>a reducir cualquier sistema a tres números</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/QKtzWocLU2pVzECK27Zbgz">
+        <div class="top"><h3>Banco de pupilas</h3><span class="pill listo">listo</span></div>
+        <p>Cuál de las tres aberturas decide el brillo, las pupilas de entrada y salida como imagen del diafragma, y el viñeteo que apaga la esquina del campo.</p>
+        <p class="what">Aprendes: <b>qué rayo limita el brillo y cuál el encuadre</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/2HEbFfWgRCdihUNzPuHyNh">
+        <div class="top"><h3>Banco de aberraciones</h3><span class="pill listo">listo</span></div>
+        <p>El trazado exacto de una lente real frente a lo que predicen las matrices, las cinco de Seidel con su diagrama de manchas, y el diámetro que minimiza la mancha.</p>
+        <p class="what">Aprendes: <b>por qué una lente real nunca forma un punto</b></p>
+      </a>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="rule" style="background:var(--cy)"></span>
+      <h2>Óptica de ondas</h2>
+    </div>
+    <div class="grid">
+
+      <a class="card" href="https://claude.ai/artifact/Y7tdnNPSqwmSXF41pbcuhR">
+        <div class="top"><h3>Banco de interferencia</h3><span class="pill listo">listo</span></div>
+        <p>La diferencia de camino en dos rendijas, la coherencia temporal con la visibilidad cayendo al separar los brazos, y la coherencia espacial según el tamaño de la fuente.</p>
+        <p class="what">Aprendes: <b>cuándo dos ondas se suman y cuándo no</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/KeBJ3jQ3YW4yfhx7NxVjRq">
+        <div class="top"><h3>Banco de difracción</h3><span class="pill listo">listo</span></div>
+        <p>La rendija simple, el disco de Airy con el criterio de Rayleigh sobre dos fuentes que se acercan, y la rejilla con sus órdenes en abanico.</p>
+        <p class="what">Aprendes: <b>el límite de resolución que impone la pupila</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/AKsmSACmvr8F2wqkbnCLug">
+        <div class="top"><h3>Banco de Fourier</h3><span class="pill listo">listo</span></div>
+        <p>El plano focal como transformada de la abertura, el filtrado 4f de Abbe y Porter con la malla borrándose al tapar sus órdenes, y la MTF con su frecuencia de corte. Con transformada discreta de verdad, no dibujos.</p>
+        <p class="what">Aprendes: <b>a leer la lente como una transformada</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/7MSvopqtNyUqkTHyVoe8Pg">
+        <div class="top"><h3>Banco de haces gaussianos</h3><span class="pill listo">listo</span></div>
+        <p>La cintura, la distancia de Rayleigh y la divergencia; el enfoque calculado con el parámetro q frente a la fórmula sencilla, con M²; y el expansor de dos lentes. Las mismas matrices del banco de matrices, con un número complejo.</p>
+        <p class="what">Aprendes: <b>el compromiso entre cintura y divergencia</b></p>
+      </a>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="rule" style="background:var(--vi)"></span>
+      <h2>Campo electromagnético</h2>
+    </div>
+    <div class="grid">
+
+      <a class="card" href="https://claude.ai/artifact/MErmbP2N7gPqUUQkMkrfnw">
+        <div class="top"><h3>Banco de Maxwell</h3><span class="pill listo">listo</span></div>
+        <p><b>Puente.</b> La onda de E y B con su cociente igual a c, el índice como raíz de la permitividad, y la irradiancia traducida a voltios por metro. Es el cimiento que esta sección da por supuesto.</p>
+        <p class="what">Aprendes: <b>de qué está hecha la onda</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/Bo4nE2rUzCAf9A9STvygDz">
+        <div class="top"><h3>Banco de polarización</h3><span class="pill listo">listo</span></div>
+        <p>La elipse construida en 3D desde las dos componentes, polarizadores en cascada con el caso de los tres, y láminas retardadoras con sus matrices de Jones.</p>
+        <p class="what">Aprendes: <b>la elipse que traza el campo eléctrico</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/Ke1pfNHAKFirQUFhZKW3vm">
+        <div class="top"><h3>Banco de películas delgadas</h3><span class="pill listo">listo</span></div>
+        <p>El color de una pompa de jabón y la película negra, el antirreflejo de cuarto de onda con su índice ideal, y el espejo dieléctrico que pasa del 99.9999 %. Con matrices características, no sólo las dos primeras reflexiones.</p>
+        <p class="what">Aprendes: <b>cómo se cancela una reflexión por capas</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/B2gbQQDxrFppiUfqWnJfQm">
+        <div class="top"><h3>Banco de dispersión</h3><span class="pill listo">listo</span></div>
+        <p>El prisma trazado con Snell vectorial y el número de Abbe, la velocidad de fase frente a la de grupo, y el pulso que se ensancha en una fibra. Con coeficientes de Sellmeier de catálogo.</p>
+        <p class="what">Aprendes: <b>por qué el prisma separa los colores</b></p>
+      </a>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="rule" style="background:var(--ok)"></span>
+      <h2>Fotones</h2>
+    </div>
+    <div class="grid">
+
+      <a class="card" href="https://claude.ai/artifact/XaZhwSeRq7fT3Sn1v9F4D3">
+        <div class="top"><h3>Banco del cuanto</h3><span class="pill listo">listo</span></div>
+        <p><b>Puente.</b> Cuántos fotones lleva un miliwatt, el espectro del cuerpo negro frente a la predicción clásica, el voltaje de frenado con pendiente h/e, y la interferencia que se construye impacto por impacto.</p>
+        <p class="what">Aprendes: <b>dónde la luz deja de comportarse como onda continua</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/ExJDDzGpyiJEkSgkQG8TnL">
+        <div class="top"><h3>Banco de detección</h3><span class="pill listo">listo</span></div>
+        <p>La responsividad con su corte, una señal que se apaga hasta perderse en el ruido, el cruce donde el disparo le gana a Johnson, y una carta de resolución contada fotón a fotón.</p>
+        <p class="what">Aprendes: <b>dónde pone el ruido su propio límite</b></p>
+      </a>
+
+      <a class="card" href="https://claude.ai/artifact/6uWutSiEkWQnFqxS83L6GK">
+        <div class="top"><h3>Los cuatro modelos</h3><span class="pill listo">listo</span></div>
+        <p>El diámetro donde la aberración y la difracción se equilibran, el presupuesto de luz de un objetivo cara por cara, y una tabla de preguntas con el modelo más simple que todavía contesta cada una.</p>
+        <p class="what">Aprendes: <b>qué modelo basta para cada problema</b></p>
+      </a>
+
+    </div>
+  </section>
+
+  <footer>
+    <p>Los montajes calculan con las expresiones exactas, sin aproximaciones de ángulo pequeño salvo donde se señale. Funcionan en el navegador, sin instalar nada, y están pensados para proyectarse en clase pidiendo una predicción antes de mover el control.</p>
+    <p>Fundamentos de Óptica · Línea de investigación en Optomecatrónica.</p>
+  </footer>
+</div>
+
+</body></html>

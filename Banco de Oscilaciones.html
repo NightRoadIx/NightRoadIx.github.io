@@ -1,0 +1,972 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Oscilaciones</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+/* en mayusculas una unidad se estropea: "nm" pasa a "NM" */
+.sect .lit { text-transform: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="https://claude.ai/artifact/CAZTQx6ruo9Lovs63pwDwy">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica · Puente hacia la óptica de ondas</p>
+    <h1>Banco de oscilaciones</h1>
+    <p class="lede">Antes de que la luz sea una onda hay que tener claro qué es oscilar. Estos cuatro montajes no llevan nada de óptica: construyen, paso a paso, las tres ideas con las que después se explica todo lo demás.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> La fase es un ángulo</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Sumar dos</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> De oscilar a viajar</button>
+    <button class="tab" role="tab" id="tab3" aria-controls="p3" aria-selected="false"><span class="n">04</span> Batidos y paquetes</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">el punto que gira y el que sube y baja son el mismo</div>
+    </div>
+
+    <!-- ============ 01 FASOR ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Una oscilación es <b>la sombra de algo que gira</b>. Eso es todo lo que significa una fase.</p>
+
+      <div class="toggle" role="group" aria-label="Animación">
+        <button id="s0-play" aria-pressed="true">Pausa</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-A">Amplitud &nbsp;A</label>
+          <output id="s0-A-v">1.00</output>
+        </div>
+        <input type="range" id="s0-A" min="0.1" max="1.4" step="0.01" value="1">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-f">Frecuencia &nbsp;f</label>
+          <output id="s0-f-v">0.50 Hz</output>
+        </div>
+        <input type="range" id="s0-f" min="0.1" max="1.5" step="0.01" value="0.5">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-ph">Fase inicial &nbsp;φ</label>
+          <output id="s0-ph-v">0°</output>
+        </div>
+        <input type="range" id="s0-ph" min="-180" max="180" step="1" value="0">
+      </div>
+
+      <div class="readout">
+        <div class="sect">Lo que define la oscilación</div>
+        <div class="row pair">
+          <div class="k">Periodo &nbsp;<em>T = 1/f</em></div>
+          <div class="v cy" id="s0-T">2.000 s</div>
+        </div>
+        <div class="row">
+          <div class="k">Frecuencia angular &nbsp;<em>ω = 2πf</em></div>
+          <div class="v cy" id="s0-w">3.142 rad/s</div>
+        </div>
+
+        <div class="sect">Ahora mismo</div>
+        <div class="row pair">
+          <div class="k">Ángulo del fasor &nbsp;<em>ωt + φ</em></div>
+          <div class="v acc" id="s0-ang">0°</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Elongación &nbsp;<em>x = A·cos(ωt+φ)</em></div>
+          <div class="v acc" id="s0-x">1.000</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> el fasor y su sombra</span>
+        <span><i style="background:var(--cy)"></i> la oscilación en el tiempo</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 SUMAR DOS ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">Dos oscilaciones iguales no se suman como números: <b>se suman como flechas</b>, y el ángulo entre ellas lo decide todo.</p>
+
+      <div class="toggle" role="group" aria-label="Animación">
+        <button id="s1-play" aria-pressed="true">Pausa</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-d">Desfase entre las dos &nbsp;δ</label>
+          <output id="s1-d-v">60°</output>
+        </div>
+        <input type="range" id="s1-d" min="0" max="360" step="1" value="60">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-r">Amplitud de la segunda &nbsp;A₂/A₁</label>
+          <output id="s1-r-v">1.00</output>
+        </div>
+        <input type="range" id="s1-r" min="0" max="1" step="0.01" value="1">
+      </div>
+
+      <div class="readout">
+        <div class="sect">La suma</div>
+        <div class="row hero">
+          <div class="k">Amplitud resultante &nbsp;<em>A</em></div>
+          <div class="v acc" id="s1-A">1.732</div>
+        </div>
+        <div class="row">
+          <div class="k">Intensidad &nbsp;<em>∝ A²</em></div>
+          <div class="v cy" id="s1-I">3.000</div>
+        </div>
+
+        <div class="sect">Recorriendo todos los desfases</div>
+        <div class="row pair">
+          <div class="k">Intensidad máxima &nbsp;<em>(A₁+A₂)²</em></div>
+          <div class="v ok" id="s1-Imax">4.000</div>
+        </div>
+        <div class="row">
+          <div class="k">Intensidad mínima &nbsp;<em>(A₁−A₂)²</em></div>
+          <div class="v no" id="s1-Imin">0.000</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Visibilidad &nbsp;<em>2A₁A₂/(A₁²+A₂²)</em></div>
+          <div class="v acc" id="s1-V">1.000</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> primera</span>
+        <span><i style="background:var(--cy)"></i> segunda</span>
+        <span><i style="background:var(--ok)"></i> la suma</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 DE OSCILAR A VIAJAR ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Una onda tiene <b>dos periodicidades distintas</b>: una en el espacio y otra en el tiempo. Confundirlas es el error más común.</p>
+
+      <div class="toggle" role="group" aria-label="Animación">
+        <button id="s2-play" aria-pressed="true">Pausa</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s2-lam-v">2.00 m</output>
+        </div>
+        <input type="range" id="s2-lam" min="0.6" max="4" step="0.02" value="2">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-T">Periodo &nbsp;T</label>
+          <output id="s2-T-v">2.00 s</output>
+        </div>
+        <input type="range" id="s2-T" min="0.6" max="4" step="0.02" value="2">
+      </div>
+
+      <div class="readout">
+        <div class="sect">Lo que se mide en cada gráfica</div>
+        <div class="row pair">
+          <div class="k">Arriba, en el espacio &nbsp;<em>λ</em></div>
+          <div class="v acc" id="s2-lam2">2.00 m</div>
+        </div>
+        <div class="row">
+          <div class="k">Abajo, en el tiempo &nbsp;<em>T</em></div>
+          <div class="v cy" id="s2-T2">2.00 s</div>
+        </div>
+
+        <div class="sect">Lo que las une</div>
+        <div class="row hero">
+          <div class="k">Velocidad &nbsp;<em>v = λ/T = λf</em></div>
+          <div class="v ok" id="s2-v">1.000 m/s</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Número de onda &nbsp;<em>k = 2π/λ</em></div>
+          <div class="v vi" id="s2-k">3.142 rad/m</div>
+        </div>
+        <div class="row">
+          <div class="k">Frecuencia angular &nbsp;<em>ω = 2π/T</em></div>
+          <div class="v vi" id="s2-w">3.142 rad/s</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> foto en un instante</span>
+        <span><i style="background:var(--cy)"></i> un punto a lo largo del tiempo</span>
+        <span><i style="background:var(--ok)"></i> el punto observado</span>
+      </div>
+    </div>
+
+    <!-- ============ 04 BATIDOS ============ -->
+    <div class="panel" id="p3" role="tabpanel" aria-labelledby="tab3" hidden>
+      <p class="ask">Dos frecuencias parecidas no dan una nota sostenida: dan <b>pulsos</b>. Y de ahí sale, sin más, la longitud de coherencia.</p>
+
+      <div class="toggle" role="group" aria-label="Animación">
+        <button id="s3-play" aria-pressed="true">Pausa</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s3-df">Diferencia de frecuencia &nbsp;Δf</label>
+          <output id="s3-df-v">1.00 Hz</output>
+        </div>
+        <input type="range" id="s3-df" min="0.05" max="3" step="0.01" value="1">
+      </div>
+
+      <div class="readout">
+        <div class="sect">Las dos frecuencias</div>
+        <div class="row pair">
+          <div class="k">Primera &nbsp;<em>f₁</em></div>
+          <div class="v acc" id="s3-f1">10.00 Hz</div>
+        </div>
+        <div class="row">
+          <div class="k">Segunda &nbsp;<em>f₂ = f₁ + Δf</em></div>
+          <div class="v cy" id="s3-f2">11.00 Hz</div>
+        </div>
+
+        <div class="sect">Lo que resulta</div>
+        <div class="row hero">
+          <div class="k">Periodo del batido &nbsp;<em>1/Δf</em></div>
+          <div class="v ok" id="s3-Tb">1.000 s</div>
+        </div>
+        <div class="row">
+          <div class="k">Oscilaciones dentro de un pulso</div>
+          <div class="v vi" id="s3-nosc">10.0</div>
+        </div>
+
+        <div class="sect">Traducido a luz de 550 <span class="lit">nm</span></div>
+        <div class="row pair">
+          <div class="k">Con la misma proporción &nbsp;<em>Δf/f</em></div>
+          <div class="v dim" id="s3-rel">10.0 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Longitud del paquete &nbsp;<em>λ/(Δf/f)</em></div>
+          <div class="v acc" id="s3-lc">5.50 µm</div>
+        </div>
+      </div>
+
+      <p class="note" id="s3-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> f₁</span>
+        <span><i style="background:var(--cy)"></i> f₂</span>
+        <span><i style="background:var(--ok)"></i> la suma</span>
+        <span><i style="background:var(--vi)"></i> la envolvente</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Nada de esta página es óptica: vale igual para un péndulo, un circuito RLC o una cuerda. Esa es justamente la razón de ponerla antes. El montaje 02 da <code>A² = A₁² + A₂² + 2A₁A₂cos δ</code>, que con <code>A₁ = A₂</code> se reduce a <code>I = 4I₁cos²(δ/2)</code>: es la fórmula del banco de interferencia, deducida aquí sin mencionar la luz. El montaje 04 cierra el puente: un pulso que dura <code>τ</code> necesita un ancho de frecuencias <code>Δf ≈ 1/τ</code>, y al traducirlo al espacio queda <code>c·τ = λ²/Δλ</code>, <b>exactamente la longitud de coherencia</b>. El paquete de ondas y la coherencia no son dos temas, son el mismo escrito de dos maneras. Puente · antes de la óptica de ondas.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+  function flecha(ctx, x0, y0, x1, y1, col, lw) {
+    var dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+    if (L < 1) return;
+    ctx.strokeStyle = col; ctx.lineWidth = lw || 2;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    var a = Math.min(9, L * 0.3), ang = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - a * Math.cos(ang - 0.42), y1 - a * Math.sin(ang - 0.42));
+    ctx.lineTo(x1 - a * Math.cos(ang + 0.42), y1 - a * Math.sin(ang + 0.42));
+    ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+  }
+  function cotaH(ctx, x0, x1, y, txt, col) {
+    ctx.strokeStyle = col; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0, y); ctx.lineTo(x1, y);
+    ctx.moveTo(x0, y - 4); ctx.lineTo(x0, y + 4);
+    ctx.moveTo(x1, y - 4); ctx.lineTo(x1, y + 4);
+    ctx.stroke();
+    labBg(ctx, txt, (x0 + x1) / 2, y - 10, col, "center", 10);
+  }
+
+  // reloj comun a los cuatro montajes
+  var t = 0, ultimo = 0;
+  var corriendo = [true, true, true, true];
+
+  // ================================================================
+  // 01  la fase es un angulo
+  // ================================================================
+  var s0 = { A: 1, f: 0.5, ph: 0 };
+
+  function update0() {
+    s0.A = +$("s0-A").value; s0.f = +$("s0-f").value; s0.ph = +$("s0-ph").value;
+    $("s0-A-v").textContent = fmt(s0.A, 2);
+    $("s0-f-v").textContent = fmt(s0.f, 2) + " Hz";
+    $("s0-ph-v").textContent = fmt(s0.ph, 0) + "°";
+    $("s0-T").textContent = fmt(1 / s0.f, 3) + " s";
+    $("s0-w").textContent = fmt(2 * Math.PI * s0.f, 3) + " rad/s";
+  }
+
+  function draw0(ctx, w, h) {
+    var ang = 2 * Math.PI * s0.f * t + s0.ph * Math.PI / 180;
+    var x = s0.A * Math.cos(ang);
+
+    var e = Math.min(h * 0.30, w * 0.15);          // escala, en pixeles por unidad
+    var cx = 30 + e * 1.45, cy = h / 2;
+    var xG = cx + e * 1.45 + 54, wG = w - 20 - xG;
+
+    // El fasor se mide desde la vertical, de modo que su proyeccion sobre el eje
+    // vertical es justo A cos(wt+phi): asi la union con la curva es horizontal y
+    // conecta dos alturas iguales, que es lo que se quiere que vean.
+    var px = cx - s0.A * e * Math.sin(ang), py = cy - s0.A * e * Math.cos(ang);
+
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, s0.A * e, 0, 6.2832); ctx.stroke();
+    ctx.strokeStyle = "rgba(134,149,170,.25)"; ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - e * 1.45); ctx.lineTo(cx, cy + e * 1.45);
+    ctx.moveTo(cx - e * 1.45, cy); ctx.lineTo(cx + e * 1.45, cy);
+    ctx.stroke(); ctx.setLineDash([]);
+    lab(ctx, "proyección", cx, cy - e * 1.45 - 10, C.dim, "center", 10);
+
+    flecha(ctx, cx, cy, px, py, C.acc, 2.2);
+
+    // de la punta al eje vertical, y de ahi a la curva: todo a la misma altura
+    ctx.strokeStyle = "rgba(242,196,84,.45)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(cx, py); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = C.acc;
+    ctx.beginPath(); ctx.arc(cx, py, 4.2, 0, 6.2832); ctx.fill();
+
+    // la grafica en el tiempo, con el pasado hacia la izquierda
+    var Tver = 4 / s0.f;
+    var X = function (dt) { return xG + wG - (dt / Tver) * wG; };
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xG, cy); ctx.lineTo(xG + wG, cy); ctx.stroke();
+
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 1.9;
+    ctx.beginPath();
+    for (var i = 0; i <= 320; i++) {
+      var dt = Tver * i / 320;
+      var v = s0.A * Math.cos(2 * Math.PI * s0.f * (t - dt) + s0.ph * Math.PI / 180);
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, X(dt), cy - v * e);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(242,196,84,.4)"; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+    ctx.beginPath(); ctx.moveTo(cx, py); ctx.lineTo(X(0), cy - x * e); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = C.acc;
+    ctx.beginPath(); ctx.arc(X(0), cy - x * e, 4.4, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.3; ctx.stroke();
+
+    // un periodo, medido sobre la curva
+    cotaH(ctx, X(1 / s0.f), X(0), cy + e * 1.34, "T = " + fmt(1 / s0.f, 2) + " s", C.vi);
+
+    // la amplitud, acotada dentro del cuadro
+    var xa = xG - 22;
+    ctx.strokeStyle = C.vi; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xa - 4, cy - s0.A * e); ctx.lineTo(xa + 4, cy - s0.A * e);
+    ctx.moveTo(xa, cy - s0.A * e); ctx.lineTo(xa, cy);
+    ctx.moveTo(xa - 4, cy); ctx.lineTo(xa + 4, cy);
+    ctx.stroke();
+    labBg(ctx, "A", xa + 7, cy - s0.A * e / 2, C.vi, "left", 10);
+
+    lab(ctx, "pasado", xG + 4, cy - e * 1.3, C.dim, "left", 10);
+    lab(ctx, "ahora", xG + wG, cy - e * 1.3, C.dim, "right", 10);
+
+    var g = (ang * 180 / Math.PI) % 360; if (g < 0) g += 360;
+    $("s0-ang").textContent = fmt(g, 0) + "\u00b0";
+    $("s0-x").textContent = fmt(x, 3);
+
+    var nt = $("s0-note");
+    nt.className = "note";
+    if (!corriendo[0]) {
+      nt.innerHTML = "<b>Con la animaci\u00f3n detenida se ve la correspondencia:</b> la punta del fasor y el punto de la curva est\u00e1n a la misma altura, porque son el mismo n\u00famero. Mueve la fase inicial y observa que la curva se desliza sin cambiar de forma \u2014 <b>la fase no deforma nada, s\u00f3lo decide por d\u00f3nde empieza</b>.";
+    } else if (Math.abs(s0.ph) > 150) {
+      nt.innerHTML = "<b>Media vuelta de fase, 180\u00b0, es la oscilaci\u00f3n del rev\u00e9s.</b> Cuando m\u00e1s adelante dos ondas lleguen desfasadas media vuelta y se cancelen, ser\u00e1 esto mismo: dos flechas apuntando en sentidos opuestos.";
+    } else {
+      nt.innerHTML = "<b>Una vuelta completa del fasor es un periodo.</b> La frecuencia dice cu\u00e1ntas vueltas por segundo da, y <code>\u03c9 = 2\u03c0f</code> las mide en radianes por segundo, que es como aparecer\u00e1 siempre en las f\u00f3rmulas de ondas.";
+    }
+  }
+
+  // ================================================================
+  // 02  sumar dos
+  // ================================================================
+  var s1 = { d: 60, r: 1 };
+
+  function update1() {
+    s1.d = +$("s1-d").value; s1.r = +$("s1-r").value;
+    $("s1-d-v").textContent = fmt(s1.d, 0) + "°";
+    $("s1-r-v").textContent = fmt(s1.r, 2);
+
+    var A1 = 1, A2 = s1.r, d = s1.d * Math.PI / 180;
+    var A = Math.sqrt(A1 * A1 + A2 * A2 + 2 * A1 * A2 * Math.cos(d));
+    var Imax = (A1 + A2) * (A1 + A2), Imin = (A1 - A2) * (A1 - A2);
+    var V = (A1 * A1 + A2 * A2 > 0) ? 2 * A1 * A2 / (A1 * A1 + A2 * A2) : 0;
+
+    $("s1-A").textContent = fmt(A, 3);
+    $("s1-I").textContent = fmt(A * A, 3);
+    $("s1-Imax").textContent = fmt(Imax, 3);
+    $("s1-Imin").textContent = fmt(Imin, 3);
+    $("s1-V").textContent = fmt(V, 3);
+
+    var nt = $("s1-note");
+    if (s1.r < 0.02) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Con una sola oscilación no hay interferencia que valga:</b> la visibilidad es cero porque no hay nada con qué comparar. Sube la segunda amplitud y mira con qué rapidez aparece el contraste.";
+    } else if (Math.abs(s1.d - 180) < 6 && s1.r > 0.96) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Media vuelta de desfase y amplitudes iguales: cancelación exacta.</b> Las dos flechas son opuestas y su suma es cero. Nota que esto exige las dos cosas — basta con que una amplitud sea algo distinta para que quede un resto.";
+    } else if (s1.r > 0.96) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Con amplitudes iguales, <code>A = 2A₁·cos(δ/2)</code> y la intensidad va como <code>4I₁cos²(δ/2)</code>.</b> Ésa es, palabra por palabra, la fórmula de las dos rendijas del banco de interferencia; aquí ha salido sin mencionar la luz ni una sola vez.";
+    } else {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Amplitudes desiguales: el mínimo ya no es cero</b> y la visibilidad cae a <code>" +
+        fmt(2 * s1.r / (1 + s1.r * s1.r), 3) + "</code>. En el laboratorio esto es el divisor de haz que no reparte al 50 %, o un brazo del interferómetro que pierde más luz que el otro: el contraste se arruina sin que nada esté desalineado.";
+    }
+  }
+
+  function draw1(ctx, w, h) {
+    var A1 = 1, A2 = s1.r, d = s1.d * Math.PI / 180;
+    var om = 2 * Math.PI * 0.35, ang = om * t;
+    var R = Math.min(h * 0.3, w * 0.16);
+    var cx = 24 + R, cy = h / 2, esc = R / 2.1;
+
+    ctx.strokeStyle = "rgba(134,149,170,.22)"; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - R - 6, cy); ctx.lineTo(cx + R + 6, cy);
+    ctx.moveTo(cx, cy - R - 6); ctx.lineTo(cx, cy + R + 6);
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // flechas punta con cola
+    var x1 = cx + A1 * esc * Math.cos(ang), y1 = cy - A1 * esc * Math.sin(ang);
+    var x2 = x1 + A2 * esc * Math.cos(ang + d), y2 = y1 - A2 * esc * Math.sin(ang + d);
+    flecha(ctx, cx, cy, x1, y1, C.acc, 2.2);
+    flecha(ctx, x1, y1, x2, y2, C.cy, 2.2);
+    flecha(ctx, cx, cy, x2, y2, C.ok, 2.6);
+    lab(ctx, "suma", cx, cy + R + 20, C.ok, "center", 10);
+
+    // curvas en el tiempo
+    var xG = cx + R + 40, wG = w - 16 - xG;
+    var Tver = 3 / 0.35;
+    var X = function (dt) { return xG + wG - (dt / Tver) * wG; };
+    var escY = Math.min(h * 0.19, R / 1.5);
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xG, cy); ctx.lineTo(xG + wG, cy); ctx.stroke();
+
+    function curva(fn, col, lw) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw;
+      ctx.beginPath();
+      for (var i = 0; i <= 300; i++) {
+        var dt = Tver * i / 300;
+        (i ? ctx.lineTo : ctx.moveTo).call(ctx, X(dt), cy - fn(t - dt) * escY);
+      }
+      ctx.stroke();
+    }
+    curva(function (tt) { return A1 * Math.cos(om * tt); }, "rgba(242,196,84,.5)", 1.2);
+    curva(function (tt) { return A2 * Math.cos(om * tt + d); }, "rgba(95,168,216,.5)", 1.2);
+    curva(function (tt) { return A1 * Math.cos(om * tt) + A2 * Math.cos(om * tt + d); }, C.ok, 2.2);
+
+    var A = Math.sqrt(A1 * A1 + A2 * A2 + 2 * A1 * A2 * Math.cos(d));
+    ctx.strokeStyle = "rgba(82,184,124,.35)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(xG, cy - A * escY); ctx.lineTo(xG + wG, cy - A * escY);
+    ctx.moveTo(xG, cy + A * escY); ctx.lineTo(xG + wG, cy + A * escY);
+    ctx.stroke(); ctx.setLineDash([]);
+    labBg(ctx, "A = " + fmt(A, 3), xG + wG, cy - A * escY - 11, C.ok, "right", 10);
+    lab(ctx, "δ = " + fmt(s1.d, 0) + "°", xG + 4, cy + escY * 2.3, C.dim, "left", 10);
+  }
+
+  // ================================================================
+  // 03  de oscilar a viajar
+  // ================================================================
+  var s2 = { lam: 2, T: 2 };
+  var XOBS = 1.6;                                 // m, punto observado
+
+  function update2() {
+    s2.lam = +$("s2-lam").value; s2.T = +$("s2-T").value;
+    $("s2-lam-v").textContent = fmt(s2.lam, 2) + " m";
+    $("s2-T-v").textContent = fmt(s2.T, 2) + " s";
+    $("s2-lam2").textContent = fmt(s2.lam, 2) + " m";
+    $("s2-T2").textContent = fmt(s2.T, 2) + " s";
+    $("s2-v").textContent = fmt(s2.lam / s2.T, 3) + " m/s";
+    $("s2-k").textContent = fmt(2 * Math.PI / s2.lam, 3) + " rad/m";
+    $("s2-w").textContent = fmt(2 * Math.PI / s2.T, 3) + " rad/s";
+
+    var nt = $("s2-note");
+    if (Math.abs(s2.lam - s2.T) < 0.05) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Aquí λ y T coinciden en número, y aun así son cosas distintas:</b> uno se mide con una regla sobre la foto de arriba, el otro con un cronómetro sobre la gráfica de abajo. Mueve cualquiera de los dos y se separan.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>La gráfica de arriba no es la de abajo.</b> Arriba está la onda entera congelada en un instante, y lo que se repite cada λ son metros. Abajo está un solo punto a lo largo del tiempo, y lo que se repite cada T son segundos. <b>La velocidad es lo único que las conecta:</b> <code>v = λ/T</code>.";
+    }
+  }
+
+  function draw2(ctx, w, h) {
+    var mL = 46, mR = 18;
+    var pw = w - mL - mR;
+    var hSup = Math.round(h * 0.47), yS = 26 + (hSup - 26) / 2;
+    var yI = hSup + 16 + (h - hSup - 46) / 2;
+    var escY = Math.min((hSup - 40) / 2, 52);
+    var Xmax = 5.0, Tver = 5.0;
+    var k = 2 * Math.PI / s2.lam, om = 2 * Math.PI / s2.T;
+
+    // ---- arriba: foto en el espacio ----
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(mL, yS); ctx.lineTo(mL + pw, yS); ctx.stroke();
+    var XX = function (x) { return mL + x / Xmax * pw; };
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var i = 0; i <= 420; i++) {
+      var x = Xmax * i / 420;
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, XX(x), yS - Math.cos(k * x - om * t) * escY);
+    }
+    ctx.stroke();
+    cotaH(ctx, XX(0.25), XX(0.25 + s2.lam), yS + escY + 16, "λ = " + fmt(s2.lam, 2) + " m", C.acc);
+    lab(ctx, "una foto en un instante", mL, 16, C.dim, "left", 10);
+    lab(ctx, "x [m]", mL + pw, yS + escY + 30, C.dim, "right", 10);
+
+    // el punto observado
+    var yObs = Math.cos(k * XOBS - om * t);
+    ctx.strokeStyle = "rgba(82,184,124,.45)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(XX(XOBS), yS - escY - 6); ctx.lineTo(XX(XOBS), yS + escY + 6); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = C.ok;
+    ctx.beginPath(); ctx.arc(XX(XOBS), yS - yObs * escY, 4.4, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.3; ctx.stroke();
+    labBg(ctx, "este punto", XX(XOBS), yS - escY - 14, C.ok, "center", 10);
+
+    // ---- abajo: ese punto a lo largo del tiempo ----
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(mL, yI); ctx.lineTo(mL + pw, yI); ctx.stroke();
+    var XT = function (dt) { return mL + pw - dt / Tver * pw; };
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var j = 0; j <= 420; j++) {
+      var dt = Tver * j / 420;
+      (j ? ctx.lineTo : ctx.moveTo).call(ctx, XT(dt), yI - Math.cos(k * XOBS - om * (t - dt)) * escY);
+    }
+    ctx.stroke();
+    cotaH(ctx, XT(0.25 + s2.T), XT(0.25), yI + escY + 16, "T = " + fmt(s2.T, 2) + " s", C.cy);
+    lab(ctx, "ese mismo punto, a lo largo del tiempo", mL, hSup + 10, C.dim, "left", 10);
+    lab(ctx, "ahora", mL + pw, yI + escY + 30, C.dim, "right", 10);
+    ctx.fillStyle = C.ok;
+    ctx.beginPath(); ctx.arc(XT(0), yI - yObs * escY, 4.4, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.3; ctx.stroke();
+  }
+
+  // ================================================================
+  // 04  batidos y paquetes
+  // ================================================================
+  var F1 = 10;
+  var s3 = { df: 1 };
+
+  function update3() {
+    s3.df = +$("s3-df").value;
+    $("s3-df-v").textContent = fmt(s3.df, 2) + " Hz";
+    $("s3-f1").textContent = fmt(F1, 2) + " Hz";
+    $("s3-f2").textContent = fmt(F1 + s3.df, 2) + " Hz";
+    $("s3-Tb").textContent = fmt(1 / s3.df, 3) + " s";
+    $("s3-nosc").textContent = fmt(F1 / s3.df, 1);
+    var rel = s3.df / F1;
+    $("s3-rel").textContent = fmt(rel * 100, 1) + " %";
+    $("s3-lc").textContent = fmt(550e-3 / rel, 2) + " µm";
+
+    var nt = $("s3-note");
+    if (s3.df < 0.2) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Frecuencias casi idénticas: el pulso dura muchísimo</b> y dentro caben <code>" +
+        fmt(F1 / s3.df, 0) + "</code> oscilaciones. Esto es el equivalente de un láser: espectro estrechísimo, paquete larguísimo, coherencia de metros.";
+    } else if (s3.df > 2) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Frecuencias muy distintas: el pulso se acorta</b> hasta no caber ni unas pocas oscilaciones dentro. Así es la luz blanca, y por eso su longitud de coherencia era de apenas dos longitudes de onda en el banco de interferencia.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>Cuanto más separadas están las dos frecuencias, más corto es el pulso.</b> Es una relación inversa inevitable: <code>τ ≈ 1/Δf</code>. Un pulso corto <b>no puede</b> tener un color puro, y una fuente de color puro <b>no puede</b> dar pulsos cortos. No es un defecto técnico, es aritmética.";
+    }
+  }
+
+  function draw3(ctx, w, h) {
+    var mL = 46, mR = 18;
+    var pw = w - mL - mR;
+    var hSup = Math.round(h * 0.38);
+    var yS = 24 + (hSup - 24) / 2;
+    var yI = hSup + 14 + (h - hSup - 44) / 2;
+    var e1 = Math.min((hSup - 36) / 2, 34);
+    var e2 = Math.min((h - hSup - 60) / 2, 56);
+    var Tver = 3.2;
+    var XT = function (dt) { return mL + pw - dt / Tver * pw; };
+    var f2 = F1 + s3.df;
+
+    // arriba: las dos por separado
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(mL, yS); ctx.lineTo(mL + pw, yS); ctx.stroke();
+    [[F1, "rgba(242,196,84,.85)"], [f2, "rgba(95,168,216,.85)"]].forEach(function (p) {
+      ctx.strokeStyle = p[1]; ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (var i = 0; i <= 900; i++) {
+        var dt = Tver * i / 900;
+        (i ? ctx.lineTo : ctx.moveTo).call(ctx, XT(dt), yS - Math.cos(2 * Math.PI * p[0] * (t - dt)) * e1);
+      }
+      ctx.stroke();
+    });
+    lab(ctx, "las dos frecuencias por separado", mL, 14, C.dim, "left", 10);
+
+    // abajo: la suma y su envolvente
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(mL, yI); ctx.lineTo(mL + pw, yI); ctx.stroke();
+
+    ctx.strokeStyle = "rgba(168,136,216,.75)"; ctx.lineWidth = 1.4;
+    [1, -1].forEach(function (sg) {
+      ctx.beginPath();
+      for (var i = 0; i <= 600; i++) {
+        var dt = Tver * i / 600;
+        var env = 2 * Math.abs(Math.cos(Math.PI * s3.df * (t - dt)));
+        (i ? ctx.lineTo : ctx.moveTo).call(ctx, XT(dt), yI - sg * env * e2 / 2);
+      }
+      ctx.stroke();
+    });
+
+    ctx.strokeStyle = C.ok; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (var j = 0; j <= 1400; j++) {
+      var dt2 = Tver * j / 1400;
+      var s = Math.cos(2 * Math.PI * F1 * (t - dt2)) + Math.cos(2 * Math.PI * f2 * (t - dt2));
+      (j ? ctx.lineTo : ctx.moveTo).call(ctx, XT(dt2), yI - s * e2 / 2);
+    }
+    ctx.stroke();
+
+    // un periodo de batido marcado, si cabe
+    var Tb = 1 / s3.df;
+    if (Tb < Tver * 0.92) {
+      cotaH(ctx, XT(0.1 + Tb), XT(0.1), yI + e2 + 17, "1/Δf = " + fmt(Tb, 2) + " s", C.vi);
+    } else {
+      labBg(ctx, "el pulso dura " + fmt(Tb, 1) + " s: no cabe entero en el cuadro", mL + 8, yI + e2 + 17, C.vi, "left", 10);
+    }
+    lab(ctx, "la suma, con su envolvente", mL, hSup + 8, C.dim, "left", 10);
+    lab(ctx, "ahora", mL + pw, h - 12, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // pestañas y bucle
+  // ================================================================
+  var cur = 0;
+  var dibujos = [draw0, draw1, draw2, draw3];
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "el punto que gira y el que sube y baja son el mismo" },
+    { p: "p1", t: "tab1", u: update1, hint: "mueve el desfase y mira la flecha verde" },
+    { p: "p2", t: "tab2", u: update2, hint: "compara la gráfica de arriba con la de abajo" },
+    { p: "p3", t: "tab3", u: update3, hint: "separa las frecuencias y mira cuánto dura el pulso" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-A", "s0-f", "s0-ph"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-d", "s1-r"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-lam", "s2-T"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  $("s3-df").addEventListener("input", update3);
+
+  ["s0-play", "s1-play", "s2-play", "s3-play"].forEach(function (id, i) {
+    $(id).addEventListener("click", function () {
+      corriendo[i] = !corriendo[i];
+      $(id).textContent = corriendo[i] ? "Pausa" : "Reanudar";
+      $(id).setAttribute("aria-pressed", corriendo[i] ? "true" : "false");
+      if (i === 0) update0();
+    });
+  });
+
+  resize();
+  show(0);
+  update0(); update1(); update2(); update3();
+  window.addEventListener("load", resize);
+
+  (function bucle(ms) {
+    requestAnimationFrame(bucle);
+    if (!ultimo) ultimo = ms || 0;
+    var dt = Math.min(((ms || 0) - ultimo) / 1000, 0.05);
+    ultimo = ms || 0;
+    if (corriendo[cur]) t += dt;
+    resize();
+    var ctx = ctx2d();
+    dibujos[cur](ctx, cv.width / dpr, cv.height / dpr);
+  })();
+})();
+</script>
+
+</body></html>
