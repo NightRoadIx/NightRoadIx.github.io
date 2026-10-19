@@ -1,0 +1,1062 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Fourier</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Banco de Fourier</h1>
+    <p class="lede">Una lente no sólo forma imágenes: en su plano focal aparece, literalmente, la transformada de Fourier de lo que tiene delante. Y si ahí se pone un papel con un agujero, se puede editar la imagen antes de que exista.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> La lente transforma</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Filtrar en el plano de Fourier</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Hasta dónde llega una lente</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">cambia la abertura y mira qué aparece en el foco</div>
+    </div>
+
+    <!-- ============ 01 LA LENTE TRANSFORMA ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Lo que se ve en el plano focal <b>no es una imagen de la abertura</b>: es su transformada, calculada por la propia luz.</p>
+
+      <div class="toggle" role="group" aria-label="Abertura">
+        <button id="a-rend" aria-pressed="true">Rendija</button>
+        <button id="a-dob" aria-pressed="false">Doble</button>
+        <button id="a-red" aria-pressed="false">Red</button>
+        <button id="a-circ" aria-pressed="false">Círculo</button>
+        <button id="a-cuad" aria-pressed="false">Cuadrado</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-a">Tamaño característico &nbsp;a</label>
+          <output id="s0-a-v">200 µm</output>
+        </div>
+        <input type="range" id="s0-a" min="40" max="600" step="5" value="200">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s0-lam-v">633 nm</output>
+        </div>
+        <input type="range" id="s0-lam" min="400" max="700" step="1" value="633">
+      </div>
+
+      <div class="readout">
+        <div class="sect">Lo que predice la teoría</div>
+        <div class="row pair">
+          <div class="k">Frecuencia característica &nbsp;<em>1/a</em></div>
+          <div class="v cy" id="s0-nu">5.00 ciclos/mm</div>
+        </div>
+        <div class="row hero">
+          <div class="k" id="s0-lk">Primer cero &nbsp;<em>λf/a</em></div>
+          <div class="v acc" id="s0-pos">0.633 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Medido sobre la transformada</div>
+          <div class="v ok" id="s0-med">0.633 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Diferencia · muestreo de la abertura</div>
+          <div class="v dim" id="s0-dif">0.4 %</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--cy)"></i> la abertura</span>
+        <span><i style="background:var(--acc)"></i> su transformada</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 FILTRADO ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">El montaje 4f: una lente transforma, <b>se tapa parte del espectro</b>, y la segunda lente deshace la transformada. La imagen sale editada.</p>
+
+      <div class="toggle" role="group" aria-label="Objeto">
+        <button id="o-malla" aria-pressed="true">Malla</button>
+        <button id="o-dos" aria-pressed="false">Dos frecuencias</button>
+      </div>
+
+      <div class="toggle" role="group" aria-label="Filtro">
+        <button id="f-no" aria-pressed="true">Sin filtro</button>
+        <button id="f-bajo" aria-pressed="false">Paso bajo</button>
+        <button id="f-alto" aria-pressed="false">Paso alto</button>
+        <button id="f-vert" aria-pressed="false">Rendija ∣</button>
+        <button id="f-hor" aria-pressed="false">Rendija —</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-p">Periodo de la malla &nbsp;p</label>
+          <output id="s1-p-v">200 µm</output>
+        </div>
+        <input type="range" id="s1-p" min="80" max="500" step="5" value="200">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-r">Tamaño del filtro</label>
+          <output id="s1-r-v">8.0 ciclos/mm</output>
+        </div>
+        <input type="range" id="s1-r" min="0.5" max="32" step="0.1" value="8">
+      </div>
+
+      <div class="readout">
+        <div class="sect">La malla y su espectro</div>
+        <div class="row pair">
+          <div class="k">Frecuencia fundamental &nbsp;<em>1/p</em></div>
+          <div class="v cy" id="s1-nu">5.00 ciclos/mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Órdenes que deja pasar el filtro</div>
+          <div class="v acc" id="s1-ord">hasta el ±1</div>
+        </div>
+
+        <div class="sect">La imagen que sale</div>
+        <div class="row hero">
+          <div class="k">Contraste de la malla</div>
+          <div class="v acc" id="s1-cont">0.82</div>
+        </div>
+        <div class="row">
+          <div class="k">Luz que sobrevive al filtro</div>
+          <div class="v cy" id="s1-luz">61 %</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--cy)"></i> objeto</span>
+        <span><i style="background:var(--acc)"></i> plano de Fourier</span>
+        <span><i style="background:var(--no)"></i> lo que tapa el filtro</span>
+        <span><i style="background:var(--ok)"></i> imagen</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 MTF ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Ninguna lente transmite todos los detalles. <b>La MTF dice cuánto contraste queda</b> en cada frecuencia, y dónde se acaba.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-N">Número f &nbsp;<em>f/#</em></label>
+          <output id="s2-N-v">f/4.0</output>
+        </div>
+        <input type="range" id="s2-N" min="1.4" max="22" step="0.1" value="4">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s2-lam-v">550 nm</output>
+        </div>
+        <input type="range" id="s2-lam" min="400" max="700" step="1" value="550">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-nu">Frecuencia observada &nbsp;ν</label>
+          <output id="s2-nu-v">150 ciclos/mm</output>
+        </div>
+        <input type="range" id="s2-nu" min="10" max="900" step="1" value="150">
+      </div>
+
+      <div class="readout">
+        <div class="sect">El límite de la lente</div>
+        <div class="row pair">
+          <div class="k">Frecuencia de corte &nbsp;<em>1/(λ·f/#)</em></div>
+          <div class="v acc" id="s2-nc">454.5 ciclos/mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Periodo más fino que resuelve</div>
+          <div class="v cy" id="s2-per">2.200 µm</div>
+        </div>
+
+        <div class="sect">En la frecuencia observada</div>
+        <div class="row hero">
+          <div class="k">Contraste que queda &nbsp;<em>MTF</em></div>
+          <div class="v acc" id="s2-mtf">0.587</div>
+        </div>
+        <div class="row">
+          <div class="k">Fracción del corte &nbsp;<em>ν/ν<sub>c</sub></em></div>
+          <div class="v dim" id="s2-s">0.330</div>
+        </div>
+        <div class="row">
+          <div class="k">Separación de Rayleigh &nbsp;<em>1.22λ·f/#</em></div>
+          <div class="v vi" id="s2-ray">2.684 µm</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> MTF</span>
+        <span><i style="background:var(--cy)"></i> frecuencia observada</span>
+        <span><i style="background:var(--no)"></i> frecuencia de corte</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Los montajes 01 y 02 calculan una transformada de Fourier discreta de verdad sobre una malla de 256 × 256 que cubre 4 mm de lado, de modo que el muestreo es de 15.6 µm y la frecuencia de Nyquist, 32 ciclos/mm. La lente transformadora tiene <code>f = 200 mm</code>, y la posición en el plano focal se relaciona con la frecuencia espacial por <code>x′ = λ·f·ν</code>: por eso una rendija de anchura <code>a</code> pone su primer cero en <code>λf/a</code>. El montaje 03 usa la MTF de difracción de una pupila circular en iluminación incoherente, <code>MTF(s) = (2/π)[arccos s − s√(1−s²)]</code> con <code>s = ν/ν_c</code> y <code>ν_c = 1/(λ·f/#)</code>. <b>Conviene avisar de que el corte de la MTF y el criterio de Rayleigh no son el mismo número</b>: a f/4 y 550 nm, el periodo de corte vale 2.20 µm y la separación de Rayleigh 2.68 µm. Son dos convenios distintos sobre el mismo límite físico, no una contradicción. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    draw();
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+  function lamRGB(lam) {
+    var r = 0, g = 0, b = 0;
+    if (lam >= 380 && lam < 440) { r = -(lam - 440) / 60; b = 1; }
+    else if (lam < 490) { g = (lam - 440) / 50; b = 1; }
+    else if (lam < 510) { g = 1; b = -(lam - 510) / 20; }
+    else if (lam < 580) { r = (lam - 510) / 70; g = 1; }
+    else if (lam < 645) { r = 1; g = -(lam - 645) / 65; }
+    else if (lam <= 780) { r = 1; }
+    var f = 1;
+    if (lam > 700) f = 0.3 + 0.7 * (780 - lam) / 80;
+    else if (lam < 420) f = 0.3 + 0.7 * (lam - 380) / 40;
+    var gm = function (x) { return Math.pow(Math.max(0, Math.min(1, x * f)), 0.8); };
+    return [gm(r), gm(g), gm(b)];
+  }
+
+  // ================================================================
+  // transformada de Fourier
+  // ================================================================
+  var N = 256, L = 4.0, FL = 200.0;            // muestras, lado en mm, focal en mm
+  var DX = L / N;                              // paso de muestreo, mm
+  var NUMAX = 1 / (2 * DX);                    // Nyquist, ciclos/mm
+
+  function fft1(re, im, n, inv) {
+    var i, j, bit, len, k, m;
+    for (i = 1, j = 0; i < n; i++) {
+      bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) {
+        var tr = re[i]; re[i] = re[j]; re[j] = tr;
+        var ti = im[i]; im[i] = im[j]; im[j] = ti;
+      }
+    }
+    for (len = 2; len <= n; len <<= 1) {
+      var ang = (inv ? 2 : -2) * Math.PI / len;
+      var wr = Math.cos(ang), wi = Math.sin(ang);
+      for (k = 0; k < n; k += len) {
+        var cr = 1, ci = 0, hl = len >> 1;
+        for (m = 0; m < hl; m++) {
+          var ar = re[k + m], ai = im[k + m];
+          var br = re[k + m + hl], bi = im[k + m + hl];
+          var dr = br * cr - bi * ci, di = br * ci + bi * cr;
+          re[k + m] = ar + dr; im[k + m] = ai + di;
+          re[k + m + hl] = ar - dr; im[k + m + hl] = ai - di;
+          var ncr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = ncr;
+        }
+      }
+    }
+    if (inv) for (i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+  }
+
+  var bufR = new Float64Array(N), bufI = new Float64Array(N);
+  function fft2(re, im, inv) {
+    var x, y;
+    for (y = 0; y < N; y++) {
+      for (x = 0; x < N; x++) { bufR[x] = re[y * N + x]; bufI[x] = im[y * N + x]; }
+      fft1(bufR, bufI, N, inv);
+      for (x = 0; x < N; x++) { re[y * N + x] = bufR[x]; im[y * N + x] = bufI[x]; }
+    }
+    for (x = 0; x < N; x++) {
+      for (y = 0; y < N; y++) { bufR[y] = re[y * N + x]; bufI[y] = im[y * N + x]; }
+      fft1(bufR, bufI, N, inv);
+      for (y = 0; y < N; y++) { re[y * N + x] = bufR[y]; im[y * N + x] = bufI[y]; }
+    }
+  }
+  // indice de frecuencia centrado: el orden cero queda en el medio al dibujar
+  function kc(i) { return (i < N / 2) ? i : i - N; }
+
+  // lienzos auxiliares donde se pinta la malla antes de escalarla
+  var off = [], offCtx = [];
+  for (var q = 0; q < 3; q++) {
+    var c = document.createElement("canvas");
+    c.width = N; c.height = N;
+    off.push(c); offCtx.push(c.getContext("2d"));
+  }
+
+  function pinta(idx, datos, rgb, gamma) {
+    var img = offCtx[idx].createImageData(N, N), d = img.data;
+    for (var i = 0; i < N * N; i++) {
+      var v = Math.pow(Math.max(0, Math.min(1, datos[i])), gamma || 1);
+      d[i * 4] = rgb[0] * 255 * v;
+      d[i * 4 + 1] = rgb[1] * 255 * v;
+      d[i * 4 + 2] = rgb[2] * 255 * v;
+      d[i * 4 + 3] = 255;
+    }
+    offCtx[idx].putImageData(img, 0, 0);
+    return off[idx];
+  }
+
+  function marco(ctx, x, y, s, titulo, col) {
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeRect(x - .5, y - .5, s + 1, s + 1);
+    lab(ctx, titulo, x, y - 10, col || C.dim, "left", 10.5);
+  }
+
+  var re1 = new Float64Array(N * N), im1 = new Float64Array(N * N);
+  var re2 = new Float64Array(N * N), im2 = new Float64Array(N * N);
+  var campo = new Float64Array(N * N);
+  var espec = new Float64Array(N * N);
+  var imagen = new Float64Array(N * N);
+
+  // ================================================================
+  // 01  la lente transforma
+  // ================================================================
+  var s0 = { tipo: "rend", a: 200, lam: 633 };
+  var TIPOS = { "a-rend": "rend", "a-dob": "dob", "a-red": "red", "a-circ": "circ", "a-cuad": "cuad" };
+
+  function abertura(tipo, aMM) {
+    var i, x, y, cx = N / 2, cy = N / 2;
+    var ap = aMM / DX;                           // en muestras
+    for (i = 0; i < N * N; i++) { re1[i] = 0; im1[i] = 0; }
+    for (y = 0; y < N; y++) {
+      for (x = 0; x < N; x++) {
+        var dx = x - cx, dy = y - cy, v = 0;
+        if (tipo === "rend") v = (Math.abs(dx) <= ap / 2 && Math.abs(dy) <= N * 0.34) ? 1 : 0;
+        else if (tipo === "dob") v = ((Math.abs(dx - ap) <= ap / 4 || Math.abs(dx + ap) <= ap / 4) && Math.abs(dy) <= N * 0.34) ? 1 : 0;
+        else if (tipo === "red") v = (Math.abs(dx) <= N * 0.34 && Math.abs(dy) <= N * 0.34 &&
+                                      (((dx % ap) + ap) % ap) < ap / 2) ? 1 : 0;
+        else if (tipo === "circ") v = (dx * dx + dy * dy <= (ap / 2) * (ap / 2)) ? 1 : 0;
+        else v = (Math.abs(dx) <= ap / 2 && Math.abs(dy) <= ap / 2) ? 1 : 0;
+        re1[y * N + x] = v;
+        campo[y * N + x] = v;
+      }
+    }
+  }
+
+  function update0() {
+    s0.a = +$("s0-a").value; s0.lam = +$("s0-lam").value;
+    Object.keys(TIPOS).forEach(function (k) {
+      $(k).setAttribute("aria-pressed", TIPOS[k] === s0.tipo ? "true" : "false");
+    });
+    $("s0-a-v").textContent = fmt(s0.a, 0) + " µm";
+    $("s0-lam-v").textContent = fmt(s0.lam, 0) + " nm";
+
+    var aMM = s0.a / 1000;
+    abertura(s0.tipo, aMM);
+    fft2(re1, im1, false);
+
+    var i, mx = 0;
+    for (i = 0; i < N * N; i++) {
+      var p = re1[i] * re1[i] + im1[i] * im1[i];
+      espec[i] = p;
+      if (p > mx) mx = p;
+    }
+    // escala logaritmica, que es como se ve de verdad un patron de difraccion
+    for (i = 0; i < N * N; i++) espec[i] = Math.log10(1 + 600 * espec[i] / mx) / Math.log10(601);
+
+    // perfil horizontal por el centro, para medir el primer cero o el primer orden
+    var fila = new Float64Array(N);
+    for (var x = 0; x < N; x++) {
+      var xr = (x + N / 2) % N;                  // deshace el centrado en x
+      var pr = re1[xr], pi = im1[xr];            // fila 0 = frecuencia cero en y
+      fila[x] = pr * pr + pi * pi;
+    }
+
+    var nu = 1 / aMM;                            // ciclos/mm
+    $("s0-nu").textContent = fmt(nu, 2) + " ciclos/mm";
+
+    var teor, etiq, medidoNu = null;
+    if (s0.tipo === "red" || s0.tipo === "dob") {
+      etiq = "Primer orden &nbsp;<em>λf/" + (s0.tipo === "red" ? "p" : "d") + "</em>";
+      var per = (s0.tipo === "red") ? aMM : 2 * aMM;
+      teor = s0.lam * 1e-6 * FL / per;
+      medidoNu = picoLateral(fila);
+    } else if (s0.tipo === "circ") {
+      // el primer cero de Airy no cae en 1/a sino en 1.22/a
+      etiq = "Primer anillo oscuro &nbsp;<em>1.22 λf/a</em>";
+      teor = 1.22 * s0.lam * 1e-6 * FL / aMM;
+      medidoNu = primerCero(fila);
+    } else {
+      etiq = "Primer cero &nbsp;<em>λf/a</em>";
+      teor = s0.lam * 1e-6 * FL / aMM;
+      medidoNu = primerCero(fila);
+    }
+    $("s0-lk").innerHTML = etiq;
+    $("s0-pos").textContent = fmt(teor, 3) + " mm";
+    if (medidoNu !== null) {
+      var med = s0.lam * 1e-6 * FL * medidoNu;
+      $("s0-med").textContent = fmt(med, 3) + " mm";
+      // Se dice cuantas muestras cubren la abertura: la medida es discreta y su
+      // precision depende de eso, no de la fisica.
+      var muestras = aMM / DX;
+      $("s0-dif").textContent = fmt(Math.abs(med / teor - 1) * 100, 1) + " % · " +
+        fmt(muestras, 0) + " muestras";
+      $("s0-dif").className = "v " + (muestras < 10 ? "no" : "dim");
+    } else {
+      $("s0-med").textContent = "—"; $("s0-dif").textContent = "—";
+    }
+
+    var nt = $("s0-note");
+    nt.className = "note";
+    if (s0.tipo === "red") {
+      nt.innerHTML = "<b>Una red periódica da puntos, no una mancha continua.</b> Cada punto es un orden, y su separación va como <code>1/p</code>: al apretar la red los órdenes se abren. Es la misma ecuación de la red del banco de difracción, aquí obtenida como transformada.";
+    } else if (s0.tipo === "circ") {
+      nt.innerHTML = "<b>El círculo da el disco de Airy con sus anillos.</b> Fíjate en que la escala es logarítmica: en escala lineal los anillos serían casi invisibles, y por eso en el laboratorio cuesta verlos salvo sobreexponiendo.";
+    } else if (s0.tipo === "cuad") {
+      nt.innerHTML = "<b>Un cuadrado da una cruz.</b> Cada lado recto del objeto produce una línea de luz perpendicular a él en la transformada. Es la razón de que las estrellas salgan con puntas en las fotos: son los bordes del diafragma de la cámara.";
+    } else if (s0.tipo === "dob") {
+      nt.innerHTML = "<b>Dos rendijas: franjas dentro de la envolvente de una.</b> La separación manda las franjas finas y la anchura manda la envolvente ancha. Son las dos escalas del montaje de Young, aquí separadas a la vista.";
+    } else {
+      nt.innerHTML = "<b>Estrechar la rendija ensancha la transformada.</b> Esa relación inversa es el corazón de todo: <code>a·ν = 1</code>. Nada en la óptica puede ser estrecho en los dos lados a la vez, y es la misma aritmética del paquete de ondas del banco de oscilaciones.";
+    }
+
+    draw0();
+  }
+
+  // primer minimo del perfil, devuelto como frecuencia en ciclos/mm
+  // Con interpolacion parabolica: sin ella el indice entero cuantiza la medida
+  // en 1/(N*DX) = 0.25 ciclos/mm, que a frecuencias altas es un error visible.
+  function subpix(fila, i) {
+    var d = fila[i - 1] - 2 * fila[i] + fila[i + 1];
+    return (Math.abs(d) < 1e-20) ? i : i + 0.5 * (fila[i - 1] - fila[i + 1]) / d;
+  }
+  function primerCero(fila) {
+    var c = N / 2;
+    for (var i = c + 1; i < N - 1; i++) {
+      if (fila[i] < fila[i - 1] && fila[i] <= fila[i + 1]) return (subpix(fila, i) - c) / (N * DX);
+    }
+    return null;
+  }
+  // El orden de una red no es el primer maximo que aparece: antes estan los
+  // lobulos de la envolvente de la abertura entera. Se busca el maximo mayor.
+  function picoLateral(fila) {
+    var c = N / 2, mejor = -1;
+    for (var i = c + 4; i < N - 1; i++) {
+      if (fila[i] > fila[i - 1] && fila[i] >= fila[i + 1]) {
+        if (mejor < 0 || fila[i] > fila[mejor]) mejor = i;
+      }
+    }
+    return (mejor < 0) ? null : (subpix(fila, mejor) - c) / (N * DX);
+  }
+
+  function draw0() {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var s = Math.min((w - 48) / 2, h - 58);
+    var x0 = (w - 2 * s - 16) / 2, y0 = (h - s) / 2 + 6;
+
+    pinta(0, campo, [0.37, 0.66, 0.85], 1);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(off[0], x0, y0, s, s);
+    marco(ctx, x0, y0, s, "la abertura · " + fmt(L, 1) + " mm de lado", C.cy);
+
+    // espectro, centrado
+    var cen = new Float64Array(N * N);
+    for (var y = 0; y < N; y++) {
+      for (var x = 0; x < N; x++) {
+        cen[y * N + x] = espec[(((y + N / 2) % N) * N) + ((x + N / 2) % N)];
+      }
+    }
+    var rgb = lamRGB(s0.lam);
+    pinta(1, cen, rgb, 1);
+    var x1 = x0 + s + 16;
+    ctx.drawImage(off[1], x1, y0, s, s);
+    var anch = 2 * s0.lam * 1e-6 * FL * NUMAX;
+    marco(ctx, x1, y0, s, "plano focal · " + fmt(anch, 2) + " mm de lado", C.acc);
+
+    lab(ctx, "f = " + FL + " mm", x1 + s, y0 + s + 13, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // 02  filtrado
+  // ================================================================
+  var s1 = { obj: "malla", filtro: "no", p: 200, r: 8 };
+  var OBJ = { "o-malla": "malla", "o-dos": "dos" };
+  var FIL = { "f-no": "no", "f-bajo": "bajo", "f-alto": "alto", "f-vert": "vert", "f-hor": "hor" };
+
+  function objeto(tipo, pMM) {
+    var pp = pMM / DX, x, y, cx = N / 2, cy = N / 2;
+    for (y = 0; y < N; y++) {
+      for (x = 0; x < N; x++) {
+        var dx = x - cx, dy = y - cy, v = 0;
+        var dentro = (dx * dx + dy * dy) <= (N * 0.38) * (N * 0.38);
+        if (!dentro) v = 0;
+        else if (tipo === "malla") {
+          var bx = (((dx % pp) + pp) % pp) < pp / 2;
+          var by = (((dy % pp) + pp) % pp) < pp / 2;
+          v = (bx && by) ? 1 : 0;
+        } else {
+          var per = (dx < 0) ? pp : pp / 2.5;
+          v = ((((dx % per) + per) % per) < per / 2) ? 1 : 0;
+        }
+        re2[y * N + x] = v; im2[y * N + x] = 0;
+        campo[y * N + x] = v;
+      }
+    }
+  }
+
+  function mascara(i, j) {
+    var fx = kc(j) / (N * DX), fy = kc(i) / (N * DX);   // ciclos/mm
+    var r = s1.r;
+    switch (s1.filtro) {
+      case "bajo": return (fx * fx + fy * fy <= r * r) ? 1 : 0;
+      case "alto": return (fx * fx + fy * fy >= r * r) ? 1 : 0;
+      case "vert": return (Math.abs(fx) <= r) ? 1 : 0;
+      case "hor": return (Math.abs(fy) <= r) ? 1 : 0;
+      default: return 1;
+    }
+  }
+
+  function update1() {
+    s1.p = +$("s1-p").value; s1.r = +$("s1-r").value;
+    Object.keys(OBJ).forEach(function (k) { $(k).setAttribute("aria-pressed", OBJ[k] === s1.obj ? "true" : "false"); });
+    Object.keys(FIL).forEach(function (k) { $(k).setAttribute("aria-pressed", FIL[k] === s1.filtro ? "true" : "false"); });
+    $("s1-p-v").textContent = fmt(s1.p, 0) + " µm";
+    $("s1-r-v").textContent = fmt(s1.r, 1) + " ciclos/mm";
+
+    var pMM = s1.p / 1000;
+    objeto(s1.obj, pMM);
+    fft2(re2, im2, false);
+
+    var i, j, mx = 0, total = 0, pasa = 0;
+    var cen = new Float64Array(N * N);
+    var mascaraVis = new Uint8Array(N * N);
+    for (i = 0; i < N; i++) {
+      for (j = 0; j < N; j++) {
+        var k = i * N + j;
+        var p = re2[k] * re2[k] + im2[k] * im2[k];
+        total += p;
+        var m = mascara(i, j);
+        if (m) pasa += p; else { re2[k] = 0; im2[k] = 0; }
+        mascaraVis[k] = m;
+        if (p > mx) mx = p;
+        cen[k] = p;
+      }
+    }
+    var esp = new Float64Array(N * N), mvis = new Uint8Array(N * N);
+    for (i = 0; i < N; i++) {
+      for (j = 0; j < N; j++) {
+        var src = (((i + N / 2) % N) * N) + ((j + N / 2) % N);
+        esp[i * N + j] = Math.log10(1 + 600 * cen[src] / mx) / Math.log10(601);
+        mvis[i * N + j] = mascaraVis[src];
+      }
+    }
+
+    fft2(re2, im2, true);
+    var imx = 0;
+    for (i = 0; i < N * N; i++) {
+      imagen[i] = Math.abs(re2[i]);
+      if (imagen[i] > imx) imx = imagen[i];
+    }
+    if (imx > 0) for (i = 0; i < N * N; i++) imagen[i] /= imx;
+
+    // contraste medido sobre una franja central del objeto
+    var lo = 1e9, hi = -1e9;
+    for (j = Math.round(N * 0.42); j < Math.round(N * 0.58); j++) {
+      var v = imagen[(N / 2) * N + j];
+      if (v < lo) lo = v;
+      if (v > hi) hi = v;
+    }
+    var cont = (hi + lo > 1e-9) ? (hi - lo) / (hi + lo) : 0;
+
+    $("s1-nu").textContent = fmt(1 / pMM, 2) + " ciclos/mm";
+    var nord = (s1.filtro === "no" || s1.filtro === "alto") ? null : Math.floor(s1.r * pMM);
+    // una rendija no deja "el orden 0": deja pasar toda una linea de ordenes
+    $("s1-ord").textContent =
+        (s1.filtro === "no") ? "todos"
+      : (s1.filtro === "alto") ? "sólo los altos"
+      : (s1.filtro === "vert") ? "sólo la columna vertical"
+      : (s1.filtro === "hor") ? "sólo la fila horizontal"
+      : (nord < 1 ? "sólo el orden 0" : "hasta el ±" + nord);
+    $("s1-cont").textContent = fmt(cont, 2);
+    $("s1-luz").textContent = fmt(total > 0 ? pasa / total * 100 : 0, 0) + " %";
+
+    var nt = $("s1-note");
+    if (s1.filtro === "bajo" && nord < 1) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Sólo pasa el orden cero y la malla se borra.</b> Toda la información de la estructura estaba en los órdenes que acabas de tapar. El contraste que queda no es la malla: es el rizado del borde del disco iluminado, que el filtro también recorta. Éste es el experimento de Abbe y Porter, y el argumento con el que Abbe explicó por qué un microscopio tiene un límite.";
+    } else if (s1.filtro === "alto") {
+      nt.className = "note";
+      nt.innerHTML = "<b>Al tapar el centro sólo quedan los bordes.</b> Las zonas uniformes no tienen frecuencias altas, así que se van a negro, y sobrevive únicamente donde el objeto cambia. Es un detector de bordes hecho con un papelito, sin una sola operación de cómputo.";
+    } else if (s1.filtro === "vert" || s1.filtro === "hor") {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Una rendija en el plano de Fourier borra una dirección entera.</b> Las barras perpendiculares a la rendija desaparecen y las paralelas se quedan: el espectro separa las direcciones del objeto, y así se pueden tratar por separado.";
+    } else if (s1.filtro === "bajo") {
+      nt.className = "note";
+      nt.innerHTML = "<b>El filtro deja pasar hasta el orden ±" + nord + ".</b> Con pocos órdenes la malla reaparece, pero redondeada: los bordes cuadrados necesitan armónicos altos. Cierra más el filtro y mira cómo los cuadrados se vuelven senos antes de desaparecer.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>Sin filtro, la imagen reproduce el objeto.</b> El espectro del centro contiene todo lo necesario para reconstruirlo. Elige un filtro y observa que no hace falta tocar la imagen: basta con tapar parte de la luz a mitad de camino.";
+    }
+
+    draw1(esp, mvis);
+  }
+
+  function draw1(esp, mvis) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var s = Math.min((w - 60) / 3, h - 62);
+    var tot = 3 * s + 2 * 14, x0 = (w - tot) / 2, y0 = (h - s) / 2 + 6;
+
+    pinta(0, campo, [0.37, 0.66, 0.85], 1);
+    ctx.drawImage(off[0], x0, y0, s, s);
+    marco(ctx, x0, y0, s, "objeto", C.cy);
+
+    // espectro con la mascara marcada en rojo encima
+    var img = offCtx[1].createImageData(N, N), d = img.data;
+    var rgb = [0.95, 0.77, 0.33];
+    for (var i = 0; i < N * N; i++) {
+      var v = esp[i];
+      if (mvis[i]) {
+        d[i * 4] = rgb[0] * 255 * v; d[i * 4 + 1] = rgb[1] * 255 * v; d[i * 4 + 2] = rgb[2] * 255 * v;
+      } else {
+        d[i * 4] = 70 + 60 * v; d[i * 4 + 1] = 24 + 20 * v; d[i * 4 + 2] = 18 + 16 * v;
+      }
+      d[i * 4 + 3] = 255;
+    }
+    offCtx[1].putImageData(img, 0, 0);
+    var x1 = x0 + s + 14;
+    ctx.drawImage(off[1], x1, y0, s, s);
+    marco(ctx, x1, y0, s, "plano de Fourier", C.acc);
+
+    pinta(2, imagen, [0.42, 0.84, 0.56], 1);
+    var x2 = x1 + s + 14;
+    ctx.drawImage(off[2], x2, y0, s, s);
+    marco(ctx, x2, y0, s, "imagen", C.ok);
+
+    lab(ctx, "rojo: lo que el filtro bloquea", x1, y0 + s + 13, C.no, "left", 10);
+    lab(ctx, "el recuadro abarca ±" + fmt(NUMAX, 0) + " ciclos/mm", x1, y0 + s + 26, C.dim, "left", 10);
+  }
+
+  // ================================================================
+  // 03  MTF
+  // ================================================================
+  var s2 = { Nf: 4, lam: 550, nu: 150 };
+
+  function mtf(s) {
+    if (s >= 1) return 0;
+    if (s <= 0) return 1;
+    return (2 / Math.PI) * (Math.acos(s) - s * Math.sqrt(1 - s * s));
+  }
+
+  function update2() {
+    s2.Nf = +$("s2-N").value; s2.lam = +$("s2-lam").value; s2.nu = +$("s2-nu").value;
+    $("s2-N-v").textContent = "f/" + fmt(s2.Nf, 1);
+    $("s2-lam-v").textContent = fmt(s2.lam, 0) + " nm";
+    $("s2-nu-v").textContent = fmt(s2.nu, 0) + " ciclos/mm";
+
+    var nc = 1 / (s2.lam * 1e-6 * s2.Nf);
+    var s = s2.nu / nc, m = mtf(s);
+    $("s2-nc").textContent = fmt(nc, 1) + " ciclos/mm";
+    $("s2-per").textContent = fmt(1000 / nc, 3) + " µm";
+    $("s2-mtf").textContent = fmt(m, 3);
+    $("s2-s").textContent = fmt(s, 3);
+    $("s2-ray").textContent = fmt(1.22 * s2.lam * 1e-6 * s2.Nf * 1000, 3) + " µm";
+
+    var nt = $("s2-note");
+    if (s >= 1) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Pasado el corte no queda nada.</b> No es que el contraste sea bajo: es exactamente cero. Un detalle más fino que <code>" +
+        fmt(1000 / nc, 2) + " µm</code> no llega al sensor de ninguna manera, por bueno que sea el vidrio. Abre el diafragma y el corte se corre.";
+    } else if (m > 0.85) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>A frecuencias bajas la lente transmite casi todo el contraste.</b> Por eso las formas grandes siempre salen bien y lo primero que se pierde al cerrar el diafragma es la textura fina.";
+    } else if (s > 0.6) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Cerca del corte el contraste se desploma.</b> Un patrón sigue estando ahí, pero con un " +
+        fmt(m * 100, 0) + " % del contraste original: por debajo de un 10 % el ruido del sensor suele tapar lo que queda, y en la práctica se considera perdido.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>La MTF no se corta de golpe: baja de forma continua.</b> Es la diferencia entre «resolver» y «ver bien»: dos detalles pueden estar por debajo del corte y aun así salir tan desvaídos que no sirvan. <b>El límite útil siempre es más blando que el límite teórico.</b>";
+    }
+
+    draw2(nc, s, m);
+  }
+
+  function draw2(nc, s, m) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var hSup = Math.round(h * 0.62);
+    var mL = 50, mR = 20, mT = 26, mB = 40;
+    var pw = w - mL - mR, ph = hSup - mT - mB;
+    var numax = 1000;
+    var GX = function (n) { return mL + n / numax * pw; };
+    var GY = function (v) { return mT + ph - v * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    var j;
+    for (j = 0; j <= 4; j++) {
+      ctx.beginPath(); ctx.moveTo(mL, GY(j / 4)); ctx.lineTo(mL + pw, GY(j / 4)); ctx.stroke();
+      lab(ctx, fmt(j / 4, 2), mL - 7, GY(j / 4), C.dim, "right", 10);
+    }
+    for (j = 0; j <= 5; j++) {
+      var nn = j * 200;
+      ctx.beginPath(); ctx.moveTo(GX(nn), mT); ctx.lineTo(GX(nn), mT + ph); ctx.stroke();
+      lab(ctx, nn + "", GX(nn), mT + ph + 13, C.dim, "center", 10);
+    }
+    lab(ctx, "MTF · contraste transmitido", mL - 42, mT - 12, C.dim, "left", 10);
+    lab(ctx, "frecuencia espacial  [ciclos/mm]", mL + pw, mT + ph + 28, C.dim, "right", 10);
+
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var i = 0; i <= 400; i++) {
+      var nu = numax * i / 400;
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, GX(nu), GY(mtf(nu / nc)));
+    }
+    ctx.stroke();
+
+    if (nc < numax) {
+      ctx.strokeStyle = C.no; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(GX(nc), mT); ctx.lineTo(GX(nc), mT + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      labBg(ctx, "corte " + fmt(nc, 0), GX(nc) - 6, mT + 10, C.no, "right", 10);
+    } else {
+      labBg(ctx, "el corte cae en " + fmt(nc, 0) + ", fuera del cuadro", mL + pw - 6, mT + 10, C.no, "right", 10);
+    }
+
+    ctx.strokeStyle = "rgba(95,168,216,.55)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(GX(s2.nu), mT); ctx.lineTo(GX(s2.nu), mT + ph); ctx.stroke();
+    ctx.fillStyle = C.cy;
+    ctx.beginPath(); ctx.arc(GX(s2.nu), GY(m), 4.2, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.4; ctx.stroke();
+    labBg(ctx, fmt(m, 3), GX(s2.nu) + (s2.nu > numax * .7 ? -9 : 9), GY(m) - 13,
+          C.cy, s2.nu > numax * .7 ? "right" : "left", 10);
+
+    // carta de barras: frecuencia creciente, con el contraste que deja la MTF
+    var by = hSup + 6, bh = h - by - 26;
+    var ctxI = offCtx[0];
+    var W2 = 512, H2 = 64;
+    off[0].width = W2; off[0].height = H2;
+    var img = ctxI.createImageData(W2, H2), d = img.data;
+    for (var px = 0; px < W2; px++) {
+      var nuP = numax * px / (W2 - 1);
+      var cN = mtf(nuP / nc);
+      // la barra se dibuja a su propia frecuencia, comprimida para que se vea
+      var fase = 2 * Math.PI * nuP * 0.0016 * px / 8;
+      var val = 0.5 + 0.5 * cN * Math.cos(fase);
+      for (var py = 0; py < H2; py++) {
+        var k = (py * W2 + px) * 4;
+        d[k] = d[k + 1] = d[k + 2] = Math.round(255 * val);
+        d[k + 3] = 255;
+      }
+    }
+    ctxI.putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off[0], mL, by, pw, bh);
+    ctx.imageSmoothingEnabled = true;
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeRect(mL - .5, by - .5, pw + 1, bh + 1);
+    off[0].width = N; off[0].height = N;
+
+    if (nc < numax) {
+      ctx.strokeStyle = C.no; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(GX(nc), by); ctx.lineTo(GX(nc), by + bh); ctx.stroke();
+    }
+    labBg(ctx, "una carta de barras vista por esta lente", mL + 7, by + 13, "#1a1a1a", "left", 10);
+  }
+
+  // ================================================================
+  // pestañas
+  // ================================================================
+  var cur = 0;
+  function draw() { if (cur === 0) update0(); else if (cur === 1) update1(); else update2(); }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "cambia la abertura y mira qué aparece en el foco" },
+    { p: "p1", t: "tab1", u: update1, hint: "tapa parte del espectro y mira la imagen" },
+    { p: "p2", t: "tab2", u: update2, hint: "cierra el diafragma y observa dónde cae el corte" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-a", "s0-lam"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-p", "s1-r"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-N", "s2-lam", "s2-nu"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  Object.keys(TIPOS).forEach(function (k) { $(k).addEventListener("click", function () { s0.tipo = TIPOS[k]; update0(); }); });
+  Object.keys(OBJ).forEach(function (k) { $(k).addEventListener("click", function () { s1.obj = OBJ[k]; update1(); }); });
+  Object.keys(FIL).forEach(function (k) { $(k).addEventListener("click", function () { s1.filtro = FIL[k]; update1(); }); });
+
+  resize();
+  show(0);
+  window.addEventListener("load", resize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+
+</body></html>

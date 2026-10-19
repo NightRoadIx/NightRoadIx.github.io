@@ -1,0 +1,968 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Películas Delgadas</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+/* en mayusculas una unidad se estropea: "nm" pasa a "NM" */
+.sect .lit { text-transform: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Banco de películas delgadas</h1>
+    <p class="lede">Una capa de unos cientos de nanómetros decide qué colores vuelven y cuáles pasan. Con una sola se quita el reflejo de una lente; apilando treinta se hace un espejo que devuelve el 99.9999 %.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> La pompa de jabón</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Quitar el reflejo</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Espejo dieléctrico</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">adelgaza la película hasta que se vuelva negra</div>
+    </div>
+
+    <!-- ============ 01 POMPA ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Dos reflexiones que se suman, pero <b>sólo una de ellas invierte la onda</b>. De ahí salen los colores, y también el negro.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-d">Espesor de la película &nbsp;d</label>
+          <output id="s0-d-v">250 nm</output>
+        </div>
+        <input type="range" id="s0-d" min="5" max="800" step="1" value="250">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-n">Índice de la película &nbsp;n</label>
+          <output id="s0-n-v">1.330</output>
+        </div>
+        <input type="range" id="s0-n" min="1.1" max="2.4" step="0.005" value="1.33">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-th">Ángulo de observación &nbsp;θ</label>
+          <output id="s0-th-v">0°</output>
+        </div>
+        <input type="range" id="s0-th" min="0" max="80" step="1" value="0">
+      </div>
+
+      <div class="readout">
+        <div class="sect">Lo que devuelve</div>
+        <div class="row pair">
+          <div class="k">Reflectancia máxima en el visible</div>
+          <div class="v acc" id="s0-rmax">7.7 % a 450 nm</div>
+        </div>
+        <div class="row">
+          <div class="k">Reflectancia mínima</div>
+          <div class="v cy" id="s0-rmin">0.0 % a 650 nm</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Color que se ve</div>
+          <div class="v acc" id="s0-col">cian</div>
+        </div>
+
+        <div class="sect">La cuenta</div>
+        <div class="row pair">
+          <div class="k">Camino óptico de ida y vuelta &nbsp;<em>2nd·cosθ</em></div>
+          <div class="v vi" id="s0-cam">665 nm</div>
+        </div>
+        <div class="row">
+          <div class="k">Refuerzo en &nbsp;<em>2nd·cosθ = (m+½)λ</em></div>
+          <div class="v dim" id="s0-ref">443 nm · m = 1</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> reflectancia</span>
+        <span><i style="background:var(--no)"></i> salto de π</span>
+        <span><i style="background:var(--cy)"></i> sin salto</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 ANTIRREFLEJO ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">Para que la capa anule el reflejo del vidrio hacen falta <b>dos condiciones a la vez</b>: el espesor justo y el índice justo.</p>
+
+      <div class="toggle" role="group" aria-label="Casos">
+        <button id="c-desn">Vidrio desnudo</button>
+        <button id="c-mgf2" aria-pressed="true">MgF₂ real</button>
+        <button id="c-ideal">Índice ideal</button>
+        <button id="c-media">Media onda</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-n">Índice de la capa &nbsp;n₁</label>
+          <output id="s1-n-v">1.380</output>
+        </div>
+        <input type="range" id="s1-n" min="1" max="2.2" step="0.001" value="1.38">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-d">Espesor &nbsp;d</label>
+          <output id="s1-d-v">99.6 nm</output>
+        </div>
+        <input type="range" id="s1-d" min="0" max="400" step="0.5" value="99.6">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-ns">Índice del sustrato &nbsp;n<sub>s</sub></label>
+          <output id="s1-ns-v">1.520</output>
+        </div>
+        <input type="range" id="s1-ns" min="1.3" max="2.0" step="0.005" value="1.52">
+      </div>
+
+      <div class="readout">
+        <div class="sect">En la longitud de diseño, 550 <span class="lit">nm</span></div>
+        <div class="row pair">
+          <div class="k">Vidrio sin capa</div>
+          <div class="v dim" id="s1-rdes">4.258 %</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Con esta capa</div>
+          <div class="v acc" id="s1-r">1.260 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Reflejo que se ha quitado</div>
+          <div class="v ok" id="s1-quita">70.4 %</div>
+        </div>
+
+        <div class="sect">Las dos condiciones</div>
+        <div class="row pair">
+          <div class="k">Índice ideal &nbsp;<em>√(n₀n<sub>s</sub>)</em></div>
+          <div class="v vi" id="s1-nid">1.233</div>
+        </div>
+        <div class="row">
+          <div class="k">Espesor de cuarto de onda &nbsp;<em>λ/4n₁</em></div>
+          <div class="v vi" id="s1-did">99.6 nm</div>
+        </div>
+        <div class="row">
+          <div class="k">Media sobre todo el visible</div>
+          <div class="v cy" id="s1-med">1.56 %</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> con la capa</span>
+        <span><i style="background:var(--dim)"></i> vidrio desnudo</span>
+        <span><i style="background:var(--ok)"></i> diseño a 550 nm</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 ESPEJO DIELECTRICO ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Ninguna capa refleja mucho por sí sola. <b>Apiladas en fase, sus reflejos se suman</b> y el conjunto supera a cualquier metal.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-N">Pares de capas &nbsp;N</label>
+          <output id="s2-N-v">8 pares · 16 capas</output>
+        </div>
+        <input type="range" id="s2-N" min="1" max="20" step="1" value="8">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-nh">Índice alto &nbsp;n<sub>H</sub></label>
+          <output id="s2-nh-v">2.350</output>
+        </div>
+        <input type="range" id="s2-nh" min="1.6" max="2.6" step="0.005" value="2.35">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-nl">Índice bajo &nbsp;n<sub>L</sub></label>
+          <output id="s2-nl-v">1.460</output>
+        </div>
+        <input type="range" id="s2-nl" min="1.35" max="1.9" step="0.005" value="1.46">
+      </div>
+
+      <div class="readout">
+        <div class="sect">En el centro de la banda, 550 <span class="lit">nm</span></div>
+        <div class="row hero">
+          <div class="k">Reflectancia</div>
+          <div class="v acc" id="s2-R">99.8704 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Lo que se escapa</div>
+          <div class="v cy" id="s2-T">1296 ppm</div>
+        </div>
+        <div class="row">
+          <div class="k">Espesor total del apilado</div>
+          <div class="v dim" id="s2-esp">1.69 µm</div>
+        </div>
+
+        <div class="sect">La banda de rechazo</div>
+        <div class="row pair">
+          <div class="k">Anchura &nbsp;<em>donde R &gt; 99 %</em></div>
+          <div class="v vi" id="s2-banda">466 – 672 nm</div>
+        </div>
+        <div class="row">
+          <div class="k">Contraste de índices &nbsp;<em>n<sub>H</sub>/n<sub>L</sub></em></div>
+          <div class="v ok" id="s2-cont">1.610</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> reflectancia</span>
+        <span><i style="background:var(--ok)"></i> banda de rechazo</span>
+        <span><i style="background:var(--no)"></i> 99 %</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Las tres escenas usan el mismo cálculo: el <b>método de matrices características</b>, que es exacto y suma todas las reflexiones múltiples, no sólo las dos primeras. Cada capa aporta una matriz <code>[[cos δ, i·sen δ/η], [i·η·sen δ, cos δ]]</code> con <code>δ = 2πnd·cosθ/λ</code>, y la admitancia <code>η</code> vale <code>n·cosθ</code> en polarización s y <code>n/cosθ</code> en p; con ángulo se promedian las dos, que es lo que corresponde a luz natural. Comprobado contra los casos cerrados: vidrio desnudo <code>4.2580 %</code>, MgF₂ de cuarto de onda sobre vidrio <code>1.2601 %</code>, y capa de media onda idéntica al vidrio desnudo. <b>Ese último caso conviene enseñarlo</b>: una capa de media onda es ópticamente invisible, por gruesa que sea, y demuestra que lo que importa no es poner material sino poner el camino óptico correcto. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    draw();
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+  function lamRGB(lam) {
+    var r = 0, g = 0, b = 0;
+    if (lam >= 380 && lam < 440) { r = -(lam - 440) / 60; b = 1; }
+    else if (lam < 490) { g = (lam - 440) / 50; b = 1; }
+    else if (lam < 510) { g = 1; b = -(lam - 510) / 20; }
+    else if (lam < 580) { r = (lam - 510) / 70; g = 1; }
+    else if (lam < 645) { r = 1; g = -(lam - 645) / 65; }
+    else if (lam <= 780) { r = 1; }
+    var f = 1;
+    if (lam > 700) f = 0.3 + 0.7 * (780 - lam) / 80;
+    else if (lam < 420) f = 0.3 + 0.7 * (lam - 380) / 40;
+    var gm = function (x) { return Math.pow(Math.max(0, Math.min(1, x * f)), 0.8); };
+    return [gm(r), gm(g), gm(b)];
+  }
+  function lamCSS(lam, a) {
+    var c = lamRGB(lam);
+    return "rgba(" + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," +
+           Math.round(c[2] * 255) + "," + (a === undefined ? 1 : a) + ")";
+  }
+
+  // ================================================================
+  // matrices caracteristicas: exacto, suma todas las reflexiones multiples
+  // ================================================================
+  // aritmetica compleja minima, con pares [re, im]
+  function cmul(a, b) { return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]; }
+  function cadd(a, b) { return [a[0] + b[0], a[1] + b[1]]; }
+  function csub(a, b) { return [a[0] - b[0], a[1] - b[1]]; }
+  function cdiv(a, b) {
+    var d = b[0] * b[0] + b[1] * b[1];
+    return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d];
+  }
+
+  // R de un apilado. capas = [[n, d_nm], ...] del lado de la luz hacia el sustrato
+  function Rpila(lam, capas, n0, ns, thDeg, pol) {
+    var s0 = n0 * Math.sin(thDeg * Math.PI / 180);
+    function cosT(n) {
+      var v = 1 - (s0 / n) * (s0 / n);
+      return (v < 0) ? 0 : Math.sqrt(v);        // sin absorcion no hay reflexion total aqui
+    }
+    function eta(n) {
+      var c = cosT(n);
+      if (c < 1e-9) return 1e9;
+      return (pol === "s") ? n * c : n / c;
+    }
+    var e0 = eta(n0), es = eta(ns);
+    var M = [[1, 0], [0, 0], [0, 0], [1, 0]];   // [m11, m12, m21, m22]
+    for (var k = 0; k < capas.length; k++) {
+      var n = capas[k][0], d = capas[k][1], c = cosT(n);
+      var dl = 2 * Math.PI * n * d * c / lam;
+      var e = eta(n);
+      var co = Math.cos(dl), si = Math.sin(dl);
+      var a11 = [co, 0], a12 = [0, si / e], a21 = [0, e * si], a22 = [co, 0];
+      var n11 = cadd(cmul(M[0], a11), cmul(M[1], a21));
+      var n12 = cadd(cmul(M[0], a12), cmul(M[1], a22));
+      var n21 = cadd(cmul(M[2], a11), cmul(M[3], a21));
+      var n22 = cadd(cmul(M[2], a12), cmul(M[3], a22));
+      M = [n11, n12, n21, n22];
+    }
+    var B = cadd(M[0], cmul(M[1], [es, 0]));
+    var Cc = cadd(M[2], cmul(M[3], [es, 0]));
+    var Y = cdiv(Cc, B);
+    var r = cdiv(csub([e0, 0], Y), cadd([e0, 0], Y));
+    return r[0] * r[0] + r[1] * r[1];
+  }
+  // luz natural: promedio de las dos polarizaciones
+  function Rnat(lam, capas, n0, ns, th) {
+    if (th < 0.01) return Rpila(lam, capas, n0, ns, 0, "s");
+    return 0.5 * (Rpila(lam, capas, n0, ns, th, "s") + Rpila(lam, capas, n0, ns, th, "p"));
+  }
+
+  // color percibido: se integra R(lam) contra la respuesta del mapeo de color
+  function colorDe(fn) {
+    var r = 0, g = 0, b = 0, wr = 0, wg = 0, wb = 0;
+    for (var l = 390; l <= 720; l += 5) {
+      var c = lamRGB(l), R = fn(l);
+      r += c[0] * R; g += c[1] * R; b += c[2] * R;
+      wr += c[0]; wg += c[1]; wb += c[2];
+    }
+    return [r / wr, g / wg, b / wb];
+  }
+  function nombreColor(rgb) {
+    var mx = Math.max(rgb[0], rgb[1], rgb[2]), mn = Math.min(rgb[0], rgb[1], rgb[2]);
+    if (mx < 0.012) return "negro";
+    if (mx - mn < mx * 0.16) return "blanco grisáceo";
+    var h;
+    if (mx === rgb[0]) h = 60 * (((rgb[1] - rgb[2]) / (mx - mn)) % 6);
+    else if (mx === rgb[1]) h = 60 * ((rgb[2] - rgb[0]) / (mx - mn) + 2);
+    else h = 60 * ((rgb[0] - rgb[1]) / (mx - mn) + 4);
+    if (h < 0) h += 360;
+    var nn = [[15, "rojo"], [45, "naranja"], [70, "amarillo"], [160, "verde"],
+              [200, "cian"], [255, "azul"], [290, "violeta"], [345, "magenta"], [361, "rojo"]];
+    for (var i = 0; i < nn.length; i++) if (h < nn[i][0]) return nn[i][1];
+    return "rojo";
+  }
+
+  // ejes de un espectro
+  function ejes(ctx, w, x0, y0, pw, ph, l0, l1, rmax, titulo) {
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    var j, paso = (l1 - l0 > 400) ? 100 : 50;
+    for (j = Math.ceil(l0 / paso) * paso; j <= l1; j += paso) {
+      var x = x0 + (j - l0) / (l1 - l0) * pw;
+      ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y0 + ph); ctx.stroke();
+      lab(ctx, j + "", x, y0 + ph + 13, C.dim, "center", 10);
+    }
+    for (j = 0; j <= 4; j++) {
+      var y = y0 + ph - j / 4 * ph;
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + pw, y); ctx.stroke();
+      lab(ctx, fmt(rmax * j / 4, rmax <= 10 ? 1 : 0) + " %", x0 - 7, y, C.dim, "right", 10);
+    }
+    lab(ctx, titulo, x0, y0 - 13, C.dim, "left", 10);
+    lab(ctx, "longitud de onda  [nm]", x0 + pw, y0 + ph + 29, C.dim, "right", 10);
+  }
+  // franja de color del visible bajo el eje
+  function franjaVisible(ctx, x0, y0, pw, hh, l0, l1) {
+    for (var i = 0; i < pw; i++) {
+      var l = l0 + (l1 - l0) * i / pw;
+      ctx.fillStyle = (l >= 380 && l <= 780) ? lamCSS(l, 0.75) : "rgba(60,70,88,.5)";
+      ctx.fillRect(x0 + i, y0, 1.3, hh);
+    }
+  }
+
+  // ================================================================
+  // 01  la pompa de jabon
+  // ================================================================
+  var s0 = { d: 250, n: 1.33, th: 0 };
+
+  function update0() {
+    s0.d = +$("s0-d").value; s0.n = +$("s0-n").value; s0.th = +$("s0-th").value;
+    $("s0-d-v").textContent = fmt(s0.d, 0) + " nm";
+    $("s0-n-v").textContent = fmt(s0.n, 3);
+    $("s0-th-v").textContent = fmt(s0.th, 0) + "°";
+
+    var capas = [[s0.n, s0.d]];
+    var fn = function (l) { return Rnat(l, capas, 1.0, 1.0, s0.th); };
+    var mx = -1, mn = 2, lmx = 0, lmn = 0;
+    for (var l = 390; l <= 720; l += 2) {
+      var R = fn(l);
+      if (R > mx) { mx = R; lmx = l; }
+      if (R < mn) { mn = R; lmn = l; }
+    }
+    $("s0-rmax").textContent = fmt(mx * 100, 1) + " % a " + fmt(lmx, 0) + " nm";
+    $("s0-rmin").textContent = fmt(mn * 100, 1) + " % a " + fmt(lmn, 0) + " nm";
+
+    var rgb = colorDe(fn);
+    $("s0-col").textContent = nombreColor(rgb);
+
+    var ct = Math.sqrt(Math.max(0, 1 - Math.pow(Math.sin(s0.th * Math.PI / 180) / s0.n, 2)));
+    var cam = 2 * s0.n * s0.d * ct;
+    $("s0-cam").textContent = fmt(cam, 0) + " nm";
+    // refuerzo cuando el camino vale (m+1/2)*lam, por el salto de pi de la cara de arriba
+    var refs = [];
+    for (var m = 0; m < 6; m++) {
+      var lr = cam / (m + 0.5);
+      if (lr >= 390 && lr <= 720) refs.push(fmt(lr, 0) + " nm · m = " + m);
+    }
+    $("s0-ref").textContent = refs.length ? refs.join("   ") : "ninguno en el visible";
+
+    var nt = $("s0-note");
+    if (s0.d < 40) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>La película se ve negra, y no por absorber: por cancelación.</b> Cuando el espesor es mucho menor que la longitud de onda, las dos reflexiones salen en oposición de fase —una invirtió, la otra no— y se anulan en todos los colores. Es la «película negra» que aparece en una pompa justo antes de reventar.";
+    } else if (mx > 0.05 && mn < 0.01) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Un color se refuerza y otro se anula al mismo tiempo.</b> Eso es lo que da el tornasol: no hay pigmento, sólo una interferencia que favorece unas longitudes de onda sobre otras. Mueve el ángulo y el color cambia sin que nada del material lo haga.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>El refuerzo ocurre en <code>2nd·cosθ = (m+½)λ</code>, con el medio</b>, no en múltiplos enteros. Ese medio sale del salto de π de la cara superior, donde la luz pasa a un índice mayor. Sin ese salto, toda la física de esta página se invertiría.";
+    }
+
+    draw0(fn, rgb);
+  }
+
+  function draw0(fn, rgb) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var hSup = Math.round(h * 0.40);
+
+    // ---- corte de la pelicula con las dos reflexiones ----
+    var cx = 30, cw = w - 60;
+    var yA = 62, yB = yA + Math.max(16, Math.min(52, s0.d * 0.09));
+    ctx.fillStyle = "rgba(95,168,216,.14)";
+    ctx.fillRect(cx, yA, cw, yB - yA);
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, yA); ctx.lineTo(cx + cw, yA);
+    ctx.moveTo(cx, yB); ctx.lineTo(cx + cw, yB);
+    ctx.stroke();
+    lab(ctx, "n = " + fmt(s0.n, 3) + " · d = " + fmt(s0.d, 0) + " nm", cx + cw - 4, (yA + yB) / 2, C.cy, "right", 10);
+    lab(ctx, "aire", cx + 4, yA - 11, C.dim, "left", 10);
+    lab(ctx, "aire", cx + 4, yB + 12, C.dim, "left", 10);
+
+    // rayos
+    var th = s0.th * Math.PI / 180, dx = Math.tan(th) * 34;
+    var xi = cx + cw * 0.3;
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(xi - dx - 40, yA - 44); ctx.lineTo(xi, yA); ctx.stroke();
+    // Reflexion de arriba, la que lleva el salto de pi. En incidencia normal las dos
+    // reflexiones serian colineales, asi que la segunda se separa a proposito para
+    // que se distingan: el dibujo es esquematico en ese detalle.
+    var SEP = 20;
+    ctx.strokeStyle = C.no; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(xi, yA); ctx.lineTo(xi + dx + 30, yA - 44); ctx.stroke();
+    labBg(ctx, "salto de π", xi + dx + 34, yA - 46, C.no, "left", 10);
+    // dentro y reflexion de abajo: sin salto
+    var thi = Math.asin(Math.sin(th) / s0.n), dxi = Math.tan(thi) * (yB - yA);
+    ctx.strokeStyle = "rgba(95,168,216,.75)"; ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(xi, yA); ctx.lineTo(xi + dxi, yB); ctx.lineTo(xi + 2 * dxi, yA);
+    ctx.stroke();
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(xi + 2 * dxi, yA);
+    ctx.lineTo(xi + 2 * dxi + dx + 30 + SEP, yA - 30); ctx.stroke();
+    labBg(ctx, "sin salto", xi + 2 * dxi + dx + 34 + SEP, yA - 28, C.cy, "left", 10);
+
+    // muestra del color
+    var sw = 74, sx = cx, sy = yB + 22;
+    ctx.fillStyle = "rgb(" + Math.round(Math.min(1, rgb[0] * 9) * 255) + "," +
+      Math.round(Math.min(1, rgb[1] * 9) * 255) + "," + Math.round(Math.min(1, rgb[2] * 9) * 255) + ")";
+    ctx.fillRect(sx, sy, sw, hSup - sy + 16);
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeRect(sx + .5, sy + .5, sw - 1, hSup - sy + 15);
+    lab(ctx, "color (realzado ×9)", sx + sw + 8, sy + 12, C.dim, "left", 10);
+
+    // ---- espectro ----
+    var mL = 52, mR = 20, y0 = hSup + 46, ph = h - y0 - 48;
+    var pw = w - mL - mR, l0 = 390, l1 = 720, rmax = 0.2;
+    ejes(ctx, w, mL, y0, pw, ph, l0, l1, rmax * 100, "reflectancia de la película");
+    franjaVisible(ctx, mL, y0 + ph + 2, pw, 5, l0, l1);
+
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var i = 0; i <= 320; i++) {
+      var l = l0 + (l1 - l0) * i / 320;
+      var yy = y0 + ph - Math.min(fn(l) / rmax, 1) * ph;
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, mL + (l - l0) / (l1 - l0) * pw, yy);
+    }
+    ctx.stroke();
+  }
+
+  // ================================================================
+  // 02  antirreflejo
+  // ================================================================
+  var s1 = { n: 1.38, d: 99.6, ns: 1.52 };
+  var LDIS = 550;
+
+  function update1() {
+    s1.n = +$("s1-n").value; s1.d = +$("s1-d").value; s1.ns = +$("s1-ns").value;
+    $("s1-n-v").textContent = fmt(s1.n, 3);
+    $("s1-d-v").textContent = fmt(s1.d, 1) + " nm";
+    $("s1-ns-v").textContent = fmt(s1.ns, 3);
+
+    var nid = Math.sqrt(s1.ns), did = LDIS / (4 * s1.n);
+    $("c-desn").setAttribute("aria-pressed", s1.d < 0.6 ? "true" : "false");
+    $("c-mgf2").setAttribute("aria-pressed", (Math.abs(s1.n - 1.38) < .002 && Math.abs(s1.d - did) < 1) ? "true" : "false");
+    $("c-ideal").setAttribute("aria-pressed", (Math.abs(s1.n - nid) < .003 && Math.abs(s1.d - did) < 1) ? "true" : "false");
+    $("c-media").setAttribute("aria-pressed", Math.abs(s1.d - 2 * did) < 1 ? "true" : "false");
+
+    var capas = s1.d > 0 ? [[s1.n, s1.d]] : [];
+    var fn = function (l) { return Rpila(l, capas, 1.0, s1.ns, 0, "s"); };
+    var fnDesn = function (l) { return Rpila(l, [], 1.0, s1.ns, 0, "s"); };
+    var R = fn(LDIS), Rd = fnDesn(LDIS);
+    $("s1-rdes").textContent = fmt(Rd * 100, 3) + " %";
+    $("s1-r").textContent = fmt(R * 100, 3) + " %";
+    $("s1-quita").textContent = fmt((1 - R / Rd) * 100, 1) + " %";
+    $("s1-nid").textContent = fmt(nid, 3);
+    $("s1-did").textContent = fmt(did, 1) + " nm";
+    var sum = 0, cnt = 0;
+    for (var l = 400; l <= 700; l += 5) { sum += fn(l); cnt++; }
+    $("s1-med").textContent = fmt(sum / cnt * 100, 2) + " %";
+
+    var nt = $("s1-note");
+    if (s1.d < 0.6) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Sin capa, el vidrio devuelve un " + fmt(Rd * 100, 2) +
+        " % en cada cara.</b> Parece poco, hasta que se cuenta: un objetivo con diez superficies pierde más de un tercio de la luz y, peor aún, esa luz rebotada se convierte en velo y reflejos fantasma.";
+    } else if (Math.abs(s1.d - 2 * did) < 1.2) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Con media onda la capa es ópticamente invisible.</b> La reflectancia vuelve a ser exactamente la del vidrio desnudo, por grueso que sea el material. <b>Lo que cuenta no es poner capa, sino poner el camino óptico correcto</b>, y a media onda la capa se cancela consigo misma.";
+    } else if (R < 1e-5) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Reflejo exactamente cero.</b> Hacen falta las dos condiciones a la vez: <code>n₁ = √(n₀n_s) = " +
+        fmt(nid, 3) + "</code> y cuarto de onda. El problema es que ningún material duro tiene ese índice, y por eso en la práctica se usa MgF₂ con 1.38 y se acepta un 1.3 % residual, o se apilan varias capas.";
+    } else if (Math.abs(s1.n - 1.38) < .002) {
+      nt.className = "note";
+      nt.innerHTML = "<b>El MgF₂ es el compromiso real.</b> Su índice, 1.38, no es el ideal de " + fmt(nid, 3) +
+        ", pero es duro, barato y se deposita bien. Baja el reflejo de " + fmt(Rd * 100, 2) + " % a " + fmt(R * 100, 2) +
+        " %, que es quitar tres cuartas partes con una sola capa.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>La curva tiene forma de V, no de línea plana.</b> Una capa sola sólo anula bien en su longitud de diseño, y hacia los bordes del visible el reflejo vuelve. Por eso los recubrimientos buenos llevan varias capas: para aplanar esa V.";
+    }
+
+    draw1(fn, fnDesn);
+  }
+
+  function draw1(fn, fnDesn) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var mL = 56, mR = 20, y0 = 36, ph = h - y0 - 56;
+    var pw = w - mL - mR, l0 = 380, l1 = 750, rmax = 0.06;
+    ejes(ctx, w, mL, y0, pw, ph, l0, l1, rmax * 100, "reflectancia de una cara");
+    franjaVisible(ctx, mL, y0 + ph + 2, pw, 5, l0, l1);
+
+    function curva(f, col, lw, dash) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []);
+      ctx.beginPath();
+      for (var i = 0; i <= 320; i++) {
+        var l = l0 + (l1 - l0) * i / 320;
+        var yy = y0 + ph - Math.min(f(l) / rmax, 1) * ph;
+        (i ? ctx.lineTo : ctx.moveTo).call(ctx, mL + (l - l0) / (l1 - l0) * pw, yy);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    curva(fnDesn, "rgba(134,149,170,.75)", 1.4, [5, 4]);
+    curva(fn, C.acc, 2.4);
+
+    var xd = mL + (LDIS - l0) / (l1 - l0) * pw;
+    ctx.strokeStyle = C.ok; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(xd, y0); ctx.lineTo(xd, y0 + ph); ctx.stroke();
+    ctx.setLineDash([]);
+    labBg(ctx, "diseño 550 nm", xd + 6, y0 + 10, C.ok, "left", 10);
+    labBg(ctx, "vidrio desnudo", mL + pw - 6, y0 + ph - fnDesn(700) / rmax * ph - 12, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // 03  espejo dielectrico
+  // ================================================================
+  var s2 = { N: 8, nh: 2.35, nl: 1.46 };
+
+  function pila() {
+    var c = [], k;
+    for (k = 0; k < s2.N; k++) {
+      c.push([s2.nh, LDIS / (4 * s2.nh)]);
+      c.push([s2.nl, LDIS / (4 * s2.nl)]);
+    }
+    return c;
+  }
+
+  function update2() {
+    s2.N = +$("s2-N").value; s2.nh = +$("s2-nh").value; s2.nl = +$("s2-nl").value;
+    $("s2-N-v").textContent = fmt(s2.N, 0) + " pares · " + fmt(2 * s2.N, 0) + " capas";
+    $("s2-nh-v").textContent = fmt(s2.nh, 3);
+    $("s2-nl-v").textContent = fmt(s2.nl, 3);
+
+    var capas = pila();
+    var fn = function (l) { return Rpila(l, capas, 1.0, 1.52, 0, "s"); };
+    var R = fn(LDIS);
+    $("s2-R").textContent = fmt(R * 100, 4) + " %";
+    $("s2-T").textContent = ((1 - R) * 1e6 >= 1) ? fmt((1 - R) * 1e6, 0) + " ppm" : fmt((1 - R) * 1e9, 1) + " ppb";
+    var esp = 0;
+    capas.forEach(function (c) { esp += c[1]; });
+    $("s2-esp").textContent = fmt(esp / 1000, 2) + " µm";
+    $("s2-cont").textContent = fmt(s2.nh / s2.nl, 3);
+
+    var a = null, b = null;
+    for (var l = 300; l <= 1000; l += 1) {
+      if (fn(l) > 0.99) { if (a === null) a = l; b = l; }
+    }
+    $("s2-banda").textContent = (a === null) ? "no llega al 99 %" : fmt(a, 0) + " – " + fmt(b, 0) + " nm";
+
+    var nt = $("s2-note");
+    if (s2.N <= 2) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Con uno o dos pares el espejo es mediocre</b>, peor que una lámina de aluminio. El apilado no gana por tener muchas interfases, sino porque todas devuelven en fase; con pocas, la suma todavía es pequeña. Sube el número de pares y mira con qué rapidez crece.";
+    } else if (R > 0.9999) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Más allá del 99.99 % ningún metal compite.</b> El aluminio se queda en un 92 % y la plata en un 98 %, y además absorben. Aquí no hay absorción: lo que no se refleja, se transmite. Por eso las cavidades láser y los interferómetros de gravitacionales usan dieléctricos y no metales.";
+    } else if (s2.nh / s2.nl < 1.2) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Con poco contraste de índices hacen falta muchísimas capas.</b> Cada interfase devuelve poco, así que la banda sale estrecha y el máximo cuesta de alcanzar. El contraste <code>n_H/n_L</code> manda más que el número de capas.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>Fuera de la banda el apilado se vuelve transparente</b>, y con rizado. Eso no es un defecto: es lo que permite usarlo como filtro, reflejando una banda y dejando pasar el resto. Un espejo dicroico es exactamente esto, diseñado para que el borde caiga donde interesa.";
+    }
+
+    draw2(fn, capas);
+  }
+
+  function draw2(fn, capas) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var hSup = Math.round(h * 0.26);
+
+    // el apilado en corte
+    var cx = 30, cw = w - 60, yT = 30, yB = hSup;
+    var esp = 0;
+    capas.forEach(function (c) { esp += c[1]; });
+    var x = cx;
+    for (var k = 0; k < capas.length; k++) {
+      var frac = capas[k][1] / esp, ww = frac * cw;
+      var alto = (capas[k][0] === s2.nh);
+      ctx.fillStyle = alto ? "rgba(242,196,84,.5)" : "rgba(95,168,216,.3)";
+      ctx.fillRect(x, yT, Math.max(ww - 0.5, 0.6), yB - yT);
+      x += ww;
+    }
+    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeRect(cx - .5, yT - .5, cw + 1, yB - yT + 1);
+    lab(ctx, fmt(2 * s2.N, 0) + " capas · " + fmt(esp / 1000, 2) + " µm en total", cx, yT - 12, C.dim, "left", 10);
+    lab(ctx, "alto", cx + cw - 46, yT - 12, C.acc, "left", 10);
+    lab(ctx, "bajo", cx + cw - 16, yT - 12, C.cy, "left", 10);
+
+    // espectro
+    var mL = 52, mR = 20, y0 = hSup + 42, ph = h - y0 - 48;
+    var pw = w - mL - mR, l0 = 330, l1 = 980;
+    ejes(ctx, w, mL, y0, pw, ph, l0, l1, 100, "reflectancia del apilado");
+    franjaVisible(ctx, mL, y0 + ph + 2, pw, 5, l0, l1);
+
+    ctx.strokeStyle = "rgba(212,98,74,.7)"; ctx.lineWidth = 1.1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(mL, y0 + ph * 0.01); ctx.lineTo(mL + pw, y0 + ph * 0.01); ctx.stroke();
+    ctx.setLineDash([]);
+    lab(ctx, "99 %", mL + 4, y0 + ph * 0.01 + 9, C.no, "left", 10);
+
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var i = 0; i <= 420; i++) {
+      var l = l0 + (l1 - l0) * i / 420;
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, mL + (l - l0) / (l1 - l0) * pw, y0 + ph - fn(l) * ph);
+    }
+    ctx.stroke();
+
+    var xd = mL + (LDIS - l0) / (l1 - l0) * pw;
+    ctx.strokeStyle = C.ok; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(xd, y0); ctx.lineTo(xd, y0 + ph); ctx.stroke();
+    ctx.setLineDash([]);
+    labBg(ctx, "550 nm", xd + 6, y0 + ph - 12, C.ok, "left", 10);
+  }
+
+  // ================================================================
+  // pestañas
+  // ================================================================
+  var cur = 0;
+  function draw() { if (cur === 0) update0(); else if (cur === 1) update1(); else update2(); }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "adelgaza la película hasta que se vuelva negra" },
+    { p: "p1", t: "tab1", u: update1, hint: "prueba la capa de media onda" },
+    { p: "p2", t: "tab2", u: update2, hint: "añade pares y mira crecer la banda" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-d", "s0-n", "s0-th"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-n", "s1-d", "s1-ns"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-N", "s2-nh", "s2-nl"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  $("c-desn").addEventListener("click", function () { $("s1-d").value = 0; update1(); });
+  $("c-mgf2").addEventListener("click", function () {
+    $("s1-n").value = 1.38; $("s1-d").value = (LDIS / (4 * 1.38)).toFixed(1); update1();
+  });
+  $("c-ideal").addEventListener("click", function () {
+    var ni = Math.sqrt(+$("s1-ns").value);
+    $("s1-n").value = ni.toFixed(3); $("s1-d").value = (LDIS / (4 * ni)).toFixed(1); update1();
+  });
+  $("c-media").addEventListener("click", function () {
+    $("s1-d").value = (LDIS / (2 * (+$("s1-n").value))).toFixed(1); update1();
+  });
+
+  resize();
+  show(0);
+  window.addEventListener("load", resize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+
+</body></html>

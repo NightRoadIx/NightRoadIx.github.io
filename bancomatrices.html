@@ -1,0 +1,1031 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Matrices</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Layout: diagrama a la izquierda, panel de instrumento a la derecha; apila bajo 880px.
+   Trazado en corte, que es como se dibuja un sistema axial. Mismo sistema visual del banco. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos          */
+  --cy:      #5fa8d8;   /* elementos      */
+  --vi:      #a888d8;   /* planos princip.*/
+  --ok:      #52b87c;
+  --no:      #d4624a;
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+/* matriz mostrada como bloque */
+.mat {
+  font-family: var(--mono); font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 2px 12px;
+  align-items: center;
+}
+.mat .br { color: var(--cy); font-size: 22px; line-height: 1; }
+.mat .c { text-align: right; }
+.mat .lbl {
+  grid-column: 1 / -1; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.mat .A { color: var(--acc); }
+.mat .B { color: var(--cy); }
+.mat .C { color: var(--vi); }
+.mat .D { color: var(--ok); }
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Banco de matrices</h1>
+    <p class="lede">Un rayo son dos números; un elemento óptico, una matriz de 2 × 2. Con eso basta para describir cualquier sistema, por muchas lentes que tenga, y reducirlo a tres cantidades.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> El vector de rayo</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> El orden del producto</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Puntos cardinales</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">mueve los controles y sigue el rayo</div>
+    </div>
+
+    <!-- ============ 01 VECTOR DE RAYO ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Un rayo entra como <b>(y, θ)</b> y sale como otro par. El elemento es lo que los conecta.</p>
+
+      <div class="toggle" role="group" aria-label="Elemento">
+        <button id="e-tras" aria-pressed="true">Traslación</button>
+        <button id="e-lente" aria-pressed="false">Lente delgada</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-y">Altura de entrada &nbsp;y</label>
+          <output id="s0-y-v">10.0 mm</output>
+        </div>
+        <input type="range" id="s0-y" min="-20" max="20" step="0.5" value="10">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-t">Ángulo de entrada &nbsp;θ</label>
+          <output id="s0-t-v">0.0 mrad</output>
+        </div>
+        <input type="range" id="s0-t" min="-150" max="150" step="1" value="0">
+      </div>
+
+      <div class="ctrl" id="s0-d-ctrl">
+        <div class="ctrl-top">
+          <label for="s0-d">Distancia &nbsp;d</label>
+          <output id="s0-d-v">60 mm</output>
+        </div>
+        <input type="range" id="s0-d" min="10" max="200" step="1" value="60">
+      </div>
+
+      <div class="ctrl" id="s0-f-ctrl" hidden>
+        <div class="ctrl-top">
+          <label for="s0-f">Distancia focal &nbsp;f</label>
+          <output id="s0-f-v">80 mm</output>
+        </div>
+        <input type="range" id="s0-f" min="-200" max="200" step="1" value="80">
+      </div>
+
+      <div class="mat" id="m0">
+        <div class="lbl" id="m0-lbl">Matriz de traslación</div>
+        <div class="br">[</div><div class="c A" id="m0-a">1</div><div class="c B" id="m0-b">60</div><div class="br">]</div>
+        <div class="br">[</div><div class="c C" id="m0-c">0</div><div class="c D" id="m0-d">1</div><div class="br">]</div>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Entra</div>
+        <div class="row pair">
+          <div class="k">Altura &nbsp;<em>y</em></div>
+          <div class="v dim" id="s0-yi">10.000 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Ángulo &nbsp;<em>θ</em></div>
+          <div class="v dim" id="s0-ti">0.000 mrad</div>
+        </div>
+
+        <div class="sect">Sale</div>
+        <div class="row hero">
+          <div class="k">Altura &nbsp;<em>y′ = A·y + B·θ</em></div>
+          <div class="v acc" id="s0-yo">10.000 mm</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Ángulo &nbsp;<em>θ′ = C·y + D·θ</em></div>
+          <div class="v cy" id="s0-to">0.000 mrad</div>
+        </div>
+        <div class="row">
+          <div class="k">Determinante</div>
+          <div class="v ok" id="s0-det">1.000</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note"><b>La traslación no desvía:</b> el ángulo sale igual al que entró, y la altura crece en <code>d·θ</code>. Por eso su matriz tiene un cero abajo a la izquierda y unos en la diagonal.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> rayo</span>
+        <span><i style="background:var(--cy)"></i> elemento</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 ORDEN DEL PRODUCTO ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">Los mismos dos elementos, montados al revés. <b>Son dos sistemas distintos</b>, y cada uno tiene su producto.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-d">Distancia de la traslación &nbsp;d</label>
+          <output id="s1-d-v">20 mm</output>
+        </div>
+        <input type="range" id="s1-d" min="5" max="120" step="1" value="20">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-f">Focal de la lente &nbsp;f</label>
+          <output id="s1-f-v">50 mm</output>
+        </div>
+        <input type="range" id="s1-f" min="20" max="200" step="1" value="50">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-y">Altura del rayo de prueba &nbsp;y</label>
+          <output id="s1-y-v">10.0 mm</output>
+        </div>
+        <input type="range" id="s1-y" min="2" max="20" step="0.5" value="10">
+      </div>
+
+      <div class="readout">
+        <div class="sect">Arriba — primero la traslación, luego la lente</div>
+        <div class="row pair">
+          <div class="k">Producto &nbsp;<em>M = L · T</em></div>
+          <div class="v acc" id="s1-lt">[1, 20 ; −0.02, 0.6]</div>
+        </div>
+        <div class="row">
+          <div class="k">Rayo paralelo de entrada, altura de salida</div>
+          <div class="v ok" id="s1-lt-y">10.000 mm</div>
+        </div>
+
+        <div class="sect">Abajo — primero la lente, luego la traslación</div>
+        <div class="row pair">
+          <div class="k">Producto &nbsp;<em>M = T · L</em></div>
+          <div class="v cy" id="s1-tl">[0.6, 20 ; −0.02, 1]</div>
+        </div>
+        <div class="row">
+          <div class="k">Rayo paralelo de entrada, altura de salida</div>
+          <div class="v no" id="s1-tl-y">6.000 mm</div>
+        </div>
+
+        <div class="sect">La prueba</div>
+        <div class="row pair">
+          <div class="k">Determinante de ambos</div>
+          <div class="v dim">1.000</div>
+        </div>
+        <div class="row">
+          <div class="k">El elemento A de cada producto</div>
+          <div class="v acc" id="s1-aa">1.00  y  0.60</div>
+        </div>
+      </div>
+
+      <p class="note"><b>Dónde se ve la diferencia:</b> los dos productos son matrices válidas y ambas tienen determinante 1, así que esa comprobación no detecta el cambio de orden. El que lo delata es el elemento A, que dice cómo cambia la altura de un rayo paralelo. En <code>L·T</code> vale 1: el rayo recorre la distancia sin cambiar de altura y la lente no lo desplaza. En <code>T·L</code> vale 0.6: la lente lo inclina primero y la traslación lo baja. Usar el producto equivocado para tu sistema no rompe ninguna comprobación; sólo da el número que no era.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> sistema real</span>
+        <span><i style="background:var(--cy)"></i> orden invertido</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 PUNTOS CARDINALES ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Cualquier sistema equivale a una lente delgada colocada <b>donde digan sus planos principales</b>.</p>
+
+      <div class="toggle" role="group" aria-label="Sistemas de ejemplo">
+        <button id="pre-dupla" aria-pressed="true">Dupla</button>
+        <button id="pre-tele" aria-pressed="false">Teleobjetivo</button>
+        <button id="pre-kepler" aria-pressed="false">Kepler</button>
+        <button id="pre-galileo" aria-pressed="false">Galileo</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-f1">Focal de la primera lente &nbsp;f₁</label>
+          <output id="s2-f1-v">100 mm</output>
+        </div>
+        <input type="range" id="s2-f1" min="-300" max="300" step="5" value="100">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-f2">Focal de la segunda lente &nbsp;f₂</label>
+          <output id="s2-f2-v">50 mm</output>
+        </div>
+        <input type="range" id="s2-f2" min="-300" max="300" step="5" value="50">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-d">Separación &nbsp;d</label>
+          <output id="s2-d-v">40 mm</output>
+        </div>
+        <input type="range" id="s2-d" min="5" max="300" step="5" value="40">
+      </div>
+
+      <div class="mat" id="m2">
+        <div class="lbl">Matriz del sistema &nbsp; M = L₂ · T(d) · L₁</div>
+        <div class="br">[</div><div class="c A" id="m2-a">0.6000</div><div class="c B" id="m2-b">40.00</div><div class="br">]</div>
+        <div class="br">[</div><div class="c C" id="m2-c">−0.02200</div><div class="c D" id="m2-d">0.2000</div><div class="br">]</div>
+      </div>
+
+      <div class="readout">
+        <div class="row hero">
+          <div class="k">Focal efectiva &nbsp;<em>f = −1/C</em></div>
+          <div class="v acc" id="s2-efl">45.45 mm</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Distancia focal posterior &nbsp;<em>BFD = −A/C</em></div>
+          <div class="v cy" id="s2-bfd">27.27 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Distancia focal anterior &nbsp;<em>FFD = −D/C</em></div>
+          <div class="v cy" id="s2-ffd">9.09 mm</div>
+        </div>
+
+        <div class="sect">Planos principales</div>
+        <div class="row pair">
+          <div class="k"><em>H′ = (1−A)/C</em> &nbsp;desde la segunda lente</div>
+          <div class="v vi" id="s2-hp">−18.18 mm</div>
+        </div>
+        <div class="row">
+          <div class="k"><em>H = (D−1)/C</em> &nbsp;desde la primera</div>
+          <div class="v vi" id="s2-h">+36.36 mm</div>
+        </div>
+
+        <div class="sect">Comprobaciones</div>
+        <div class="row pair">
+          <div class="k">Determinante</div>
+          <div class="v ok" id="s2-det">1.000</div>
+        </div>
+        <div class="row">
+          <div class="k">Longitud física &nbsp;<em>d + BFD</em></div>
+          <div class="v dim" id="s2-len">67.27 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Razón &nbsp;<em>f / longitud</em></div>
+          <div class="v dim" id="s2-ratio">0.68</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note"><b>Cómo leer el dibujo:</b> los rayos amarillos son los reales, que se quiebran en cada lente. La línea azul punteada es el rayo equivalente, que se quiebra una sola vez, en H′. Las dos llegan al mismo foco, y por eso basta con f, H y H′ para describir todo el sistema.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> rayos reales</span>
+        <span><i style="background:var(--cy)"></i> rayo equivalente</span>
+        <span><i style="background:var(--vi)"></i> H y H′</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    El vector de rayo es <code>(y, θ)</code> con θ en radianes y en aproximación paraxial. Traslación <code>[1 d ; 0 1]</code>, lente delgada <code>[1 0 ; −1/f 1]</code>, y el sistema <code>M = Mₙ ··· M₁</code>, en orden inverso al recorrido de la luz. El determinante vale 1 en todo sistema que empieza y termina en aire. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; draw(); }
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+
+  // ================================================================
+  // álgebra
+  // ================================================================
+  function T(d) { return [1, d, 0, 1]; }
+  function L(f) { return [1, 0, -1 / f, 1]; }
+  function mul(M, N) {           // M·N
+    return [
+      M[0] * N[0] + M[1] * N[2], M[0] * N[1] + M[1] * N[3],
+      M[2] * N[0] + M[3] * N[2], M[2] * N[1] + M[3] * N[3]
+    ];
+  }
+  function apply(M, r) { return [M[0] * r[0] + M[1] * r[1], M[2] * r[0] + M[3] * r[1]]; }
+  function det(M) { return M[0] * M[3] - M[1] * M[2]; }
+
+  function fmt(x, d) { return x.toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  function sgn(x, d) { return (x >= 0 ? "+" : "−") + fmt(Math.abs(x), d); }
+
+  // ================================================================
+  // dibujo común
+  // ================================================================
+  function axisSetup(ctx, w, h, x0, x1, yHalf) {
+    var mL = 30, mR = 22, mT = 20, mB = 36;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var sx = pw / (x1 - x0);
+    var sy = ph / (2 * yHalf);
+    var s = Math.min(sx, sy * 6);     // el eje y se exagera para que se vea
+    var X = function (x) { return mL + (x - x0) * sx; };
+    var Y = function (y) { return mT + ph / 2 - y * sy; };
+    ctx.strokeStyle = "rgba(134,149,170,.35)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(mL, Y(0)); ctx.lineTo(mL + pw, Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+    return { X: X, Y: Y, mL: mL, mT: mT, pw: pw, ph: ph, sx: sx, sy: sy };
+  }
+
+  function lensGlyph(ctx, g, x, f, hgt) {
+    var cx = g.X(x), top = g.Y(hgt), bot = g.Y(-hgt);
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx, bot); ctx.stroke();
+    var a = 7;
+    ctx.beginPath();
+    if (f > 0) {                      // convergente: puntas hacia afuera
+      ctx.moveTo(cx - a, top + a); ctx.lineTo(cx, top); ctx.lineTo(cx + a, top + a);
+      ctx.moveTo(cx - a, bot - a); ctx.lineTo(cx, bot); ctx.lineTo(cx + a, bot - a);
+    } else {                          // divergente: puntas hacia adentro
+      ctx.moveTo(cx - a, top); ctx.lineTo(cx, top + a); ctx.lineTo(cx + a, top);
+      ctx.moveTo(cx - a, bot); ctx.lineTo(cx, bot - a); ctx.lineTo(cx + a, bot);
+    }
+    ctx.stroke();
+  }
+
+  function vline(ctx, g, x, col, dash, y0, y1, lw) {
+    ctx.strokeStyle = col; ctx.lineWidth = lw || 1.3;
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(g.X(x), g.Y(y1)); ctx.lineTo(g.X(x), g.Y(y0)); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function label(ctx, x, y, txt, col, align, size) {
+    ctx.font = (size || 11.5) + "px 'IBM Plex Mono', ui-monospace, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillText(txt, x, y);
+  }
+
+  // ================================================================
+  // 01 — el vector de rayo
+  // ================================================================
+  var elem = "tras";
+
+  function draw0() {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+
+    var y0 = parseFloat($("s0-y").value);
+    var t0 = parseFloat($("s0-t").value) / 1000;     // rad
+    var d = parseFloat($("s0-d").value);
+    var f = parseFloat($("s0-f").value);
+    var isT = (elem === "tras");
+    var M = isT ? T(d) : L(f);
+    var span = isT ? d : 80;                         // longitud dibujada
+    var pre = isT ? 50 : 80, post = isT ? 50 : 80;
+
+    var g = axisSetup(ctx, w, h, -pre, span + post, 26);
+    var r1 = apply(M, [y0, t0]);
+
+    // planos de referencia
+    vline(ctx, g, 0, "rgba(95,168,216,.45)", [4, 4], -24, 24);
+    vline(ctx, g, span, "rgba(95,168,216,.45)", [4, 4], -24, 24);
+    label(ctx, g.X(0), g.mT - 6, isT ? "plano 1" : "entrada", C.dim);
+    label(ctx, g.X(span), g.mT - 6, isT ? "plano 2" : "salida", C.dim);
+
+    if (!isT) lensGlyph(ctx, g, span / 2, f, 22);
+
+    // rayo
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    if (isT) {
+      ctx.moveTo(g.X(-pre), g.Y(y0 - pre * t0));
+      ctx.lineTo(g.X(0), g.Y(y0));
+      ctx.lineTo(g.X(span), g.Y(r1[0]));
+      ctx.lineTo(g.X(span + post), g.Y(r1[0] + post * r1[1]));
+    } else {
+      var xm = span / 2;
+      ctx.moveTo(g.X(-pre), g.Y(y0 - (pre + xm) * t0));
+      ctx.lineTo(g.X(xm), g.Y(y0 + 0));
+      ctx.lineTo(g.X(span + post), g.Y(r1[0] + (span / 2 + post) * r1[1]));
+    }
+    ctx.stroke();
+
+    // marcas de altura
+    [[0, y0, C.dim], [span, isT ? r1[0] : r1[0], C.acc]].forEach(function (p) {
+      ctx.strokeStyle = p[2]; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(g.X(p[0]), g.Y(0)); ctx.lineTo(g.X(p[0]), g.Y(p[1])); ctx.stroke();
+      ctx.beginPath(); ctx.arc(g.X(p[0]), g.Y(p[1]), 4, 0, Math.PI * 2);
+      ctx.fillStyle = p[2]; ctx.fill();
+    });
+
+    label(ctx, g.X(0) - 8, g.Y(y0 / 2), "y", C.dim, "right", 13);
+    label(ctx, g.X(span) + 8, g.Y(r1[0] / 2), "y′", C.acc, "left", 13);
+
+    // pie
+    label(ctx, g.mL + g.pw / 2, h - 12,
+      isT ? ("traslación de " + d + " mm") : ("lente de f = " + f + " mm"), C.dim, "center", 12);
+  }
+
+  // ================================================================
+  // 02 — el orden del producto
+  // ================================================================
+  function draw1() {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var d = parseFloat($("s1-d").value);
+    var f = parseFloat($("s1-f").value);
+    var y0 = parseFloat($("s1-y").value);
+
+    var half = h / 2;
+    var span = d + 60, pre = 40;
+
+    function panel(oy, first, second, col, titulo) {
+      ctx.save();
+      ctx.translate(0, oy);
+      var mL = 30, mR = 22, mT = 22, mB = 18;
+      var pw = w - mL - mR, ph = half - mT - mB;
+      var x0 = -pre, x1 = span;
+      var sx = pw / (x1 - x0);
+      var sy = ph / 60;
+      var X = function (x) { return mL + (x - x0) * sx; };
+      var Y = function (y) { return mT + ph / 2 - y * sy; };
+      var g = { X: X, Y: Y, mL: mL, mT: mT, pw: pw, ph: ph };
+
+      ctx.strokeStyle = "rgba(134,149,170,.3)"; ctx.lineWidth = 1;
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath(); ctx.moveTo(mL, Y(0)); ctx.lineTo(mL + pw, Y(0)); ctx.stroke();
+      ctx.setLineDash([]);
+
+      label(ctx, mL, mT - 7, titulo, col, "left", 12);
+
+      // trazado real: el rayo paralelo recorre el sistema en el orden dibujado
+      var r = [y0, 0];
+      var xs = [x0], ys = [y0];
+      var seq = (first === "T")
+        ? [{ k: "T", at: 0, len: d }, { k: "L", at: d }]
+        : [{ k: "L", at: 0 }, { k: "T", at: 0, len: d }];
+
+      // dibujo de los elementos
+      if (first === "T") {
+        vline(ctx, g, 0, "rgba(95,168,216,.4)", [4, 4], -26, 26);
+        lensGlyph(ctx, g, d, f, 22);
+      } else {
+        lensGlyph(ctx, g, 0, f, 22);
+        vline(ctx, g, d, "rgba(95,168,216,.4)", [4, 4], -26, 26);
+      }
+
+      // trazar
+      var cx = x0, cy = y0, cu = 0;
+      ctx.strokeStyle = C.acc; ctx.lineWidth = 2.3;
+      ctx.beginPath(); ctx.moveTo(X(cx), Y(cy));
+      // tramo hasta el primer elemento
+      cy = cy + (0 - cx) * cu; cx = 0;
+      ctx.lineTo(X(cx), Y(cy));
+      if (first === "T") {
+        cy = cy + d * cu; cx = d;          // traslación
+        ctx.lineTo(X(cx), Y(cy));
+        cu = cu - cy / f;                  // lente
+        var rest = span - d;
+        ctx.lineTo(X(cx + rest), Y(cy + rest * cu));
+      } else {
+        cu = cu - cy / f;                  // lente
+        cy = cy + d * cu; cx = d;          // traslación
+        ctx.lineTo(X(cx), Y(cy));
+        var rest2 = span - d;
+        ctx.lineTo(X(cx + rest2), Y(cy + rest2 * cu));
+      }
+      ctx.stroke();
+
+      // altura en el plano de salida del segundo elemento
+      var Msys = (first === "T") ? mul(L(f), T(d)) : mul(T(d), L(f));
+      var out = apply(Msys, [y0, 0]);
+      var xOut = d;
+      ctx.beginPath(); ctx.arc(X(xOut), Y(out[0]), 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = col; ctx.fill();
+      ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.6; ctx.stroke();
+      label(ctx, X(xOut) + 9, Y(out[0]) + 4, "y′ = " + fmt(out[0], 2) + " mm", col, "left", 11.5);
+
+      // altura de entrada, como referencia
+      ctx.strokeStyle = "rgba(242,196,84,.3)";
+      ctx.setLineDash([3, 4]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(X(x0), Y(y0)); ctx.lineTo(X(x1), Y(y0)); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.restore();
+    }
+
+    panel(0, "T", "L", C.acc, "traslación → lente     (el sistema real)");
+    panel(half, "L", "T", C.cy, "lente → traslación     (orden invertido)");
+
+    // separador
+    ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(20, half); ctx.lineTo(w - 20, half); ctx.stroke();
+  }
+
+  // ================================================================
+  // 03 — puntos cardinales
+  // ================================================================
+  function draw2() {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+
+    var f1 = parseFloat($("s2-f1").value);
+    var f2 = parseFloat($("s2-f2").value);
+    var d = parseFloat($("s2-d").value);
+    var M = mul(L(f2), mul(T(d), L(f1)));
+    var A = M[0], B = M[1], Cc = M[2], D = M[3];
+    var afocal = Math.abs(Cc) < 1e-10;
+
+    var efl = afocal ? null : -1 / Cc;
+    var bfd = afocal ? null : -A / Cc;
+    var hp = afocal ? null : (1 - A) / Cc;     // desde L2
+    var hh = afocal ? null : (D - 1) / Cc;     // desde L1
+
+    // extensión en x que hay que mostrar
+    var xs = [-d * 0.5, 0, d, d + 40];
+    if (!afocal) { xs.push(d + bfd); xs.push(d + hp); xs.push(hh); }
+    var xmin = Math.min.apply(null, xs), xmax = Math.max.apply(null, xs);
+    var pad = (xmax - xmin) * 0.09 + 10;
+    xmin -= pad; xmax += pad;
+
+    var mL = 26, mR = 22, mT = 26, mB = 38;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var sx = pw / (xmax - xmin);
+    var yHalf = 31;
+    var sy = ph / (2 * yHalf);
+    var X = function (x) { return mL + (x - xmin) * sx; };
+    var Y = function (y) { return mT + ph / 2 - y * sy; };
+    var g = { X: X, Y: Y, mL: mL, mT: mT, pw: pw, ph: ph };
+
+    ctx.strokeStyle = "rgba(134,149,170,.35)"; ctx.lineWidth = 1;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(mL, Y(0)); ctx.lineTo(mL + pw, Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // planos principales
+    if (!afocal) {
+      [[hh, "H"], [d + hp, "H′"]].forEach(function (p) {
+        vline(ctx, g, p[0], "rgba(168,136,216,.75)", [7, 4], -21, 24, 1.5);
+        label(ctx, X(p[0]), mT - 8, p[1], C.vi, "center", 13);
+      });
+    }
+
+    // lentes
+    lensGlyph(ctx, g, 0, f1, 20);
+    lensGlyph(ctx, g, d, f2, 20);
+    label(ctx, X(0), Y(-23.5), "L₁", C.cy, "center", 11.5);
+    label(ctx, X(d), Y(-23.5), "L₂", C.cy, "center", 11.5);
+
+    // rayos paralelos
+    var alturas = [16, 10, -10, -16];
+    alturas.forEach(function (y0) {
+      var r = [y0, 0];
+      ctx.strokeStyle = "rgba(242,196,84,.9)"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(X(xmin), Y(y0));
+      ctx.lineTo(X(0), Y(y0));
+      r = apply(L(f1), r);
+      var y1 = r[0] + d * r[1];
+      ctx.lineTo(X(d), Y(y1));
+      var r2 = apply(L(f2), [y1, r[1]]);
+      ctx.lineTo(X(xmax), Y(r2[0] + (xmax - d) * r2[1]));
+      ctx.stroke();
+    });
+
+    // rayo equivalente: paralelo hasta H', un solo quiebre hacia F'
+    if (!afocal && isFinite(bfd)) {
+      var ye = 16;
+      ctx.strokeStyle = "rgba(95,168,216,.95)"; ctx.lineWidth = 1.8;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(X(xmin), Y(ye));
+      ctx.lineTo(X(d + hp), Y(ye));
+      ctx.lineTo(X(d + bfd), Y(0));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(X(d + hp), Y(ye), 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = C.cy; ctx.fill();
+    }
+
+    // foco
+    if (!afocal) {
+      var xf = d + bfd;
+      ctx.beginPath(); ctx.arc(X(xf), Y(0), 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = C.no; ctx.fill();
+      ctx.strokeStyle = "#070a10"; ctx.lineWidth = 2; ctx.stroke();
+      label(ctx, X(xf), Y(0) - 11, "F′", C.no, "center", 13);
+
+      // cota de la focal efectiva, de H' a F'
+      var yc = -yHalf * 0.93;
+      ctx.strokeStyle = "rgba(168,136,216,.85)"; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(X(d + hp), Y(yc)); ctx.lineTo(X(xf), Y(yc)); ctx.stroke();
+      [X(d + hp), X(xf)].forEach(function (xx) {
+        ctx.beginPath(); ctx.moveTo(xx, Y(yc) - 4); ctx.lineTo(xx, Y(yc) + 4); ctx.stroke();
+      });
+      label(ctx, (X(d + hp) + X(xf)) / 2, Y(yc) - 7,
+        "f = " + fmt(efl, 1) + " mm", C.vi, "center", 11.5);
+    } else {
+      label(ctx, mL + pw / 2, mT + 14,
+        "sistema afocal: los rayos salen paralelos", C.ok, "center", 12.5);
+    }
+  }
+
+  // ================================================================
+  // lecturas
+  // ================================================================
+  function update0() {
+    var y0 = parseFloat($("s0-y").value);
+    var tm = parseFloat($("s0-t").value);
+    var t0 = tm / 1000;
+    var d = parseFloat($("s0-d").value);
+    var f = parseFloat($("s0-f").value);
+    var isT = (elem === "tras");
+    var M = isT ? T(d) : L(f);
+    var r = apply(M, [y0, t0]);
+
+    $("e-tras").setAttribute("aria-pressed", String(isT));
+    $("e-lente").setAttribute("aria-pressed", String(!isT));
+    $("s0-d-ctrl").hidden = !isT;
+    $("s0-f-ctrl").hidden = isT;
+
+    $("s0-y-v").textContent = fmt(y0, 1) + " mm";
+    $("s0-t-v").textContent = fmt(tm, 1) + " mrad";
+    $("s0-d-v").textContent = d + " mm";
+    $("s0-f-v").textContent = f + " mm";
+
+    $("m0-lbl").textContent = isT ? "Matriz de traslación" : "Matriz de lente delgada";
+    $("m0-a").textContent = "1";
+    $("m0-b").textContent = isT ? String(d) : "0";
+    $("m0-c").textContent = isT ? "0" : fmt(-1 / f, 5);
+    $("m0-d").textContent = "1";
+
+    $("s0-yi").textContent = fmt(y0, 3) + " mm";
+    $("s0-ti").textContent = fmt(tm, 3) + " mrad";
+    $("s0-yo").textContent = fmt(r[0], 3) + " mm";
+    $("s0-to").textContent = fmt(r[1] * 1000, 3) + " mrad";
+    $("s0-det").textContent = fmt(det(M), 3);
+
+    var note = $("s0-note");
+    if (isT) {
+      note.className = "note";
+      note.innerHTML = "<b>La traslación no desvía:</b> el ángulo sale igual al que entró, y la altura crece en <code>d·θ</code>. Por eso su matriz tiene un cero abajo a la izquierda y unos en la diagonal. Prueba con θ = 0: el rayo atraviesa sin cambiar de altura.";
+    } else {
+      note.className = "note";
+      note.innerHTML = "<b>La lente no mueve el rayo de sitio:</b> lo encuentra y lo desvía en el acto, así que la altura sale igual y el ángulo cambia en <code>−y/f</code>. Un rayo que pase por el centro, con y = 0, sale sin desviarse: ése es el rayo principal.";
+    }
+    draw();
+  }
+
+  function update1() {
+    var d = parseFloat($("s1-d").value);
+    var f = parseFloat($("s1-f").value);
+    var y0 = parseFloat($("s1-y").value);
+    var LT = mul(L(f), T(d));
+    var TL = mul(T(d), L(f));
+    var a = apply(LT, [y0, 0]);
+    var b = apply(TL, [y0, 0]);
+
+    $("s1-d-v").textContent = d + " mm";
+    $("s1-f-v").textContent = f + " mm";
+    $("s1-y-v").textContent = fmt(y0, 1) + " mm";
+
+    $("s1-lt").textContent = "[" + fmt(LT[0], 2) + ", " + fmt(LT[1], 0) + " ; " + fmt(LT[2], 4) + ", " + fmt(LT[3], 2) + "]";
+    $("s1-tl").textContent = "[" + fmt(TL[0], 2) + ", " + fmt(TL[1], 0) + " ; " + fmt(TL[2], 4) + ", " + fmt(TL[3], 2) + "]";
+    $("s1-lt-y").textContent = fmt(a[0], 3) + " mm";
+    $("s1-tl-y").textContent = fmt(b[0], 3) + " mm";
+    $("s1-aa").textContent = fmt(LT[0], 2) + "  y  " + fmt(TL[0], 2);
+    draw();
+  }
+
+  function setPreset(f1, f2, d) {
+    $("s2-f1").value = f1; $("s2-f2").value = f2; $("s2-d").value = d;
+    update2();
+  }
+
+  function update2() {
+    var f1 = parseFloat($("s2-f1").value);
+    var f2 = parseFloat($("s2-f2").value);
+    var d = parseFloat($("s2-d").value);
+    var M = mul(L(f2), mul(T(d), L(f1)));
+    var A = M[0], B = M[1], Cc = M[2], D = M[3];
+    var afocal = Math.abs(Cc) < 1e-10;
+
+    $("s2-f1-v").textContent = f1 + " mm";
+    $("s2-f2-v").textContent = f2 + " mm";
+    $("s2-d-v").textContent = d + " mm";
+
+    $("m2-a").textContent = fmt(A, 4);
+    $("m2-b").textContent = fmt(B, 2);
+    $("m2-c").textContent = (Cc < 0 ? "−" : "") + fmt(Math.abs(Cc), 5);
+    $("m2-d").textContent = fmt(D, 4);
+
+    // presets activos
+    var combos = [["pre-dupla", 100, 50, 40], ["pre-tele", 100, -50, 60],
+                  ["pre-kepler", 200, 50, 250], ["pre-galileo", 150, -75, 75]];
+    combos.forEach(function (c) {
+      $(c[0]).setAttribute("aria-pressed", String(f1 === c[1] && f2 === c[2] && d === c[3]));
+    });
+
+    if (afocal) {
+      $("s2-efl").textContent = "infinita";
+      $("s2-efl").className = "v ok";
+      $("s2-bfd").textContent = "—";
+      $("s2-ffd").textContent = "—";
+      $("s2-hp").textContent = "no existen";
+      $("s2-h").textContent = "no existen";
+      $("s2-len").textContent = fmt(d, 2) + " mm";
+      $("s2-ratio").textContent = "—";
+    } else {
+      var efl = -1 / Cc, bfd = -A / Cc, ffd = -D / Cc, hp = (1 - A) / Cc, hh = (D - 1) / Cc;
+      $("s2-efl").textContent = fmt(efl, 2) + " mm";
+      $("s2-efl").className = "v acc";
+      $("s2-bfd").textContent = fmt(bfd, 2) + " mm";
+      $("s2-ffd").textContent = fmt(ffd, 2) + " mm";
+      $("s2-hp").textContent = sgn(hp, 2) + " mm";
+      $("s2-h").textContent = sgn(hh, 2) + " mm";
+      $("s2-len").textContent = fmt(d + bfd, 2) + " mm";
+      $("s2-ratio").textContent = fmt(efl / (d + bfd), 2);
+    }
+    $("s2-det").textContent = fmt(det(M), 3);
+
+    var note = $("s2-note");
+    if (afocal) {
+      note.className = "note good";
+      note.innerHTML = "<b>Sistema afocal.</b> El elemento C vale cero, así que la focal es infinita y no hay foco ni planos principales: los rayos paralelos entran y paralelos salen. Eso es un telescopio, y su aumento angular es el elemento D, aquí " +
+        fmt(D, 2) + ". La separación es justo la suma de las dos focales.";
+    } else {
+      var efl2 = -1 / Cc, hp2 = (1 - A) / Cc, largo = d + (-A / Cc);
+      if (efl2 / largo > 1.3) {
+        note.className = "note good";
+        note.innerHTML = "<b>Un teleobjetivo.</b> La focal efectiva es " + fmt(efl2, 0) +
+          " mm pero el conjunto sólo mide " + fmt(largo, 0) +
+          " mm de largo. Mira dónde quedó H′: a " + fmt(Math.abs(hp2), 0) +
+          " mm por delante de la segunda lente, fuera del vidrio, en el aire. Un plano principal no es una superficie: es una construcción, y puede caer donde no hay nada.";
+      } else {
+        note.className = "note";
+        note.innerHTML = "<b>Cómo leer el dibujo:</b> los rayos amarillos son los reales, que se quiebran en cada lente. La línea azul punteada es el rayo equivalente, que se quiebra una sola vez, en H′. Las dos llegan al mismo foco, y por eso basta con f, H y H′ para describir todo el sistema.";
+      }
+    }
+    draw();
+  }
+
+  // ================================================================
+  // pestañas
+  // ================================================================
+  var cur = 0;
+  function draw() {
+    if (cur === 0) draw0();
+    else if (cur === 1) draw1();
+    else draw2();
+  }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "mueve los controles y sigue el rayo" },
+    { p: "p1", t: "tab1", u: update1, hint: "compara los dos trazados" },
+    { p: "p2", t: "tab2", u: update2, hint: "prueba los sistemas de ejemplo" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    resize();
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-y", "s0-t", "s0-d", "s0-f"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-d", "s1-f", "s1-y"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-f1", "s2-f2", "s2-d"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  $("e-tras").addEventListener("click", function () { elem = "tras"; update0(); });
+  $("e-lente").addEventListener("click", function () { elem = "lente"; update0(); });
+  $("pre-dupla").addEventListener("click", function () { setPreset(100, 50, 40); });
+  $("pre-tele").addEventListener("click", function () { setPreset(100, -50, 60); });
+  $("pre-kepler").addEventListener("click", function () { setPreset(200, 50, 250); });
+  $("pre-galileo").addEventListener("click", function () { setPreset(150, -75, 75); });
+
+  resize();
+  update0(); update1(); update2();
+  show(0);
+  window.addEventListener("load", resize);
+  // la fuente web puede llegar despues del primer trazo: se redibuja al cargarla
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+
+</body></html>

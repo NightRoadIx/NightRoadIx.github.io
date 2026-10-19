@@ -1,0 +1,876 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Los Cuatro Modelos</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+/* en mayusculas, "µW" se convierte en "MW": seis ordenes de magnitud de error */
+.sect .lit { text-transform: none; }
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o los cuatro paneles salen apilados */
+.panel[hidden] { display: none; }
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Los cuatro modelos</h1>
+    <p class="lede">Rayos, ondas, campo y fotones no son cuatro teorías compitiendo: son <b>cuatro niveles de detalle del mismo fenómeno</b>. La pregunta profesional no es cuál es verdad, sino <b>cuál es el más barato que todavía acierta</b>.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> El diámetro óptimo</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> El presupuesto de luz</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Qué modelo basta</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">abre y cierra el diafragma: ningún modelo solo da el óptimo</div>
+    </div>
+
+    <!-- ============ 01 DIAMETRO OPTIMO ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Los rayos dicen que abras el diafragma; las ondas, que lo cierres. <b>El óptimo no está en ninguno de los dos modelos: está en los dos a la vez.</b></p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-D">Diámetro libre &nbsp;D</label>
+          <output id="s0-D-v">25.0 mm</output>
+        </div>
+        <input type="range" id="s0-D" min="1.5" max="55" step="0.1" value="25">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s0-lam-v">550 nm</output>
+        </div>
+        <input type="range" id="s0-lam" min="400" max="1600" step="5" value="550">
+      </div>
+
+      <div class="toggle cinco" role="group" aria-label="Forma de la lente">
+        <button id="q-mej" aria-pressed="true">Mejor forma</button>
+        <button id="q-equi">Equiconvexa</button>
+        <button id="q-plano">Plano-convexa</button>
+      </div>
+
+      <div class="form">
+        <span class="lb">Las dos manchas</span>
+        <span class="z">rayos:</span> d = <span class="t">S</span>·f / 128·N³ <span class="z">· crece como D³</span><br>
+        <span class="z">ondas:</span> d = 2.44·λ·N <span class="z">· crece como 1/D</span>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Esta abertura</div>
+        <div class="row pair">
+          <div class="k">Número f &nbsp;<em>N = f/D</em></div>
+          <div class="v dim" id="s0-N">f/4.00</div>
+        </div>
+        <div class="row">
+          <div class="k">Mancha geométrica &nbsp;<em>sólo rayos</em></div>
+          <div class="v acc" id="s0-geo">104.6 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Disco de Airy &nbsp;<em>sólo ondas</em></div>
+          <div class="v cy" id="s0-airy">5.37 µm</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Mancha real</div>
+          <div class="v fg" id="s0-tot">104.8 µm</div>
+        </div>
+
+        <div class="sect">Dónde está el óptimo</div>
+        <div class="row pair">
+          <div class="k">Diámetro óptimo</div>
+          <div class="v ok" id="s0-dopt">10.37 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Que es</div>
+          <div class="v ok" id="s0-nopt">f/9.64</div>
+        </div>
+        <div class="row">
+          <div class="k">Mancha que da</div>
+          <div class="v ok" id="s0-mopt">14.94 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Modelo mínimo suficiente</div>
+          <div class="v acc" id="s0-mod">los rayos</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> rayos</span>
+        <span><i style="background:var(--cy)"></i> ondas</span>
+        <span><i style="background:var(--fg)"></i> mancha real</span>
+        <span><i class="dot" style="background:var(--ok)"></i> óptimo</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 PRESUPUESTO ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">Para los rayos y para las ondas, <b>por la lente pasa el 100 %</b>. Hace falta el campo para saber que no, y el fotón para saber qué significa eso en tiempo de exposición.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-k">Superficies aire–vidrio</label>
+          <output id="s1-k-v">12</output>
+        </div>
+        <input type="range" id="s1-k" min="2" max="16" step="2" value="12">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-eta">Eficiencia del detector &nbsp;η</label>
+          <output id="s1-eta-v">0.80</output>
+        </div>
+        <input type="range" id="s1-eta" min="0.1" max="1" step="0.01" value="0.8">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Tratamiento">
+        <button id="t-no" aria-pressed="true">Vidrio desnudo</button>
+        <button id="t-ar">Antirreflejo λ/4</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Lo que dice el campo</div>
+        <div class="row pair">
+          <div class="k">Reflexión por cara &nbsp;<em>Fresnel</em></div>
+          <div class="v vi" id="s1-R">4.000 %</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Transmisión del conjunto</div>
+          <div class="v acc" id="s1-T">61.27 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Luz perdida en reflejos</div>
+          <div class="v no" id="s1-perd">38.73 %</div>
+        </div>
+
+        <div class="sect">Lo que dice el fotón</div>
+        <div class="row pair">
+          <div class="k">Fotones que llegan &nbsp;<em>1 nW a 550 nm</em></div>
+          <div class="v dim" id="s1-fot">2.77 × 10⁹ /s</div>
+        </div>
+        <div class="row">
+          <div class="k">Electrones por segundo</div>
+          <div class="v cy" id="s1-ele">1.36 × 10⁹ /s</div>
+        </div>
+        <div class="row">
+          <div class="k">Por píxel &nbsp;<em>sensor de 1 Mpx</em></div>
+          <div class="v cy" id="s1-px">1 357 /s</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Exposición para SNR = 5</div>
+          <div class="v ok" id="s1-exp">18.4 ms</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> luz que sigue adelante</span>
+        <span><i style="background:var(--no)"></i> perdida en cada cara</span>
+        <span><i style="background:var(--ok)"></i> convertida en electrones</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 MATRIZ ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Cada pregunta tiene un <b>umbral</b>: el modelo más simple que todavía la contesta. De ahí hacia la derecha todos aciertan, pero cuestan más.</p>
+
+      <div class="toggle" role="group" aria-label="Navegación">
+        <button id="m-prev">← Anterior</button>
+        <button id="m-next">Siguiente →</button>
+      </div>
+
+      <p class="note" style="border-color:var(--line)">Pulsa cualquier fila de la tabla para ver su respuesta.</p>
+
+      <div class="readout">
+        <div class="sect">La pregunta</div>
+        <div class="row hero">
+          <div class="k" id="m-preg" style="font-size:14px">¿Dónde cae la imagen?</div>
+          <div class="v" id="m-mod">rayos</div>
+        </div>
+        <div class="row">
+          <div class="k">La respuesta</div>
+          <div class="v acc" id="m-resp" style="font-size:12.5px">s′ = 150.0 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Qué modelo hace falta</div>
+          <div class="v dim" id="m-umbral">basta el primero</div>
+        </div>
+      </div>
+
+      <p class="note" id="m-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> rayos</span>
+        <span><i style="background:var(--cy)"></i> ondas</span>
+        <span><i style="background:var(--vi)"></i> campo</span>
+        <span><i style="background:var(--ok)"></i> fotones</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    El montaje 01 usa la aberración esférica de tercer orden de una lente delgada con el objeto en el infinito: <code>1/f_m − 1/f = (h²/8f³)·S(q)</code>, con <code>S</code> el polinomio de Coddington en el factor de forma. El diámetro que se dibuja es el del <b>círculo de mínima confusión</b>, que vale la cuarta parte de la mancha en el foco paraxial y sale en forma cerrada como <code>d = S·f/(128·N³)</code>. <b>De ahí cae un resultado que conviene enseñar</b>: la regla de taller de que la mancha de un singlete vale <code>0.067·f/N³</code> no es un ajuste empírico, es <code>S_mín/128</code> con <code>S_mín = 8.5714</code> para <code>n = 1.5</code>, y por eso cambia si cambia la forma de la lente — a <code>0.104</code> en una equiconvexa y a <code>0.281</code> en una plano-convexa montada al revés. El montaje 02 toma <code>R = ((n−1)/(n+1))²</code> en incidencia normal y la capa de cuarto de onda del banco de películas delgadas. Este banco entero se puede recorrer en cualquier orden y a cualquier ritmo; los montajes no son una secuencia obligatoria sino un repertorio. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  }
+  window.addEventListener("resize", function () { resize(); draw(); });
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+  var HP = 6.62607015e-34, CL = 299792458;
+  var NG = 1.5, FL = 100;                 // vidrio y focal de referencia, en mm
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  var SUP = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻" };
+  function sup(e) { return String(e).split("").map(function (c) { return SUP[c] || c; }).join(""); }
+  function cien(x, d) {
+    if (x === 0) return "0";
+    var ex = Math.floor(Math.log10(Math.abs(x))), m = x / Math.pow(10, ex);
+    return fmt(m, d === undefined ? 2 : d) + " × 10" + sup(ex);
+  }
+  function lab(ctx, txt, x, y, col, align, size, peso) {
+    ctx.font = (peso ? peso + " " : "") + (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labS(ctx, txt, x, y, col, align, size, peso) {
+    ctx.font = (peso ? peso + " " : "") + (size || 11) + "px 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.85)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+
+  // ================================================================
+  // 01  el diametro optimo
+  // ================================================================
+  // aberracion esferica de tercer orden, lente delgada, objeto en el infinito.
+  // S es el polinomio de Coddington en el factor de forma q, con p = -1
+  function Sde(q) {
+    var n = NG, p = -1;
+    return ((n + 2) / (n * (n - 1) * (n - 1))) * q * q
+         - (4 * (n + 1) / (n * (n - 1))) * q * p
+         + ((3 * n + 2) / n) * p * p
+         + n * n / ((n - 1) * (n - 1));
+  }
+  var FORMAS = { "q-mej": ["mejor forma", -0.714286], "q-equi": ["equiconvexa", 0], "q-plano": ["plano-convexa", 1] };
+  var s0 = { D: 25, lam: 550, f: "q-mej" };
+
+  // circulo de minima confusion: la cuarta parte de la mancha en foco paraxial
+  function dGeo(D, q) { return Sde(q) * D * D * D / (128 * FL * FL); }      // mm
+  function dAiry(D, lamNm) { return 2.44 * lamNm * 1e-6 * FL / D; }        // mm
+  function dTot(D, q, lamNm) { return Math.hypot(dGeo(D, q), dAiry(D, lamNm)); }
+
+  function optimo(q, lamNm) {
+    // d² = (S/128f²)²D⁶ + (2.44λf)²/D² ; derivando, D⁸ = (2.44λf)²·2·(128f²/S)²/6
+    var a = Sde(q) / (128 * FL * FL), b = 2.44 * lamNm * 1e-6 * FL;
+    return Math.pow(b * b / (3 * a * a), 1 / 8);
+  }
+
+  function update0() {
+    s0.D = +$("s0-D").value;
+    s0.lam = +$("s0-lam").value;
+    Object.keys(FORMAS).forEach(function (k) { $(k).setAttribute("aria-pressed", k === s0.f ? "true" : "false"); });
+    $("s0-D-v").textContent = fmt(s0.D, 1) + " mm";
+    $("s0-lam-v").textContent = fmt(s0.lam, 0) + " nm";
+
+    var q = FORMAS[s0.f][1];
+    var g = dGeo(s0.D, q), a = dAiry(s0.D, s0.lam), t = Math.hypot(g, a);
+    var Do = optimo(q, s0.lam), to = dTot(Do, q, s0.lam);
+
+    $("s0-N").textContent = "f/" + fmt(FL / s0.D, 2);
+    $("s0-geo").textContent = fmt(g * 1000, g * 1000 < 100 ? 2 : 1) + " µm";
+    $("s0-airy").textContent = fmt(a * 1000, 2) + " µm";
+    $("s0-tot").textContent = fmt(t * 1000, t * 1000 < 100 ? 2 : 1) + " µm";
+    $("s0-dopt").textContent = fmt(Do, 2) + " mm";
+    $("s0-nopt").textContent = "f/" + fmt(FL / Do, 2);
+    $("s0-mopt").textContent = fmt(to * 1000, 2) + " µm";
+
+    var r = g / a, mod, cls, nt;
+    if (r > 3) {
+      mod = "los rayos"; cls = "acc";
+      nt = "Tan abierto, <b>la aberración manda por " + fmt(r, 0) + " a 1</b> y la difracción es un detalle. " +
+           "Aquí el trazado de rayos del banco de aberraciones da la respuesta correcta y no hace falta nada más. " +
+           "Cerrando se gana: la mancha baja como D³.";
+    } else if (r < 1 / 3) {
+      mod = "las ondas"; cls = "cy";
+      nt = "Tan cerrado, <b>la lente ya es perfecta para lo que sirve</b>: la aberración es " + fmt(1 / r, 0) +
+           " veces menor que el disco de Airy. Seguir cerrando empeora la imagen, y eso los rayos no lo pueden ni " +
+           "enunciar, porque para ellos la mancha tendería a cero.";
+    } else {
+      mod = "los dos a la vez"; cls = "ok";
+      nt = "<b>Estás en la zona donde ningún modelo solo acierta.</b> Las dos manchas son comparables, " +
+           "y el óptimo de " + fmt(Do, 2) + " mm sale de equilibrarlas. Ningún libro de óptica geométrica " +
+           "contiene este número, y ninguno de difracción tampoco.";
+    }
+    $("s0-mod").textContent = mod;
+    $("s0-mod").className = "v " + cls;
+    $("s0-note").innerHTML = nt;
+    hint.textContent = Math.abs(s0.D - Do) / Do < 0.06
+      ? "aquí está el mínimo: ni más abierto ni más cerrado"
+      : "abre y cierra el diafragma: ningún modelo solo da el óptimo";
+
+    draw0(q);
+  }
+
+  function draw0(q) {
+    var ctx = ctx2d(), W = cv.width / dpr, H = cv.height / dpr;
+    var mL = 58, mR = 18, mT = 26, mB = 46;
+    var pw = W - mL - mR, ph = H - mT - mB;
+    var DA = 1.5, DB = 60, YA = 1e-4, YB = 20;     // mm
+    var lg = Math.log10;
+    var X = function (d) { return mL + (lg(d) - lg(DA)) / (lg(DB) - lg(DA)) * pw; };
+    var Y = function (v) { return mT + ph - (lg(v) - lg(YA)) / (lg(YB) - lg(YA)) * ph; };
+
+    lab(ctx, "diámetro de la mancha  ·  escala logarítmica", mL - 4, mT - 12, C.dim, "left", 10);
+
+    ctx.strokeStyle = "rgba(34,48,68,.6)"; ctx.lineWidth = 1;
+    [1e-4, 1e-3, 1e-2, 1e-1, 1, 10].forEach(function (v) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(v)); ctx.lineTo(mL + pw, Y(v)); ctx.stroke();
+      var et = v < 1 ? fmt(v * 1000, v < 1e-3 ? 1 : 0) + " µm" : fmt(v, 0) + " mm";
+      lab(ctx, et, mL - 8, Y(v), C.dim, "right", 9.5);
+    });
+    [2, 5, 10, 20, 50].forEach(function (d) {
+      ctx.beginPath(); ctx.moveTo(X(d), mT); ctx.lineTo(X(d), mT + ph); ctx.stroke();
+      lab(ctx, fmt(d, 0), X(d), mT + ph + 14, C.dim, "center", 9.5);
+    });
+    lab(ctx, "diámetro libre  D  [mm]", mL + pw, mT + ph + 31, C.dim, "right", 10);
+    // el mismo rango leido como numero f, dentro del marco: arriba del todo
+    // chocaria con el titulo del eje
+    [2, 4, 8, 16, 32].forEach(function (N) {
+      var d = FL / N; if (d < DA || d > DB) return;
+      lab(ctx, "f/" + N, X(d), mT + 11, "rgba(134,149,170,.55)", "center", 9);
+    });
+
+    // la curva se recorta, no se aplasta: una recta pegada al suelo del eje
+    // diria que la mancha deja de bajar, que es justo lo contrario
+    var curva = function (fn, col, lw, dash) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []);
+      ctx.beginPath();
+      var dentro = false;
+      for (var k = 0; k <= 200; k++) {
+        var d = Math.pow(10, lg(DA) + (lg(DB) - lg(DA)) * k / 200), v = fn(d);
+        if (v < YA || v > YB) { dentro = false; continue; }
+        if (!dentro) { ctx.moveTo(X(d), Y(v)); dentro = true; } else ctx.lineTo(X(d), Y(v));
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    };
+
+    curva(function (d) { return dGeo(d, q); }, C.acc, 1.8);
+    curva(function (d) { return dAiry(d, s0.lam); }, C.cy, 1.8);
+    curva(function (d) { return dTot(d, q, s0.lam); }, "rgba(221,229,240,.95)", 2.4);
+
+    lab(ctx, "rayos", X(DB) - 6, Y(Math.min(dGeo(DB, q), YB)) + 13, C.acc, "right", 10);
+    lab(ctx, "ondas", X(DA) + 6, Y(Math.min(dAiry(DA, s0.lam), YB)) + 13, C.cy, "left", 10);
+
+    // el optimo
+    var Do = optimo(q, s0.lam), to = dTot(Do, q, s0.lam);
+    ctx.strokeStyle = "rgba(82,184,124,.45)"; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(X(Do), Y(to)); ctx.lineTo(X(Do), mT + ph); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = C.ok;
+    ctx.beginPath(); ctx.arc(X(Do), Y(to), 5, 0, 6.2832); ctx.fill();
+    labBg(ctx, "óptimo · f/" + fmt(FL / Do, 1) + " · " + fmt(to * 1000, 1) + " µm",
+          X(Do), Y(to) - 15, C.ok, "center", 10);
+
+    // punto de trabajo
+    var t = dTot(s0.D, q, s0.lam);
+    ctx.strokeStyle = "rgba(221,229,240,.28)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(s0.D), mT); ctx.lineTo(X(s0.D), mT + ph); ctx.stroke();
+    ctx.fillStyle = C.fg;
+    ctx.beginPath(); ctx.arc(X(s0.D), Y(Math.min(t, YB)), 4.2, 0, 6.2832); ctx.fill();
+    // debajo del punto: encima esta el rotulo del optimo y se solapan al coincidir
+    var izq = s0.D < Do;
+    labBg(ctx, fmt(t * 1000, t * 1000 < 100 ? 1 : 0) + " µm",
+          X(s0.D) + (izq ? -9 : 9), Y(Math.min(t, YB)) + 15, C.fg, izq ? "right" : "left", 10.5);
+  }
+
+  // ================================================================
+  // 02  el presupuesto de luz
+  // ================================================================
+  var RDES = Math.pow((NG - 1) / (NG + 1), 2);              // Fresnel, incidencia normal
+  var NMGF = 1.38, RAR = Math.pow((NG - NMGF * NMGF) / (NG + NMGF * NMGF), 2);
+  var s1 = { k: 12, eta: 0.8, ar: false };
+  var PREF1 = 1e-9, LAM1 = 550, NPX = 1e6, ROSE = 25;
+
+  function update1() {
+    s1.k = +$("s1-k").value;
+    s1.eta = +$("s1-eta").value;
+    $("t-no").setAttribute("aria-pressed", s1.ar ? "false" : "true");
+    $("t-ar").setAttribute("aria-pressed", s1.ar ? "true" : "false");
+    $("s1-k-v").textContent = fmt(s1.k, 0);
+    $("s1-eta-v").textContent = fmt(s1.eta, 2);
+
+    var R = s1.ar ? RAR : RDES;
+    var T = Math.pow(1 - R, s1.k);
+    var Nf = PREF1 * LAM1 * 1e-9 / (HP * CL);
+    var Ne = Nf * T * s1.eta;
+    var px = Ne / NPX;
+    var t = ROSE / px;
+
+    $("s1-R").textContent = fmt(R * 100, 3) + " %";
+    $("s1-T").textContent = fmt(T * 100, 2) + " %";
+    $("s1-perd").textContent = fmt((1 - T) * 100, 2) + " %";
+    $("s1-fot").textContent = cien(Nf, 2) + " /s";
+    $("s1-ele").textContent = cien(Ne, 2) + " /s";
+    $("s1-px").textContent = fmt(px, 0) + " /s";
+    $("s1-exp").textContent = fmt(t * 1000, t * 1000 < 100 ? 1 : 0) + " ms";
+
+    var Tdes = Math.pow(1 - RDES, s1.k), Tar = Math.pow(1 - RAR, s1.k);
+    var nt;
+    if (!s1.ar && s1.k >= 10) {
+      nt = "Un objetivo de verdad lleva esta cantidad de superficies, y <b>sin tratar perdería el " +
+           fmt((1 - Tdes) * 100, 0) + " % de la luz</b> sólo en reflejos. Con antirreflejo la pérdida baja al " +
+           fmt((1 - Tar) * 100, 0) + " %. Por eso no existe un objetivo sin tratar: no es un lujo, es lo que " +
+           "lo hace utilizable.";
+    } else if (s1.ar) {
+      nt = "La capa de cuarto de onda de MgF₂ baja cada cara del " + fmt(RDES * 100, 1) + " % al " +
+           fmt(RAR * 100, 2) + " %, y sobre " + fmt(s1.k, 0) + " superficies eso son " +
+           fmt((Tar - Tdes) * 100, 1) + " puntos de transmisión recuperados. <b>Lo mismo que el banco de " +
+           "películas delgadas calculaba con matrices características</b>, ahora puesto en fotones.";
+    } else {
+      nt = "Con pocas superficies la pérdida parece menor, pero <b>se acumula multiplicando, no sumando</b>: " +
+           "cada cara se lleva su " + fmt(R * 100, 1) + " % de lo que le llega. Sube el número de superficies " +
+           "y mira cómo cae la transmisión.";
+    }
+    $("s1-note").innerHTML = nt;
+    hint.textContent = "cada escalón es una cara de vidrio llevándose su parte";
+
+    draw1(R, T, Ne);
+  }
+
+  function draw1(R, T, Ne) {
+    var ctx = ctx2d(), W = cv.width / dpr, H = cv.height / dpr;
+    var mL = 48, mR = 18, mT = 30, mB = 50;
+    var pw = W - mL - mR, ph = H - mT - mB;
+    var n = s1.k + 1;                                   // superficies + detector
+    var bw = pw / n, hueco = Math.min(5, bw * 0.16);
+
+    lab(ctx, "de la luz que entra, lo que sigue adelante", mL - 4, mT - 14, C.dim, "left", 10);
+
+    ctx.strokeStyle = "rgba(34,48,68,.6)"; ctx.lineWidth = 1;
+    for (var g = 0; g <= 100; g += 25) {
+      var yy = mT + ph - g / 100 * ph;
+      ctx.beginPath(); ctx.moveTo(mL, yy); ctx.lineTo(mL + pw, yy); ctx.stroke();
+      lab(ctx, fmt(g, 0) + " %", mL - 8, yy, C.dim, "right", 9.5);
+    }
+
+    var q = 1;
+    for (var i = 0; i < s1.k; i++) {
+      var antes = q; q = q * (1 - R);
+      var x = mL + i * bw;
+      ctx.fillStyle = "rgba(242,196,84,.82)";
+      ctx.fillRect(x, mT + ph - q * ph, bw - hueco, q * ph);
+      ctx.fillStyle = "rgba(212,98,74,.75)";
+      ctx.fillRect(x, mT + ph - antes * ph, bw - hueco, (antes - q) * ph);
+    }
+    // el detector: de la luz que le llega, se queda con eta
+    var xd = mL + s1.k * bw, qd = q * s1.eta;
+    ctx.fillStyle = "rgba(82,184,124,.85)";
+    ctx.fillRect(xd, mT + ph - qd * ph, bw - hueco, qd * ph);
+    ctx.fillStyle = "rgba(134,149,170,.32)";
+    ctx.fillRect(xd, mT + ph - q * ph, bw - hueco, (q - qd) * ph);
+
+    ctx.strokeStyle = "rgba(221,229,240,.35)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(mL, mT); ctx.lineTo(mL + pw, mT); ctx.stroke();
+    ctx.setLineDash([]);
+
+    lab(ctx, "caras de vidrio", mL + 2, mT + ph + 15, C.dim, "left", 9.5);
+    lab(ctx, "detector", xd + (bw - hueco) / 2, mT + ph + 15, C.ok, "center", 9.5);
+    // los dos a la izquierda del detector: pegados al borde derecho se salen del marco
+    labBg(ctx, "llega " + fmt(T * 100, 1) + " %", xd - 8, mT + ph - q * ph - 12, C.acc, "right", 10.5);
+    labBg(ctx, "se detecta " + fmt(qd * 100, 1) + " %", xd - 8, mT + ph - qd * ph + 13, C.ok, "right", 10.5);
+    lab(ctx, cien(Ne, 2) + " electrones por segundo", mL + pw, mT + ph + 32, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // 03  que modelo basta
+  // ================================================================
+  var MODS = [["rayos", C.acc], ["ondas", C.cy], ["campo", C.vi], ["fotones", C.ok]];
+  // umbral = indice del modelo mas simple que todavia contesta.
+  // de ahi a la derecha todos aciertan: cada modelo contiene al anterior
+  var FILAS = [
+    ["¿Dónde cae la imagen?", 0, "s′ = 150.0 mm con el objeto a 300 mm", "1/s′ − 1/s = 1/f, y ya está."],
+    ["¿Qué aumento da?", 0, "m = −0.500, invertida y a la mitad", "m = s′/s. Pura semejanza de triángulos."],
+    ["¿Cuánta luz recoge?", 0, "∝ 1/N² · f/4 recoge 4 veces lo de f/8", "Es el área de la pupila: geometría pura."],
+    ["¿Cuál es la mancha más pequeña?", 1, "disco de Airy, 5.37 µm a f/4 y 550 nm", "Los rayos dicen cero, y cero es la respuesta equivocada."],
+    ["¿Qué detalle llega a resolver?", 1, "corte de la MTF, 455 ciclos/mm a f/4", "Hace falta la fase: es interferencia en la pupila."],
+    ["¿Por qué motea un láser?", 1, "interferencia de la rugosidad consigo misma", "Sin coherencia no hay moteado que explicar."],
+    ["¿Cuánto refleja cada cara?", 2, "4.00 % en incidencia normal, con n = 1.5", "Sale de las condiciones de frontera de E y B."],
+    ["¿Por qué sirve el antirreflejo?", 2, "λ/4 de MgF₂ baja esa cara al 1.41 %", "Dos reflejos en oposición de fase: amplitudes, no intensidades."],
+    ["¿Por qué un polarizador quita el reflejo?", 2, "ángulo de Brewster, 56.31° para n = 1.5", "La polarización es la dirección del campo: no existe antes del campo."],
+    ["¿Cuánto hay que exponer?", 3, "18.4 ms para 25 fotones por píxel", "Un vatio no dice nada hasta saber de cuántos cuantos está hecho."],
+    ["¿De dónde sale el grano?", 3, "Poisson: SNR = √N, y no se puede bajar", "El ruido no lo añade el detector: lo trae la luz."]
+  ];
+  var sel = 0, filaY = [];
+
+  function update2() {
+    var f = FILAS[sel];
+    $("m-preg").textContent = f[0];
+    $("m-mod").textContent = MODS[f[1]][0];
+    $("m-mod").style.color = MODS[f[1]][1];
+    $("m-resp").textContent = f[2];
+    $("m-resp").style.color = MODS[f[1]][1];
+    $("m-umbral").textContent = f[1] === 0 ? "basta el más simple"
+      : "los " + (f[1] === 1 ? "rayos" : f[1] === 2 ? "rayos y las ondas" : "tres anteriores") + " no llegan";
+    $("m-note").innerHTML = f[3] + " <b>De " + MODS[f[1]][0] + " en adelante todos aciertan</b>, " +
+      (f[1] === 3 ? "y aquí se acaba el banco." : "pero pagando más cuenta por la misma respuesta.");
+    hint.textContent = "pulsa una fila: el primer ✓ es el modelo que basta";
+    draw2();
+  }
+
+  function draw2() {
+    var ctx = ctx2d(), W = cv.width / dpr, H = cv.height / dpr;
+    var mL = 12, mR = 12, mT = 40, mB = 16;
+    var colW = Math.min(62, (W - mL - mR) * 0.17);
+    var anchoP = W - mL - mR - 4 * colW;
+    var ph = H - mT - mB;
+    var fh = ph / FILAS.length;
+    filaY = [];
+
+    // cabecera de columnas
+    for (var c = 0; c < 4; c++) {
+      var cx = mL + anchoP + c * colW + colW / 2;
+      labS(ctx, MODS[c][0], cx, mT - 20, MODS[c][1], "center", 11, "600");
+      ctx.fillStyle = MODS[c][1];
+      ctx.fillRect(cx - 13, mT - 10, 26, 2);
+    }
+    labS(ctx, "la pregunta", mL + 2, mT - 20, C.dim, "left", 11);
+
+    for (var i = 0; i < FILAS.length; i++) {
+      var y = mT + i * fh, cy = y + fh / 2;
+      filaY.push([y, y + fh]);
+      if (i === sel) {
+        ctx.fillStyle = "rgba(242,196,84,.09)";
+        ctx.fillRect(mL - 4, y, W - mL - mR + 8, fh);
+        ctx.fillStyle = MODS[FILAS[i][1]][1];
+        ctx.fillRect(mL - 4, y, 2.5, fh);
+      } else if (i > 0) {
+        ctx.strokeStyle = "rgba(34,48,68,.6)"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(mL, y); ctx.lineTo(W - mR, y); ctx.stroke();
+      }
+      var txt = FILAS[i][0];
+      ctx.font = (i === sel ? "600 " : "") + "11.5px 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif";
+      while (ctx.measureText(txt).width > anchoP - 14 && txt.length > 6) txt = txt.slice(0, -2);
+      if (txt !== FILAS[i][0]) txt = txt.slice(0, -1) + "…";
+      labS(ctx, txt, mL + 4, cy, i === sel ? C.fg : "rgba(221,229,240,.72)", "left", 11.5, i === sel ? "600" : null);
+
+      for (var k = 0; k < 4; k++) {
+        var x = mL + anchoP + k * colW + colW / 2;
+        var vale = k >= FILAS[i][1], umbral = k === FILAS[i][1];
+        if (umbral) {
+          ctx.fillStyle = MODS[k][1];
+          ctx.globalAlpha = i === sel ? 0.24 : 0.14;
+          ctx.beginPath(); ctx.arc(x, cy, 10.5, 0, 6.2832); ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+        lab(ctx, vale ? "✓" : "✗", x, cy,
+            vale ? (umbral ? MODS[k][1] : "rgba(134,149,170,.6)") : "rgba(212,98,74,.55)",
+            "center", umbral ? 13 : 11.5);
+      }
+    }
+  }
+
+  cv.addEventListener("click", function (e) {
+    if (cur !== 2) return;
+    var r = cv.getBoundingClientRect(), y = e.clientY - r.top;
+    for (var i = 0; i < filaY.length; i++) {
+      if (y >= filaY[i][0] && y < filaY[i][1]) { sel = i; update2(); return; }
+    }
+  });
+  cv.style.cursor = "default";
+
+  // ================================================================
+  // pestañas y arranque
+  // ================================================================
+  var cur = 0;
+  function draw() { if (cur === 0) update0(); else if (cur === 1) update1(); else update2(); }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0 },
+    { p: "p1", t: "tab1", u: update1 },
+    { p: "p2", t: "tab2", u: update2 }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    cv.style.cursor = (i === 2) ? "pointer" : "default";
+    resize();
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-D", "s0-lam"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  Object.keys(FORMAS).forEach(function (k) {
+    $(k).addEventListener("click", function () { s0.f = k; update0(); });
+  });
+
+  ["s1-k", "s1-eta"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  $("t-no").addEventListener("click", function () { s1.ar = false; update1(); });
+  $("t-ar").addEventListener("click", function () { s1.ar = true; update1(); });
+
+  $("m-prev").addEventListener("click", function () { sel = (sel + FILAS.length - 1) % FILAS.length; update2(); });
+  $("m-next").addEventListener("click", function () { sel = (sel + 1) % FILAS.length; update2(); });
+
+  resize();
+  show(0);
+  window.addEventListener("load", function () { resize(); draw(); });
+  // la fuente web puede llegar despues del primer trazo: se redibuja al cargarla
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+
+</body></html>

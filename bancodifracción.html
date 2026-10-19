@@ -1,0 +1,1025 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Difracción</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Layout: visor a la izquierda, panel de instrumento a la derecha; apila bajo 880px.
+   Mismo sistema visual que los demás montajes del banco. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;
+  --cy:      #5fa8d8;
+  --ok:      #52b87c;
+  --no:      #d4624a;
+  --vi:      #a888d8;
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #050709;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#c2d, #gl { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; }
+.toggle button {
+  flex: 1; font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.vi  { color: var(--vi);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Banco de difracción</h1>
+    <p class="lede">Qué pasa cuando la abertura deja de ser grande comparada con la longitud de onda: el haz se abre, la imagen deja de ser un punto, y hay un límite que ninguna óptica mejor puede superar.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> Rendija simple</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Airy y resolución</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Rejilla</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="c2d"></canvas>
+      <canvas id="gl" hidden></canvas>
+      <div class="hint" id="hint">mueve los controles y observa el patrón</div>
+    </div>
+
+    <!-- ============ 01 RENDIJA ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Estrecha la rendija. <b>El patrón se ensancha</b>: lo contrario de lo que haría una sombra.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-a">Ancho de la rendija &nbsp;a</label>
+          <output id="s0-a-v">50 µm</output>
+        </div>
+        <input type="range" id="s0-a" min="5" max="200" step="1" value="50">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s0-lam-v">633 nm</output>
+        </div>
+        <input type="range" id="s0-lam" min="400" max="700" step="1" value="633">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-L">Distancia a la pantalla &nbsp;L</label>
+          <output id="s0-L-v">2.00 m</output>
+        </div>
+        <input type="range" id="s0-L" min="0.3" max="5" step="0.05" value="2">
+      </div>
+
+      <div class="readout">
+        <div class="row hero">
+          <div class="k">Primer cero &nbsp;<em>sen θ = λ/a</em></div>
+          <div class="v acc" id="s0-th">0.7254°</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Semiancho del máximo central en la pantalla</div>
+          <div class="v cy" id="s0-w">25.32 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Razón &nbsp;<em>a/λ</em></div>
+          <div class="v dim" id="s0-ratio">79.0</div>
+        </div>
+
+        <div class="sect">Reparto de la energía</div>
+        <div class="row pair">
+          <div class="k">Máximo central</div>
+          <div class="v acc">90.3 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Primer máximo lateral</div>
+          <div class="v dim">4.7 %</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note"><b>La relación es inversa:</b> al dividir entre dos el ancho de la rendija, el patrón se abre al doble. Es el comportamiento opuesto al de una sombra geométrica, y por eso la óptica de rayos deja de servir en cuanto la abertura se acerca a la longitud de onda.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> intensidad</span>
+        <span><i style="background:var(--cy)"></i> ceros</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 AIRY ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">Dos estrellas que se acercan. <b>Cierra la pupila y deja de poder separarlas</b>.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-D">Diámetro de la pupila &nbsp;D</label>
+          <output id="s1-D-v">25.0 mm</output>
+        </div>
+        <input type="range" id="s1-D" min="4" max="80" step="0.5" value="25">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-sep">Separación de las fuentes &nbsp;Δθ</label>
+          <output id="s1-sep-v">8.00 ″</output>
+        </div>
+        <input type="range" id="s1-sep" min="0" max="25" step="0.1" value="8">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s1-lam-v">550 nm</output>
+        </div>
+        <input type="range" id="s1-lam" min="400" max="700" step="1" value="550">
+      </div>
+
+      <div class="readout">
+        <div class="row hero">
+          <div class="k">¿Se resuelven?</div>
+          <div class="v ok" id="s1-ok">sí</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Límite de Rayleigh &nbsp;<em>1.22 λ/D</em></div>
+          <div class="v acc" id="s1-ray">5.54 ″</div>
+        </div>
+        <div class="row">
+          <div class="k">Separación actual</div>
+          <div class="v cy" id="s1-sep2">8.00 ″</div>
+        </div>
+        <div class="row">
+          <div class="k">Valle entre los dos picos</div>
+          <div class="v dim" id="s1-dip">47.5 %</div>
+        </div>
+
+        <div class="sect">El disco de Airy</div>
+        <div class="row pair">
+          <div class="k">Radio angular del primer anillo oscuro</div>
+          <div class="v acc" id="s1-airy">5.54 ″</div>
+        </div>
+        <div class="row">
+          <div class="k">Energía dentro del disco central</div>
+          <div class="v dim">83.8 %</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note"><b>El reactivo que casi todos fallan:</b> cerrar el diafragma reduce las aberraciones, es cierto, pero agranda el disco de Airy y empeora el límite por difracción. Son dos efectos opuestos, y el óptimo está donde se cruzan. Nadie mejora la resolución cerrando la pupila.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> suma de las dos</span>
+        <span><i style="background:var(--cy)"></i> cada fuente</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 REJILLA ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Muchas rendijas en lugar de una. <b>La luz sale sólo en direcciones concretas</b>, una por orden.</p>
+
+      <div class="toggle" role="group" aria-label="Tipo de fuente">
+        <button id="s2-mono" aria-pressed="true">Monocromática</button>
+        <button id="s2-white" aria-pressed="false">Luz blanca</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-lpm">Densidad de surcos</label>
+          <output id="s2-lpm-v">600 líneas/mm</output>
+        </div>
+        <input type="range" id="s2-lpm" min="100" max="1800" step="25" value="600">
+      </div>
+
+      <div class="ctrl" id="s2-lam-ctrl">
+        <div class="ctrl-top">
+          <label for="s2-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s2-lam-v">633 nm</output>
+        </div>
+        <input type="range" id="s2-lam" min="400" max="700" step="1" value="633">
+      </div>
+
+      <div class="readout">
+        <div class="row hero">
+          <div class="k">Órdenes visibles &nbsp;<em>d sen θ = mλ</em></div>
+          <div class="v acc" id="s2-orders">±2</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Periodo de la rejilla &nbsp;d</div>
+          <div class="v dim" id="s2-d">1.6667 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Orden 1</div>
+          <div class="v cy" id="s2-m1">22.32°</div>
+        </div>
+        <div class="row">
+          <div class="k">Orden 2</div>
+          <div class="v cy" id="s2-m2">49.43°</div>
+        </div>
+        <div class="row">
+          <div class="k">Orden 3</div>
+          <div class="v dim" id="s2-m3">no existe</div>
+        </div>
+
+        <div class="sect" id="s2-sect">Dispersión</div>
+        <div class="row pair">
+          <div class="k" id="s2-k1">Abanico del orden 1 (400 a 700 nm)</div>
+          <div class="v vi" id="s2-fan">10.95°</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note"><b>Por qué una rejilla y no un prisma:</b> el prisma separa los colores porque el índice depende de la longitud de onda, un efecto pequeño. La rejilla los separa por geometría pura, y la separación crece con el orden. Por eso los espectrómetros usan rejillas, y por eso una rejilla con demasiados surcos pierde los órdenes altos: el seno no puede pasar de 1.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> haz incidente</span>
+        <span><i style="background:var(--cy)"></i> órdenes</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    La rendija usa <code>I = sinc²(πa senθ/λ)</code>; el disco de Airy, <code>I = [2J₁(u)/u]²</code> con <code>u = πD senθ/λ</code>, y la rejilla, <code>d senθ = mλ</code>. Las dos fuentes del montaje 02 se suman en intensidad, por ser incoherentes entre sí. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ================================================================
+  // funciones especiales
+  // ================================================================
+  // J1 por Abramowitz & Stegun 9.4.4 / 9.4.6 (error < 1e-8)
+  function J1(x) {
+    var ax = Math.abs(x), y, p, z, f1, t1, r;
+    if (ax < 3.0) {
+      y = (x / 3.0) * (x / 3.0);
+      p = 0.5 - 0.56249985 * y + 0.21093573 * y * y - 0.03954289 * y * y * y
+        + 0.00443319 * Math.pow(y, 4) - 0.00031761 * Math.pow(y, 5) + 0.00001109 * Math.pow(y, 6);
+      return x * p;
+    }
+    z = 3.0 / ax;
+    f1 = 0.79788456 + 0.00000156 * z + 0.01659667 * z * z + 0.00017105 * z * z * z
+       - 0.00249511 * Math.pow(z, 4) + 0.00113653 * Math.pow(z, 5) - 0.00020033 * Math.pow(z, 6);
+    t1 = ax - 2.35619449 + 0.12499612 * z + 0.00005650 * z * z - 0.00637879 * z * z * z
+       + 0.00074348 * Math.pow(z, 4) + 0.00079824 * Math.pow(z, 5) - 0.00029166 * Math.pow(z, 6);
+    r = f1 * Math.cos(t1) / Math.sqrt(ax);
+    return x > 0 ? r : -r;
+  }
+  function airyI(u) {
+    if (Math.abs(u) < 1e-7) return 1;
+    var t = 2 * J1(u) / u;
+    return t * t;
+  }
+  function sinc2(x) {
+    if (Math.abs(x) < 1e-7) return 1;
+    var s = Math.sin(x) / x;
+    return s * s;
+  }
+  // color sRGB aproximado de una longitud de onda
+  function lamRGB(lam) {
+    var r = 0, g = 0, b = 0;
+    if (lam >= 380 && lam < 440) { r = -(lam - 440) / 60; b = 1; }
+    else if (lam < 490) { g = (lam - 440) / 50; b = 1; }
+    else if (lam < 510) { g = 1; b = -(lam - 510) / 20; }
+    else if (lam < 580) { r = (lam - 510) / 70; g = 1; }
+    else if (lam < 645) { r = 1; g = -(lam - 645) / 65; }
+    else if (lam <= 780) { r = 1; }
+    var f = 1;
+    if (lam > 700) f = 0.3 + 0.7 * (780 - lam) / 80;
+    else if (lam < 420) f = 0.3 + 0.7 * (lam - 380) / 40;
+    var gm = function (x) { return Math.pow(Math.max(0, Math.min(1, x * f)), 0.8); };
+    return [gm(r), gm(g), gm(b)];
+  }
+  function lamHex(lam) {
+    var c = lamRGB(lam);
+    return (Math.round(c[0] * 255) << 16) | (Math.round(c[1] * 255) << 8) | Math.round(c[2] * 255);
+  }
+  function lamCSS(lam, a) {
+    var c = lamRGB(lam);
+    return "rgba(" + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," + Math.round(c[2] * 255) + "," + (a === undefined ? 1 : a) + ")";
+  }
+
+  // ================================================================
+  // lienzos
+  // ================================================================
+  var c2d = document.getElementById("c2d");
+  var glc = document.getElementById("gl");
+  var viewport = c2d.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+
+  var renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: true });
+  renderer.setClearColor(0x050709, 1);
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(42, 4 / 3, 0.1, 300);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+
+  var orbit = { az: 0.0, el: 0.30, dist: 8.4, target: new THREE.Vector3(0, 0, 0) };
+  function place() {
+    var ce = Math.cos(orbit.el), se = Math.sin(orbit.el);
+    camera.position.set(
+      orbit.target.x + orbit.dist * ce * Math.sin(orbit.az),
+      orbit.target.y + orbit.dist * se,
+      orbit.target.z + orbit.dist * ce * Math.cos(orbit.az)
+    );
+    camera.lookAt(orbit.target);
+  }
+  var drag = null;
+  function ptr(e) { var t = e.touches ? e.touches[0] : e; return { x: t.clientX, y: t.clientY }; }
+  function mv(e) {
+    if (!drag) return;
+    var p = ptr(e);
+    orbit.az -= (p.x - drag.x) * 0.0075;
+    orbit.el += (p.y - drag.y) * 0.0075;
+    orbit.el = Math.max(-1.42, Math.min(1.42, orbit.el));
+    drag = p; place();
+    if (e.cancelable) e.preventDefault();
+  }
+  glc.addEventListener("mousedown", function (e) { drag = ptr(e); });
+  window.addEventListener("mousemove", mv);
+  window.addEventListener("mouseup", function () { drag = null; });
+  glc.addEventListener("touchstart", function (e) { drag = ptr(e); }, { passive: true });
+  glc.addEventListener("touchmove", mv, { passive: false });
+  glc.addEventListener("touchend", function () { drag = null; });
+  glc.addEventListener("wheel", function (e) {
+    orbit.dist = Math.max(3, Math.min(20, orbit.dist + e.deltaY * 0.0045));
+    place(); e.preventDefault();
+  }, { passive: false });
+
+  var dpr = 1;
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (c2d.width !== W || c2d.height !== H) {
+      c2d.width = W; c2d.height = H;
+      if (!c2d.hidden) redraw2d();
+    }
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = c2d.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#050709";
+    ctx.fillRect(0, 0, c2d.width, c2d.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  // ================================================================
+  // 01 — rendija simple
+  // ================================================================
+  function drawSlit() {
+    var ctx = ctx2d();
+    var w = c2d.width / dpr, h = c2d.height / dpr;
+    var mL = 48, mR = 20, mT = 26, mB = 58;
+    var pw = w - mL - mR;
+    var bandH = 46;                       // franja del patrón
+    var gap = 14;
+    var ph = h - mT - mB - bandH - gap;
+
+    var a = parseFloat($("s0-a").value) * 1e-6;
+    var lam = parseFloat($("s0-lam").value) * 1e-9;
+    var L = parseFloat($("s0-L").value);
+
+    var s1 = lam / a;                      // seno del primer cero
+    var span = Math.min(1, s1 * 3.6);      // media ventana en seno
+    var X = function (s) { return mL + (s / span + 1) / 2 * pw; };
+    var Y = function (v) { return mT + (1 - v) * ph; };
+
+    // rejilla
+    ctx.strokeStyle = "rgba(34,48,68,.85)"; ctx.lineWidth = 1;
+    ctx.font = "11px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "#8695aa";
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (var v = 0; v <= 1.0001; v += 0.25) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(v)); ctx.lineTo(mL + pw, Y(v)); ctx.stroke();
+      ctx.fillText(v.toFixed(2), mL - 7, Y(v));
+    }
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("I / I₀", mL - 8, mT - 10);
+
+    // ceros
+    for (var m = 1; m <= 8; m++) {
+      var sm = m * s1;
+      if (sm > span) break;
+      [sm, -sm].forEach(function (ss) {
+        ctx.strokeStyle = m === 1 ? "rgba(95,168,216,.75)" : "rgba(95,168,216,.25)";
+        ctx.setLineDash(m === 1 ? [5, 4] : [2, 4]);
+        ctx.beginPath(); ctx.moveTo(X(ss), mT); ctx.lineTo(X(ss), mT + ph); ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+
+    // curva
+    var col = lamCSS(parseFloat($("s0-lam").value));
+    ctx.beginPath();
+    for (var i = 0; i <= 900; i++) {
+      var s = -span + 2 * span * i / 900;
+      var I = sinc2(Math.PI * a * s / lam);
+      if (i === 0) ctx.moveTo(X(s), Y(I)); else ctx.lineTo(X(s), Y(I));
+    }
+    ctx.strokeStyle = col; ctx.lineWidth = 2.2; ctx.stroke();
+    ctx.lineTo(X(span), Y(0)); ctx.lineTo(X(-span), Y(0)); ctx.closePath();
+    ctx.fillStyle = lamCSS(parseFloat($("s0-lam").value), 0.13); ctx.fill();
+
+    // eje x
+    ctx.strokeStyle = "rgba(34,48,68,.9)";
+    ctx.beginPath(); ctx.moveTo(mL, Y(0)); ctx.lineTo(mL + pw, Y(0)); ctx.stroke();
+
+    // franja del patrón, tal como se vería
+    var by = mT + ph + gap;
+    var img = ctx.createImageData(Math.round(pw), 1);
+    var rgb = lamRGB(parseFloat($("s0-lam").value));
+    for (var px = 0; px < Math.round(pw); px++) {
+      var sx = (px / pw * 2 - 1) * span;
+      var Ii = sinc2(Math.PI * a * sx / lam);
+      var g = Math.pow(Ii, 0.42);          // compresión para ver los lóbulos
+      img.data[px * 4] = Math.round(rgb[0] * 255 * g);
+      img.data[px * 4 + 1] = Math.round(rgb[1] * 255 * g);
+      img.data[px * 4 + 2] = Math.round(rgb[2] * 255 * g);
+      img.data[px * 4 + 3] = 255;
+    }
+    var tmp = document.createElement("canvas");
+    tmp.width = Math.round(pw); tmp.height = 1;
+    tmp.getContext("2d").putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(tmp, mL, by, pw, bandH);
+    ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+    ctx.strokeRect(mL, by, pw, bandH);
+
+    // escala en milímetros sobre la pantalla
+    ctx.font = "11px 'IBM Plex Mono', ui-monospace, monospace";
+    ctx.fillStyle = "#8695aa"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    var halfmm = L * Math.tan(Math.asin(Math.min(span, 0.999))) * 1000;
+    var step = Math.pow(10, Math.round(Math.log10(halfmm / 3)));
+    if (halfmm / step > 6) step *= 2;
+    for (var mm = -Math.floor(halfmm / step) * step; mm <= halfmm; mm += step) {
+      var sr = Math.sin(Math.atan2(mm / 1000, L));
+      if (Math.abs(sr) > span) continue;
+      ctx.fillText(Math.abs(mm) < 1e-9 ? "0" : (mm + ""), X(sr), by + bandH + 6);
+    }
+    ctx.fillText("posición sobre la pantalla  [mm]", mL + pw / 2, by + bandH + 22);
+  }
+
+  // ================================================================
+  // 02 — Airy y resolución
+  // ================================================================
+  function drawAiry() {
+    var ctx = ctx2d();
+    var w = c2d.width / dpr, h = c2d.height / dpr;
+    var mL = 48, mR = 20, mT = 28, mB = 56;
+    var pw = w - mL - mR;
+    var imgH = Math.min(150, (h - mT - mB) * 0.46);
+    var gap = 12;
+    var ph = h - mT - mB - imgH - gap;
+
+    var D = parseFloat($("s1-D").value) * 1e-3;
+    var lam = parseFloat($("s1-lam").value) * 1e-9;
+    var sepArc = parseFloat($("s1-sep").value);
+    var sep = sepArc / 3600 * Math.PI / 180;          // rad
+    var rayl = 1.22 * lam / D;                         // rad
+
+    var span = Math.max(rayl * 3.4, sep * 2.4);        // media ventana angular
+    var X = function (t) { return mL + (t / span + 1) / 2 * pw; };
+    var Y = function (v) { return mT + (1 - v) * ph; };
+
+    var k = Math.PI * D / lam;
+    var I1 = function (t) { return airyI(k * (t - sep / 2)); };
+    var I2 = function (t) { return airyI(k * (t + sep / 2)); };
+
+    // normalización de la suma
+    var peak = 0;
+    for (var q = 0; q <= 400; q++) {
+      var tq = -span + 2 * span * q / 400;
+      peak = Math.max(peak, I1(tq) + I2(tq));
+    }
+    if (peak < 1e-9) peak = 1;
+
+    // rejilla
+    ctx.strokeStyle = "rgba(34,48,68,.85)"; ctx.lineWidth = 1;
+    ctx.font = "11px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "#8695aa";
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (var v = 0; v <= 1.0001; v += 0.25) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(v)); ctx.lineTo(mL + pw, Y(v)); ctx.stroke();
+      ctx.fillText(v.toFixed(2), mL - 7, Y(v));
+    }
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("intensidad normalizada", mL - 8, mT - 11);
+
+    // perfiles individuales
+    [I1, I2].forEach(function (f) {
+      ctx.beginPath();
+      for (var i = 0; i <= 700; i++) {
+        var t = -span + 2 * span * i / 700;
+        var yv = Y(f(t) / peak);
+        if (i === 0) ctx.moveTo(X(t), yv); else ctx.lineTo(X(t), yv);
+      }
+      ctx.strokeStyle = "rgba(95,168,216,.62)"; ctx.lineWidth = 1.3; ctx.stroke();
+    });
+
+    // suma
+    ctx.beginPath();
+    for (var j = 0; j <= 900; j++) {
+      var tj = -span + 2 * span * j / 900;
+      var yj = Y((I1(tj) + I2(tj)) / peak);
+      if (j === 0) ctx.moveTo(X(tj), yj); else ctx.lineTo(X(tj), yj);
+    }
+    ctx.strokeStyle = "#f2c454"; ctx.lineWidth = 2.4; ctx.stroke();
+
+    // marca del valle central
+    var dip = (I1(0) + I2(0)) / peak;
+    ctx.strokeStyle = sepArc > 0 ? "rgba(242,196,84,.5)" : "rgba(134,149,170,.4)";
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(mL, Y(dip)); ctx.lineTo(mL + pw, Y(dip)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // imagen del patrón, dos discos de Airy sumados
+    var iy = mT + ph + gap;
+    var iw = Math.round(pw), ih = Math.round(imgH);
+    var sc = 2;                                         // submuestreo
+    var sw = Math.max(1, Math.round(iw / sc)), sh = Math.max(1, Math.round(ih / sc));
+    var tmp = document.createElement("canvas");
+    tmp.width = sw; tmp.height = sh;
+    var tctx = tmp.getContext("2d");
+    var im = tctx.createImageData(sw, sh);
+    var rgb = lamRGB(parseFloat($("s1-lam").value));
+    var vspan = span * (ih / iw);                       // escala vertical coherente
+    for (var yy = 0; yy < sh; yy++) {
+      var ty = (yy / sh * 2 - 1) * vspan;
+      for (var xx = 0; xx < sw; xx++) {
+        var tx = (xx / sw * 2 - 1) * span;
+        var r1 = Math.sqrt((tx - sep / 2) * (tx - sep / 2) + ty * ty);
+        var r2 = Math.sqrt((tx + sep / 2) * (tx + sep / 2) + ty * ty);
+        var Iv = (airyI(k * r1) + airyI(k * r2)) / peak;
+        var gg = Math.pow(Math.min(1, Iv), 0.38);
+        var o = (yy * sw + xx) * 4;
+        im.data[o] = Math.round(rgb[0] * 255 * gg);
+        im.data[o + 1] = Math.round(rgb[1] * 255 * gg);
+        im.data[o + 2] = Math.round(rgb[2] * 255 * gg);
+        im.data[o + 3] = 255;
+      }
+    }
+    tctx.putImageData(im, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(tmp, mL, iy, iw, ih);
+    ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+    ctx.strokeRect(mL, iy, iw, ih);
+
+    // escala angular
+    ctx.font = "11px 'IBM Plex Mono', ui-monospace, monospace";
+    ctx.fillStyle = "#8695aa"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    var halfArc = span * 180 / Math.PI * 3600;
+    var stp = Math.pow(10, Math.round(Math.log10(halfArc / 3)));
+    if (halfArc / stp > 6) stp *= 2;
+    for (var ac = -Math.floor(halfArc / stp) * stp; ac <= halfArc; ac += stp) {
+      var tr = ac / 3600 * Math.PI / 180;
+      if (Math.abs(tr) > span) continue;
+      ctx.fillText(String(Math.round(ac * 100) / 100), X(tr), iy + ih + 6);
+    }
+    ctx.fillText("separación angular  [segundos de arco]", mL + pw / 2, iy + ih + 22);
+  }
+
+  // ================================================================
+  // 03 — rejilla (3D)
+  // ================================================================
+  var gG = new THREE.Group(), gGs = new THREE.Group(), gGd = new THREE.Group();
+  gG.add(gGs, gGd); scene.add(gG);
+
+  function lineMat(c, o) {
+    return new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: o === undefined ? 1 : o });
+  }
+  function segL(a, b, c, o) {
+    return new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), lineMat(c, o));
+  }
+  (function () {
+    // placa de la rejilla, en el plano YZ
+    var plate = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.4, 2.4),
+      new THREE.MeshBasicMaterial({ color: 0x1b2a3c, transparent: true, opacity: 0.55, side: THREE.DoubleSide })
+    );
+    plate.rotation.y = Math.PI / 2;
+    gGs.add(plate);
+    gGs.add(new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.PlaneGeometry(2.4, 2.4)), lineMat(0x5fa8d8, 0.6)
+    ).rotateY(Math.PI / 2));
+    // surcos
+    for (var i = -10; i <= 10; i++) {
+      gGs.add(segL(new THREE.Vector3(0, i * 0.11, -1.2), new THREE.Vector3(0, i * 0.11, 1.2), 0x5fa8d8, 0.22));
+    }
+    // normal
+    for (var k = 0; k < 10; k += 2) {
+      gGs.add(segL(new THREE.Vector3(1 + k * 0.28, 0, 0), new THREE.Vector3(1 + (k + 1) * 0.28, 0, 0), 0x8695aa, 0.35));
+    }
+  })();
+
+  function buildGrating(orders, white) {
+    while (gGd.children.length) {
+      var c = gGd.children.pop();
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) c.material.dispose();
+    }
+    var L = 4.3;
+    // haz incidente
+    var inc = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.05, 3.4, 10),
+      new THREE.MeshBasicMaterial({ color: 0xf2c454, transparent: true, opacity: 0.85 })
+    );
+    inc.rotation.z = Math.PI / 2;
+    inc.position.x = -1.7;
+    gGd.add(inc);
+
+    orders.forEach(function (o) {
+      // o = {m, bands:[{lam, thDeg}]}
+      o.bands.forEach(function (b, bi) {
+        var t = b.thDeg * Math.PI / 180;
+        var p = new THREE.Vector3(L * Math.cos(t), L * Math.sin(t), 0);
+        var hex = (white && o.m === 0) ? 0xf4f6fa : lamHex(b.lam);
+        var op = o.m === 0 ? 0.9 : (white ? 0.75 : 0.82);
+        var mesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(white ? 0.028 : 0.045, white ? 0.028 : 0.045, L, 8),
+          new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: op })
+        );
+        var q = new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0), p.clone().normalize()
+        );
+        mesh.position.copy(p).multiplyScalar(0.5);
+        mesh.quaternion.copy(q);
+        gGd.add(mesh);
+        // espejo hacia abajo
+        if (o.m !== 0) {
+          var p2 = new THREE.Vector3(p.x, -p.y, 0);
+          var m2 = mesh.clone();
+          m2.material = mesh.material.clone();
+          m2.position.set(p2.x * 0.5, p2.y * 0.5, 0);
+          m2.quaternion.copy(new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0), p2.clone().normalize()
+          ));
+          gGd.add(m2);
+        }
+      });
+    });
+  }
+
+  // ================================================================
+  // lecturas
+  // ================================================================
+  function fmt(x, d) { return x.toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+
+  function update0() {
+    var a = parseFloat($("s0-a").value), lam = parseFloat($("s0-lam").value), L = parseFloat($("s0-L").value);
+    var s1 = (lam * 1e-9) / (a * 1e-6);
+    var th = Math.asin(Math.min(1, s1)) * 180 / Math.PI;
+    var halfw = L * Math.tan(Math.asin(Math.min(0.9999, s1))) * 1000;
+
+    $("s0-a-v").textContent = a + " µm";
+    $("s0-lam-v").textContent = lam + " nm";
+    $("s0-L-v").textContent = fmt(L, 2) + " m";
+    $("s0-th").textContent = s1 >= 1 ? "no hay cero" : fmt(th, 4) + "°";
+    $("s0-w").textContent = s1 >= 1 ? "—" : (halfw >= 1000 ? fmt(halfw / 1000, 2) + " m" : fmt(halfw, 2) + " mm");
+    $("s0-ratio").textContent = fmt(a * 1000 / lam, 1);
+
+    var note = $("s0-note");
+    if (a * 1000 / lam < 2) {
+      note.className = "note hot";
+      note.innerHTML = "<b>La rendija ya no es grande comparada con λ:</b> con a/λ = " + fmt(a * 1000 / lam, 2) +
+        " el patrón cubre casi todo el semiespacio y el concepto de haz deja de tener sentido. Aquí la óptica de rayos no es una aproximación mala: simplemente no aplica.";
+    } else {
+      note.className = "note";
+      note.innerHTML = "<b>La relación es inversa:</b> al dividir entre dos el ancho de la rendija, el patrón se abre al doble. Es lo contrario de una sombra geométrica, y por eso la óptica de rayos deja de servir en cuanto la abertura se acerca a la longitud de onda.";
+    }
+    redraw2d();
+  }
+
+  function update1() {
+    var D = parseFloat($("s1-D").value), lam = parseFloat($("s1-lam").value);
+    var sepArc = parseFloat($("s1-sep").value);
+    var rayl = 1.22 * (lam * 1e-9) / (D * 1e-3);
+    var raylArc = rayl * 180 / Math.PI * 3600;
+    var sep = sepArc / 3600 * Math.PI / 180;
+    var k = Math.PI * (D * 1e-3) / (lam * 1e-9);
+
+    // valle central relativo al pico de la suma
+    var peak = 0;
+    for (var q = -200; q <= 200; q++) {
+      var tq = q / 200 * Math.max(rayl * 3, sep * 2);
+      peak = Math.max(peak, airyI(k * (tq - sep / 2)) + airyI(k * (tq + sep / 2)));
+    }
+    var dip = peak > 0 ? (2 * airyI(k * sep / 2)) / peak : 1;
+    var resuelto = sepArc >= raylArc;
+
+    $("s1-D-v").textContent = fmt(D, 1) + " mm";
+    $("s1-sep-v").textContent = fmt(sepArc, 2) + " ″";
+    $("s1-lam-v").textContent = lam + " nm";
+    $("s1-ray").textContent = fmt(raylArc, 2) + " ″";
+    $("s1-airy").textContent = fmt(raylArc, 2) + " ″";
+    $("s1-sep2").textContent = fmt(sepArc, 2) + " ″";
+    $("s1-dip").textContent = fmt(dip * 100, 1) + " %";
+    $("s1-ok").textContent = sepArc === 0 ? "son una sola" : (resuelto ? "sí" : "no");
+    $("s1-ok").className = "v " + (sepArc === 0 ? "dim" : (resuelto ? "ok" : "no"));
+
+    var note = $("s1-note");
+    if (!resuelto && sepArc > 0) {
+      note.className = "note hot";
+      note.innerHTML = "<b>No se resuelven.</b> Están separadas " + fmt(sepArc, 2) + "″ y el límite de esta pupila es " +
+        fmt(raylArc, 2) + "″. Los dos discos se funden en uno solo, y ningún aumento posterior los separa: la información ya se perdió en la pupila. Abre el diámetro y vuelve a mirar.";
+    } else if (resuelto && sepArc > 0) {
+      note.className = "note good";
+      note.innerHTML = "<b>El reactivo que casi todos fallan:</b> cerrar el diafragma reduce las aberraciones, es cierto, pero agranda el disco de Airy y empeora el límite por difracción. Prueba a bajar D hasta que estas dos fuentes se fundan: la resolución empeoró sin tocar nada más.";
+    } else {
+      note.className = "note";
+      note.innerHTML = "<b>Una sola fuente puntual</b> no produce un punto, sino un disco rodeado de anillos. Ese disco es la imagen más pequeña que esta pupila puede formar, y su tamaño lo fija la difracción, no la calidad del vidrio.";
+    }
+    redraw2d();
+  }
+
+  var whiteMode = false;
+  function update2() {
+    var lpm = parseFloat($("s2-lpm").value);
+    var lam = parseFloat($("s2-lam").value);
+    var d = 1e-3 / lpm;                       // m
+
+    $("s2-lpm-v").textContent = lpm + " líneas/mm";
+    $("s2-lam-v").textContent = lam + " nm";
+    $("s2-d").textContent = fmt(d * 1e6, 4) + " µm";
+    $("s2-lam-ctrl").hidden = whiteMode;
+    $("s2-mono").setAttribute("aria-pressed", String(!whiteMode));
+    $("s2-white").setAttribute("aria-pressed", String(whiteMode));
+
+    var refLam = whiteMode ? 550 : lam;
+    var nmax = 0;
+    var angs = [];
+    for (var m = 1; m <= 3; m++) {
+      var s = m * (refLam * 1e-9) / d;
+      if (s <= 1) { nmax = m; angs[m] = Math.asin(s) * 180 / Math.PI; }
+      else angs[m] = null;
+    }
+    $("s2-orders").textContent = nmax === 0 ? "sólo el orden 0" : "±" + nmax;
+    [1, 2, 3].forEach(function (m) {
+      var el = $("s2-m" + m);
+      el.textContent = angs[m] === null ? "no existe" : fmt(angs[m], 2) + "°";
+      el.className = "v " + (angs[m] === null ? "dim" : "cy");
+    });
+
+    // abanico del orden 1 con luz blanca
+    var a4 = 400e-9 / d, a7 = 700e-9 / d;
+    var fan = (a4 <= 1 && a7 <= 1)
+      ? (Math.asin(a7) - Math.asin(a4)) * 180 / Math.PI : null;
+    $("s2-fan").textContent = fan === null ? "fuera de rango" : fmt(fan, 2) + "°";
+
+    var note = $("s2-note");
+    if (nmax === 0) {
+      note.className = "note hot";
+      note.innerHTML = "<b>Sólo queda el orden cero.</b> Con " + lpm + " líneas/mm el periodo es menor que la longitud de onda, así que ni siquiera el primer orden cabe: <code>senθ</code> tendría que pasar de 1. La rejilla deja de dispersar y se comporta como un espejo.";
+    } else {
+      note.className = "note";
+      note.innerHTML = "<b>Por qué una rejilla y no un prisma:</b> el prisma separa los colores porque el índice depende de la longitud de onda, un efecto pequeño. La rejilla los separa por geometría pura, y la separación crece con el orden. Por eso los espectrómetros usan rejillas, y por eso una rejilla con demasiados surcos pierde los órdenes altos.";
+    }
+
+    // construir la escena
+    var orders = [{ m: 0, bands: [{ lam: refLam, thDeg: 0 }] }];
+    if (whiteMode) {
+      for (var mm = 1; mm <= 3; mm++) {
+        var bands = [];
+        for (var lw = 400; lw <= 700; lw += 12) {
+          var sw = mm * (lw * 1e-9) / d;
+          if (sw <= 1) bands.push({ lam: lw, thDeg: Math.asin(sw) * 180 / Math.PI });
+        }
+        if (bands.length) orders.push({ m: mm, bands: bands });
+      }
+    } else {
+      for (var m2 = 1; m2 <= 3; m2++) {
+        if (angs[m2] !== null) orders.push({ m: m2, bands: [{ lam: lam, thDeg: angs[m2] }] });
+      }
+    }
+    buildGrating(orders, whiteMode);
+  }
+
+  // ================================================================
+  // pestañas
+  // ================================================================
+  var cur = 0;
+  function redraw2d() {
+    if (c2d.hidden) return;
+    if (cur === 0) drawSlit();
+    else if (cur === 1) drawAiry();
+  }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, gl: false },
+    { p: "p1", t: "tab1", u: update1, gl: false },
+    { p: "p2", t: "tab2", u: update2, gl: true }
+  ];
+
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    var use3d = views[i].gl;
+    glc.hidden = !use3d;
+    c2d.hidden = use3d;
+    gG.visible = use3d;
+    hint.textContent = use3d ? "arrastra para girar · rueda para acercar" : "mueve los controles y observa el patrón";
+    if (use3d) { orbit.az = 0.0; orbit.el = 0.30; orbit.dist = 10.2; orbit.target.set(0.8, 0, 0); place(); }
+    resize();
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-a", "s0-lam", "s0-L"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-D", "s1-sep", "s1-lam"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-lpm", "s2-lam"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  $("s2-mono").addEventListener("click", function () { whiteMode = false; update2(); });
+  $("s2-white").addEventListener("click", function () { whiteMode = true; update2(); });
+
+  resize();
+  update0(); update1(); update2();
+  show(0);
+
+  (function loop() {
+    requestAnimationFrame(loop);
+    resize();
+    if (!glc.hidden) renderer.render(scene, camera);
+  })();
+})();
+</script>
+
+</body></html>

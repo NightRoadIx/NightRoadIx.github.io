@@ -1,0 +1,947 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Interferencia</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Banco de interferencia</h1>
+    <p class="lede">Dos caminos que se vuelven a juntar suman amplitudes, no intensidades. Que el resultado se vea o no depende de algo que la fuente trae de fábrica: cuánta coherencia tiene.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> Dos rendijas</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Coherencia temporal</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Coherencia espacial</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">mueve el punto de observación y mira la diferencia de camino</div>
+    </div>
+
+    <!-- ============ 01 DOS RENDIJAS ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Lo que decide si hay luz u oscuridad en un punto es <b>cuántas longitudes de onda caben en la diferencia de camino</b>.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-d">Separación de las rendijas &nbsp;d</label>
+          <output id="s0-d-v">0.250 mm</output>
+        </div>
+        <input type="range" id="s0-d" min="0.05" max="1" step="0.005" value="0.25">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s0-lam-v">633 nm</output>
+        </div>
+        <input type="range" id="s0-lam" min="400" max="700" step="1" value="633">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-y">Punto de observación &nbsp;y</label>
+          <output id="s0-y-v">+2.53 mm</output>
+        </div>
+        <input type="range" id="s0-y" min="-12" max="12" step="0.01" value="2.53">
+      </div>
+
+      <div class="readout">
+        <div class="sect">En el punto marcado</div>
+        <div class="row pair">
+          <div class="k">Diferencia de camino &nbsp;<em>δ = d·sen θ</em></div>
+          <div class="v acc" id="s0-delta">633.0 nm</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Cuántas ondas caben &nbsp;<em>δ/λ</em></div>
+          <div class="v acc" id="s0-ord">1.000</div>
+        </div>
+        <div class="row">
+          <div class="k">Intensidad relativa</div>
+          <div class="v cy" id="s0-int">100.0 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Qué hay ahí</div>
+          <div class="v ok" id="s0-que">máximo de orden 1</div>
+        </div>
+
+        <div class="sect">El patrón completo</div>
+        <div class="row pair">
+          <div class="k">Interfranja &nbsp;<em>Δy = λL/d</em></div>
+          <div class="v vi" id="s0-dy">2.532 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Franjas en la pantalla</div>
+          <div class="v dim" id="s0-nf">9</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> los dos caminos</span>
+        <span><i style="background:var(--ok)"></i> punto observado</span>
+        <span><i style="background:var(--vi)"></i> intensidad</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 COHERENCIA TEMPORAL ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">Si los dos caminos difieren demasiado, la onda ya <b>no se parece a sí misma</b> y las franjas se borran.</p>
+
+      <div class="toggle" role="group" aria-label="Fuente">
+        <button id="f-hene" aria-pressed="false">HeNe</button>
+        <button id="f-diodo" aria-pressed="false">Diodo</button>
+        <button id="f-led" aria-pressed="true">LED</button>
+        <button id="f-blanca" aria-pressed="false">Luz blanca</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-dl">Anchura espectral &nbsp;Δλ</label>
+          <output id="s1-dl-v">20.0 nm</output>
+        </div>
+        <input type="range" id="s1-dl" min="-3" max="2.6" step="0.01" value="1.301">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-cam">Diferencia de camino &nbsp;ΔL</label>
+          <output id="s1-cam-v">10.0 µm</output>
+        </div>
+        <input type="range" id="s1-cam" min="-1" max="6" step="0.01" value="1">
+      </div>
+
+      <div class="readout">
+        <div class="sect">La fuente</div>
+        <div class="row pair">
+          <div class="k">Longitud de coherencia &nbsp;<em>l<sub>c</sub> = λ²/Δλ</em></div>
+          <div class="v acc" id="s1-lc">19.84 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">En longitudes de onda</div>
+          <div class="v dim" id="s1-nw">31 λ</div>
+        </div>
+
+        <div class="sect">Con esta diferencia de camino</div>
+        <div class="row hero">
+          <div class="k">Visibilidad &nbsp;<em>(I₊−I₋)/(I₊+I₋)</em></div>
+          <div class="v acc" id="s1-V">0.405</div>
+        </div>
+        <div class="row">
+          <div class="k">ΔL en unidades de &nbsp;<em>l<sub>c</sub></em></div>
+          <div class="v cy" id="s1-rel">0.504</div>
+        </div>
+        <div class="row">
+          <div class="k">Las franjas</div>
+          <div class="v ok" id="s1-ver">se ven con poco contraste</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> visibilidad</span>
+        <span><i style="background:var(--ok)"></i> longitud de coherencia</span>
+        <span><i style="background:var(--cy)"></i> punto actual</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 COHERENCIA ESPACIAL ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Una fuente ancha son muchas fuentes puntuales, cada una con su patrón corrido. <b>Sumados, se borran.</b></p>
+
+      <div class="toggle" role="group" aria-label="Fuente">
+        <button id="e-sol" aria-pressed="false">El Sol</button>
+        <button id="e-lamp" aria-pressed="false">Lámpara lejana</button>
+        <button id="e-fina" aria-pressed="false">Rendija fuente</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-th">Tamaño angular de la fuente &nbsp;θ<sub>s</sub></label>
+          <output id="s2-th-v">9.25 mrad</output>
+        </div>
+        <input type="range" id="s2-th" min="-2" max="1.4" step="0.01" value="0.966">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-d">Separación de las rendijas &nbsp;d</label>
+          <output id="s2-d-v">30.0 µm</output>
+        </div>
+        <input type="range" id="s2-d" min="2" max="300" step="0.5" value="30">
+      </div>
+
+      <div class="readout">
+        <div class="sect">La fuente</div>
+        <div class="row pair">
+          <div class="k">Anchura de coherencia &nbsp;<em>λ/θ<sub>s</sub></em></div>
+          <div class="v acc" id="s2-lt">59.5 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Rendijas más juntas que eso</div>
+          <div class="v ok" id="s2-cabe">sí, caben</div>
+        </div>
+
+        <div class="sect">Con esta separación</div>
+        <div class="row hero">
+          <div class="k">Visibilidad &nbsp;<em>|sinc(d·θ<sub>s</sub>/λ)|</em></div>
+          <div class="v acc" id="s2-V">0.632</div>
+        </div>
+        <div class="row">
+          <div class="k">Las franjas</div>
+          <div class="v ok" id="s2-ver">se ven bien</div>
+        </div>
+        <div class="row">
+          <div class="k">Primer cero en</div>
+          <div class="v vi" id="s2-cero">59.5 µm</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> visibilidad</span>
+        <span><i style="background:var(--vi)"></i> primer cero</span>
+        <span><i style="background:var(--cy)"></i> punto actual</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    En el montaje 01 la pantalla está a <code>L = 1000 mm</code> y la intensidad es <code>I = I₀·cos²(πδ/λ)</code> con <code>δ = d·sen θ</code>, calculada sin aproximar el seno. La longitud de coherencia del montaje 02 se define como <code>l_c = λ²/Δλ</code>, que es la estimación habitual; la curva de visibilidad corresponde a un espectro gaussiano de anchura a media altura <code>Δλ</code>, para el que <code>V = exp[−(π²/4ln2)·(ΔL/l_c)²]</code>, de modo que en <code>ΔL = l_c</code> queda ya un 3 % de contraste. <b>Conviene decirlo en clase: la longitud de coherencia no es una frontera donde las franjas se apagan de golpe, sino la escala en la que se desvanecen</b>, y otros libros la definen con factores distintos. El montaje 03 aplica el teorema de van Cittert–Zernike a una rendija fuente uniforme, cuyo grado de coherencia es la transformada de Fourier de la fuente, con <code>λ = 550 nm</code>. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    draw();
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  function sgn(x, d) { return (x >= 0 ? "+" : "−") + fmt(Math.abs(x), d); }
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+
+  // mismo mapeo de color que el banco de difraccion
+  function lamRGB(lam) {
+    var r = 0, g = 0, b = 0;
+    if (lam >= 380 && lam < 440) { r = -(lam - 440) / 60; b = 1; }
+    else if (lam < 490) { g = (lam - 440) / 50; b = 1; }
+    else if (lam < 510) { g = 1; b = -(lam - 510) / 20; }
+    else if (lam < 580) { r = (lam - 510) / 70; g = 1; }
+    else if (lam < 645) { r = 1; g = -(lam - 645) / 65; }
+    else if (lam <= 780) { r = 1; }
+    var f = 1;
+    if (lam > 700) f = 0.3 + 0.7 * (780 - lam) / 80;
+    else if (lam < 420) f = 0.3 + 0.7 * (lam - 380) / 40;
+    var gm = function (x) { return Math.pow(Math.max(0, Math.min(1, x * f)), 0.8); };
+    return [gm(r), gm(g), gm(b)];
+  }
+  function lamCSS(lam, a) {
+    var c = lamRGB(lam);
+    return "rgba(" + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," +
+           Math.round(c[2] * 255) + "," + (a === undefined ? 1 : a) + ")";
+  }
+  // longitud con la unidad que le corresponda, para no leer 0.000001 m
+  function largo(mm) {
+    var a = Math.abs(mm);
+    if (a < 1e-3) return fmt(mm * 1e6, 1) + " nm";
+    if (a < 1) return fmt(mm * 1e3, 1) + " µm";
+    if (a < 1000) return fmt(mm, 2) + " mm";
+    return fmt(mm / 1000, 3) + " m";
+  }
+
+  // banda de franjas: I = (1 + V cos phi)/2, que conserva la potencia al perder contraste
+  function franjas(ctx, x0, y0, wid, hei, periodoPx, V, rgb, vertical) {
+    var n = vertical ? hei : wid;
+    for (var i = 0; i < n; i++) {
+      var phi = 2 * Math.PI * (i - n / 2) / periodoPx;
+      var I = (1 + V * Math.cos(phi)) / 2;
+      ctx.fillStyle = "rgb(" + Math.round(rgb[0] * 255 * I) + "," +
+                      Math.round(rgb[1] * 255 * I) + "," + Math.round(rgb[2] * 255 * I) + ")";
+      if (vertical) ctx.fillRect(x0, y0 + i, wid, 1);
+      else ctx.fillRect(x0 + i, y0, 1, hei);
+    }
+    ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + .5, y0 + .5, wid - 1, hei - 1);
+  }
+
+  // ================================================================
+  // 01  dos rendijas
+  // ================================================================
+  var LPANT = 1000;                       // mm hasta la pantalla
+  var s0 = { d: 0.25, lam: 633, y: 2.53 };
+  var YMAX = 12;                          // media altura de pantalla, mm
+
+  function update0() {
+    s0.d = +$("s0-d").value;
+    s0.lam = +$("s0-lam").value;
+    s0.y = +$("s0-y").value;
+    $("s0-d-v").textContent = fmt(s0.d, 3) + " mm";
+    $("s0-lam-v").textContent = fmt(s0.lam, 0) + " nm";
+    $("s0-y-v").textContent = sgn(s0.y, 2) + " mm";
+
+    var lamMM = s0.lam * 1e-6;
+    var th = Math.atan2(s0.y, LPANT);
+    var delta = s0.d * Math.sin(th);                 // sin aproximar
+    var nOnd = delta / lamMM;
+    var I = Math.pow(Math.cos(Math.PI * nOnd), 2);
+    var dy = lamMM * LPANT / s0.d;
+
+    $("s0-delta").textContent = largo(delta);
+    $("s0-ord").textContent = fmt(nOnd, 3);
+    $("s0-int").textContent = fmt(I * 100, 1) + " %";
+
+    var cerca = Math.round(nOnd), resto = Math.abs(nOnd - cerca);
+    var que, cls;
+    if (resto < 0.06) { que = "máximo de orden " + Math.abs(cerca); cls = "ok"; }
+    else if (Math.abs(resto - 0.5) < 0.06) { que = "franja oscura"; cls = "no"; }
+    else { que = "entre franjas"; cls = "dim"; }
+    $("s0-que").textContent = que; $("s0-que").className = "v " + cls;
+
+    $("s0-dy").textContent = fmt(dy, 3) + " mm";
+    $("s0-nf").textContent = fmt(Math.floor(2 * YMAX / dy) + 1, 0);
+
+    var nt = $("s0-note");
+    if (resto < 0.06) {
+      nt.className = "note good";
+      var nOn = Math.abs(cerca);
+      var frase = (nOn === 0) ? "<b>Los dos caminos miden exactamente lo mismo</b>"
+        : "<b>Aquí cabe" + (nOn === 1 ? " exactamente una longitud de onda" : "n exactamente " + nOn + " longitudes de onda") +
+          " en la diferencia de camino</b>";
+      nt.innerHTML = frase + ", así que las dos ondas llegan en fase y se suman. Observa que la intensidad es cuatro veces la de una rendija sola, no el doble: <b>se suman amplitudes</b>, y el cuadrado de 2 es 4.";
+    } else if (Math.abs(resto - 0.5) < 0.06) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Media longitud de onda de diferencia: llegan en oposición y se cancelan.</b> La luz no desaparece, se ha repartido hacia los máximos vecinos. Por eso la energía total sigue cuadrando.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>La interfranja no depende del orden:</b> <code>Δy = λL/d</code> es la misma en todo el patrón. Junta las rendijas y las franjas se separan — es la relación inversa que aparece en toda la óptica de ondas, y la misma que rige la difracción.";
+    }
+
+    draw0(delta, dy, I);
+  }
+
+  function draw0(delta, dy, I) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var mT = 20, mB = 34;
+    var ph = h - mT - mB;
+    var Y = function (y) { return mT + ph / 2 - y * (ph / 2) / YMAX; };
+
+    var xSl = 40, xPant = Math.round(w * 0.56), xBanda = xPant + 4, wBanda = 26;
+    var xCur = xBanda + wBanda + 10, wCur = w - 14 - xCur;
+
+    // eje optico
+    ctx.strokeStyle = "rgba(134,149,170,.28)"; ctx.lineWidth = 1; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(xSl, Y(0)); ctx.lineTo(xPant, Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // las dos rendijas, con separacion dibujada a escala legible
+    var sep = 6.5;                                   // mm en pantalla, esquematico
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(xSl, Y(YMAX)); ctx.lineTo(xSl, Y(sep + 1.1));
+    ctx.moveTo(xSl, Y(sep - 1.1)); ctx.lineTo(xSl, Y(-sep + 1.1));
+    ctx.moveTo(xSl, Y(-sep - 1.1)); ctx.lineTo(xSl, Y(-YMAX));
+    ctx.stroke();
+    lab(ctx, "d = " + fmt(s0.d, 3) + " mm", xSl - 4, Y(YMAX) - 9, C.cy, "left", 10);
+    lab(ctx, "(separación dibujada en esquema)", xSl - 4, Y(YMAX) + 4, C.dim, "left", 9);
+
+    // los dos caminos hasta el punto observado
+    var yP = Math.max(-YMAX, Math.min(YMAX, s0.y));
+    [sep, -sep].forEach(function (ys, k) {
+      ctx.strokeStyle = C.acc; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(xSl, Y(ys)); ctx.lineTo(xPant, Y(yP)); ctx.stroke();
+    });
+
+    // pantalla
+    ctx.strokeStyle = "rgba(221,229,240,.55)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(xPant, Y(YMAX)); ctx.lineTo(xPant, Y(-YMAX)); ctx.stroke();
+
+    // banda de franjas, en la pantalla misma
+    var perPx = dy * (ph / 2) / YMAX;
+    franjas(ctx, xBanda, Y(YMAX), wBanda, Y(-YMAX) - Y(YMAX), perPx, 1, lamRGB(s0.lam), true);
+
+    // curva de intensidad, I horizontal y la pantalla en vertical
+    ctx.strokeStyle = C.vi; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (var i = 0; i <= 260; i++) {
+      var yy = YMAX - 2 * YMAX * i / 260;
+      var ii = Math.pow(Math.cos(Math.PI * s0.d * Math.sin(Math.atan2(yy, LPANT)) / (s0.lam * 1e-6)), 2);
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, xCur + ii * wCur, Y(yy));
+    }
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xCur, Y(YMAX)); ctx.lineTo(xCur, Y(-YMAX)); ctx.stroke();
+    lab(ctx, "I", xCur + wCur, mT - 8, C.vi, "right", 10);
+    lab(ctx, "0", xCur, mT - 8, C.dim, "center", 10);
+
+    // marca del punto observado, en las tres zonas
+    ctx.strokeStyle = C.ok; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(xPant - 16, Y(yP)); ctx.lineTo(xCur + wCur, Y(yP)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = C.ok;
+    ctx.beginPath(); ctx.arc(xCur + I * wCur, Y(yP), 3.6, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.2; ctx.stroke();
+    labBg(ctx, "y = " + sgn(yP, 2) + " mm", xSl + 6, Y(yP) - 11, C.ok, "left", 10);
+
+    labBg(ctx, "pantalla a " + LPANT + " mm", xPant - 8, mT + 6, C.dim, "right", 10);
+    labBg(ctx, "Δy = " + fmt(dy, 2) + " mm", xCur + wCur, h - 16, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // 02  coherencia temporal
+  // ================================================================
+  var LAM2 = 550;                                   // nm, centro del espectro
+  var KG = Math.PI * Math.PI / (4 * Math.LN2);      // espectro gaussiano
+  var s1 = { dl: 20, dL: 10 };                      // nm y µm
+  var FUENTES = {
+    "f-hene": { n: "HeNe", lam: 632.8, dl: 0.002 },
+    "f-diodo": { n: "diodo láser", lam: 650, dl: 1 },
+    "f-led": { n: "LED rojo", lam: 630, dl: 20 },
+    "f-blanca": { n: "luz blanca", lam: 550, dl: 300 }
+  };
+  var fuenteAct = "f-led";
+
+  function lcDe(lam, dl) { return (lam * 1e-6) * (lam * 1e-6) / (dl * 1e-6); }   // mm
+  function visib(dL, lc) { return Math.exp(-KG * (dL / lc) * (dL / lc)); }
+
+  function update1() {
+    s1.dl = Math.pow(10, +$("s1-dl").value);
+    s1.dL = Math.pow(10, +$("s1-cam").value);         // µm
+    $("s1-dl-v").textContent = (s1.dl < 0.01 ? fmt(s1.dl, 4) : fmt(s1.dl, 2)) + " nm";
+    $("s1-cam-v").textContent = largo(s1.dL * 1e-3);
+
+    var lamF = LAM2, act = null;
+    Object.keys(FUENTES).forEach(function (k) {
+      var f = FUENTES[k];
+      var hit = Math.abs(Math.log10(s1.dl) - Math.log10(f.dl)) < 0.04;
+      $(k).setAttribute("aria-pressed", hit ? "true" : "false");
+      if (hit) { act = f; lamF = f.lam; }
+    });
+    fuenteAct = act;
+
+    var lc = lcDe(lamF, s1.dl);                      // mm
+    var dLmm = s1.dL * 1e-3;
+    var V = visib(dLmm, lc);
+
+    $("s1-lc").textContent = largo(lc);
+    $("s1-nw").textContent = fmt(lc / (lamF * 1e-6), 0) + " λ";
+    $("s1-V").textContent = fmt(V, 3);
+    $("s1-rel").textContent = fmt(dLmm / lc, 3);
+
+    var ver, cls;
+    if (V > 0.85) { ver = "nítidas"; cls = "ok"; }
+    else if (V > 0.35) { ver = "se ven con poco contraste"; cls = "acc"; }
+    else if (V > 0.05) { ver = "apenas se adivinan"; cls = "no"; }
+    else { ver = "no se ven"; cls = "no"; }
+    $("s1-ver").textContent = ver; $("s1-ver").className = "v " + cls;
+
+    var nt = $("s1-note");
+    if (act && act.n === "luz blanca") {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>La luz blanca sólo interfiere a menos de una micra de diferencia de camino</b>, que son menos de dos longitudes de onda. Por eso en un Michelson con luz blanca hay que buscar el cero de camino casi a ciegas, y por eso mismo, cuando aparecen, esas franjas marcan el cero con una precisión que ninguna fuente coherente da.";
+    } else if (act && act.n === "HeNe") {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Veinte centímetros de coherencia:</b> con un HeNe se pueden desigualar los brazos del interferómetro a lo bestia y las franjas siguen ahí. Eso es exactamente lo que hace práctica la metrología láser.";
+    } else if (V > 0.85) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Dentro de la longitud de coherencia las franjas salen nítidas.</b> Aleja los brazos y mira que el contraste no cae de golpe, sino de forma gradual: <code>l_c</code> marca la escala del desvanecimiento, no una frontera.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>La visibilidad cae con el cuadrado de la diferencia de camino.</b> Cada color del espectro produce su propio juego de franjas con su propio período; cuanto más camino se acumula, más desalineados quedan entre sí, y la suma tiende a un gris uniforme. <b>La luz no se pierde: se reparte.</b>";
+    }
+
+    draw1(lc, V, lamF);
+  }
+
+  function draw1(lc, V, lamF) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var hSup = Math.round(h * 0.58);
+    var mL = 52, mR = 18, mT = 24, mB = 34;
+    var pw = w - mL - mR, ph = hSup - mT - mB;
+
+    var e0 = -1, e1 = 6;                             // µm, en decadas
+    var GX = function (um) { return mL + (Math.log10(um) - e0) / (e1 - e0) * pw; };
+    var GY = function (v) { return mT + ph - v * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    var j;
+    for (j = 0; j <= 4; j++) {
+      ctx.beginPath(); ctx.moveTo(mL, GY(j / 4)); ctx.lineTo(mL + pw, GY(j / 4)); ctx.stroke();
+      lab(ctx, fmt(j / 4, 2), mL - 7, GY(j / 4), C.dim, "right", 10);
+    }
+    var etq = [[-1, "0.1 µm"], [0, "1 µm"], [1, "10 µm"], [2, "100 µm"], [3, "1 mm"], [4, "10 mm"], [5, "10 cm"], [6, "1 m"]];
+    for (j = 0; j < etq.length; j++) {
+      var xx = GX(Math.pow(10, etq[j][0]));
+      ctx.beginPath(); ctx.moveTo(xx, mT); ctx.lineTo(xx, mT + ph); ctx.stroke();
+      lab(ctx, etq[j][1], xx, mT + ph + 13, C.dim, "center", 9.5);
+    }
+    lab(ctx, "visibilidad", mL - 44, mT - 11, C.dim, "left", 10);
+    lab(ctx, "diferencia de camino  ΔL", mL + pw, mT + ph + 27, C.dim, "right", 10);
+
+    // la curva, en todo el rango
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var i = 0; i <= 360; i++) {
+      var um = Math.pow(10, e0 + (i / 360) * (e1 - e0));
+      var v = visib(um * 1e-3, lc);
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, GX(um), GY(v));
+    }
+    ctx.stroke();
+
+    // la longitud de coherencia
+    var lcUm = lc * 1e3;
+    if (lcUm > Math.pow(10, e0) && lcUm < Math.pow(10, e1)) {
+      ctx.strokeStyle = C.ok; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(GX(lcUm), mT); ctx.lineTo(GX(lcUm), mT + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      labBg(ctx, "l_c = " + largo(lc), GX(lcUm) + 6, mT + 10, C.ok, "left", 10);
+    }
+
+    // punto actual
+    ctx.strokeStyle = "rgba(95,168,216,.55)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(GX(s1.dL), mT); ctx.lineTo(GX(s1.dL), mT + ph); ctx.stroke();
+    ctx.fillStyle = C.cy;
+    ctx.beginPath(); ctx.arc(GX(s1.dL), GY(V), 4.2, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.4; ctx.stroke();
+    labBg(ctx, "V = " + fmt(V, 3), GX(s1.dL) + (s1.dL > 1e3 ? -9 : 9), GY(V) - 13,
+          C.cy, s1.dL > 1e3 ? "right" : "left", 10);
+
+    // franjas resultantes. Un espectro ancho se ve blanco, no del color de su centro:
+    // se mezcla hacia el blanco segun la anchura espectral.
+    var base = lamRGB(lamF), bl = Math.min(1, s1.dl / 200);
+    var rgb = [base[0] + (1 - base[0]) * bl, base[1] + (1 - base[1]) * bl, base[2] + (1 - base[2]) * bl];
+    var by = hSup + 8, bh = h - by - 28;
+    franjas(ctx, mL, by, pw, bh, pw / 9, V, rgb, false);
+    labBg(ctx, "lo que se ve en la pantalla", mL + 7, by + 13, C.dim, "left", 10);
+    if (fuenteAct) labBg(ctx, fuenteAct.n, mL + pw - 7, by + 13, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // 03  coherencia espacial
+  // ================================================================
+  var LAM3 = 550e-6;                                 // mm
+  var s2 = { th: 9.25, d: 30 };                      // mrad y µm
+  var EXT = {
+    "e-sol": { n: "el Sol", th: 9.25 },
+    "e-lamp": { n: "lámpara lejana", th: 1.0 },
+    "e-fina": { n: "rendija fuente", th: 0.1 }
+  };
+
+  function sinc(x) { return (Math.abs(x) < 1e-9) ? 1 : Math.sin(Math.PI * x) / (Math.PI * x); }
+  function visibEsp(dUm, thMrad) { return Math.abs(sinc(dUm * 1e-3 * thMrad * 1e-3 / LAM3)); }
+
+  function update2() {
+    s2.th = Math.pow(10, +$("s2-th").value);
+    s2.d = +$("s2-d").value;
+    $("s2-th-v").textContent = fmt(s2.th, 2) + " mrad";
+    $("s2-d-v").textContent = fmt(s2.d, 1) + " µm";
+
+    var act = null;
+    Object.keys(EXT).forEach(function (k) {
+      var hit = Math.abs(Math.log10(s2.th) - Math.log10(EXT[k].th)) < 0.03;
+      $(k).setAttribute("aria-pressed", hit ? "true" : "false");
+      if (hit) act = EXT[k];
+    });
+
+    var lt = LAM3 / (s2.th * 1e-3);                  // mm
+    var V = visibEsp(s2.d, s2.th);
+
+    $("s2-lt").textContent = largo(lt);
+    $("s2-cero").textContent = largo(lt);
+    $("s2-cabe").textContent = (s2.d * 1e-3 < lt) ? "sí, caben" : "no, están más lejos";
+    $("s2-cabe").className = "v " + ((s2.d * 1e-3 < lt) ? "ok" : "no");
+    $("s2-V").textContent = fmt(V, 3);
+
+    var ver, cls;
+    if (V > 0.85) { ver = "nítidas"; cls = "ok"; }
+    else if (V > 0.35) { ver = "se ven bien"; cls = "acc"; }
+    else if (V > 0.05) { ver = "apenas se adivinan"; cls = "no"; }
+    else { ver = "no se ven"; cls = "no"; }
+    $("s2-ver").textContent = ver; $("s2-ver").className = "v " + cls;
+
+    var nt = $("s2-note");
+    if (act && act.n === "el Sol" && V > 0.3) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Con el Sol se puede hacer Young.</b> Su anchura de coherencia es de unas 60 µm: si las rendijas están más juntas que eso, salen franjas sin filtro, sin láser y sin rendija de entrada. Es lo que vio Young en 1801, y la razón de que su montaje original llevara un agujerito previo.";
+    } else if (V < 0.05) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Las rendijas ya no están iluminadas de manera coherente.</b> Cada punto de la fuente produce su propio patrón, desplazado respecto al vecino, y al sumarse todos queda luz uniforme. <b>La luz sigue llegando; lo que se perdió es la correlación entre los dos puntos.</b>";
+    } else if (s2.d * 1e-3 > lt) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Pasado el primer cero vuelve a haber algo de contraste</b>, pero poco y con las franjas invertidas respecto a antes. Eso es el lóbulo lateral de la transformada de la fuente: coherencia residual, no coherencia recuperada.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>Estrechar la fuente es lo que compra coherencia espacial.</b> La anchura de coherencia vale <code>λ/θ_s</code>: a fuente más pequeña vista desde más lejos, más separadas pueden estar las rendijas. Es el motivo de la rendija de entrada en todo espectrómetro.";
+    }
+
+    draw2(lt, V);
+  }
+
+  function draw2(lt, V) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var hSup = Math.round(h * 0.58);
+    var mL = 52, mR = 18, mT = 24, mB = 34;
+    var pw = w - mL - mR, ph = hSup - mT - mB;
+
+    var dMax = 300;
+    var GX = function (d) { return mL + d / dMax * pw; };
+    var GY = function (v) { return mT + ph - v * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    var j;
+    for (j = 0; j <= 4; j++) {
+      ctx.beginPath(); ctx.moveTo(mL, GY(j / 4)); ctx.lineTo(mL + pw, GY(j / 4)); ctx.stroke();
+      lab(ctx, fmt(j / 4, 2), mL - 7, GY(j / 4), C.dim, "right", 10);
+    }
+    for (j = 0; j <= 6; j++) {
+      var dd = j * 50;
+      ctx.beginPath(); ctx.moveTo(GX(dd), mT); ctx.lineTo(GX(dd), mT + ph); ctx.stroke();
+      lab(ctx, dd + "", GX(dd), mT + ph + 13, C.dim, "center", 10);
+    }
+    lab(ctx, "visibilidad", mL - 44, mT - 11, C.dim, "left", 10);
+    lab(ctx, "separación de las rendijas  d  [µm]", mL + pw, mT + ph + 27, C.dim, "right", 10);
+
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var i = 0; i <= 420; i++) {
+      var d = i / 420 * dMax;
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, GX(d), GY(visibEsp(d, s2.th)));
+    }
+    ctx.stroke();
+
+    var ltUm = lt * 1e3;
+    if (ltUm < dMax) {
+      ctx.strokeStyle = C.vi; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(GX(ltUm), mT); ctx.lineTo(GX(ltUm), mT + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      labBg(ctx, "primer cero " + largo(lt), GX(ltUm) + 6, mT + 10, C.vi, "left", 10);
+    } else {
+      labBg(ctx, "el primer cero cae en " + largo(lt) + ", fuera del cuadro", mL + 8, mT + 10, C.vi, "left", 10);
+    }
+
+    ctx.strokeStyle = "rgba(95,168,216,.55)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(GX(s2.d), mT); ctx.lineTo(GX(s2.d), mT + ph); ctx.stroke();
+    ctx.fillStyle = C.cy;
+    ctx.beginPath(); ctx.arc(GX(s2.d), GY(V), 4.2, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.4; ctx.stroke();
+    labBg(ctx, "V = " + fmt(V, 3), GX(s2.d) + (s2.d > dMax * .7 ? -9 : 9), GY(V) - 13,
+          C.cy, s2.d > dMax * .7 ? "right" : "left", 10);
+
+    // aqui la fuente es extensa y de espectro ancho: se dibuja neutra, porque el
+    // montaje trata del tamaño de la fuente, no de su color
+    var by = hSup + 8, bh = h - by - 28;
+    franjas(ctx, mL, by, pw, bh, pw / 9, V, [1, 1, 1], false);
+    labBg(ctx, "lo que se ve en la pantalla", mL + 7, by + 13, C.dim, "left", 10);
+    labBg(ctx, "θ_s = " + fmt(s2.th, 2) + " mrad", mL + pw - 7, by + 13, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // pestañas
+  // ================================================================
+  var cur = 0;
+  function draw() { if (cur === 0) update0(); else if (cur === 1) update1(); else update2(); }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "mueve el punto de observación y mira la diferencia de camino" },
+    { p: "p1", t: "tab1", u: update1, hint: "cambia de fuente y separa los brazos" },
+    { p: "p2", t: "tab2", u: update2, hint: "estrecha la fuente y separa las rendijas" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-d", "s0-lam", "s0-y"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-dl", "s1-cam"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-th", "s2-d"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  Object.keys(FUENTES).forEach(function (k) {
+    $(k).addEventListener("click", function () {
+      $("s1-dl").value = Math.log10(FUENTES[k].dl); update1();
+    });
+  });
+  Object.keys(EXT).forEach(function (k) {
+    $(k).addEventListener("click", function () {
+      $("s2-th").value = Math.log10(EXT[k].th); update2();
+    });
+  });
+
+  resize();
+  show(0);
+  window.addEventListener("load", resize);
+  // la fuente web puede llegar despues del primer trazo: se redibuja al cargarla
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+
+</body></html>

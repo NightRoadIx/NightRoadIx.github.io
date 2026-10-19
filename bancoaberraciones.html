@@ -1,0 +1,1158 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Aberraciones</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Banco de aberraciones</h1>
+    <p class="lede">Las matrices predicen que todos los rayos paralelos al eje se juntan en un punto. Aquí se trazan los mismos rayos sin aproximar nada, y se ve a qué distancia del punto queda cada uno.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> Aberración esférica</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Las cinco de Seidel</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> El compromiso de la apertura</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">abre la apertura y mira dónde cruza cada rayo</div>
+    </div>
+
+    <!-- ============ 01 ESFERICA ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Una lente real de <b>f = 100 mm</b>, trazada con la ley de Snell exacta en cada superficie. Ningún rayo se aproxima.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-h">Semiapertura del haz &nbsp;h<sub>máx</sub></label>
+          <output id="s0-h-v">12.0 mm</output>
+        </div>
+        <input type="range" id="s0-h" min="1" max="15" step="0.5" value="12">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-q">Factor de forma &nbsp;q</label>
+          <output id="s0-q-v">0.00</output>
+        </div>
+        <input type="range" id="s0-q" min="-1.5" max="2" step="0.05" value="0">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Formas de referencia">
+        <button id="s0-eq" aria-pressed="true">Equiconvexa</button>
+        <button id="s0-pc" aria-pressed="false">Plano-cx</button>
+        <button id="s0-rev" aria-pressed="false">Al revés</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-z">Plano de observación, respecto al foco paraxial</label>
+          <output id="s0-z-v">0.00 mm</output>
+        </div>
+        <input type="range" id="s0-z" min="-2.5" max="0.8" step="0.01" value="0">
+      </div>
+
+      <div class="readout">
+        <div class="sect">La lente</div>
+        <div class="row pair">
+          <div class="k">Radios &nbsp;<em>R₁ / R₂</em></div>
+          <div class="v cy" id="s0-r">102.5 / −102.5</div>
+        </div>
+        <div class="row">
+          <div class="k">Focal efectiva &nbsp;<em>con el espesor incluido</em></div>
+          <div class="v ok" id="s0-efl">100.000 mm</div>
+        </div>
+
+        <div class="sect">Dónde cruza el eje cada rayo</div>
+        <div class="row pair">
+          <div class="k">Rayo paraxial &nbsp;<em>h → 0</em></div>
+          <div class="v vi" id="s0-fp">104.168 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Rayo marginal &nbsp;<em>h = h<sub>máx</sub></em></div>
+          <div class="v no" id="s0-fm">101.670 mm</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Aberración esférica longitudinal &nbsp;<em>LSA</em></div>
+          <div class="v no" id="s0-lsa">−2.498 mm</div>
+        </div>
+
+        <div class="sect">Mancha en el plano de observación</div>
+        <div class="row pair">
+          <div class="k">Radio RMS</div>
+          <div class="v acc" id="s0-rms">— µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Mejor plano posible</div>
+          <div class="v ok" id="s0-best">— mm</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> rayos cerca del eje</span>
+        <span><i style="background:var(--no)"></i> rayos del borde</span>
+        <span><i style="background:var(--vi)"></i> foco paraxial</span>
+        <span><i style="background:var(--cy)"></i> plano de observación</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 SEIDEL ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">Cada aberración deja una <b>figura distinta</b> en el plano imagen. La figura es la firma: dice cuál es, sin medir nada.</p>
+
+      <div class="toggle cinco" role="group" aria-label="Aberración">
+        <button id="a-sph" aria-pressed="true">Esférica</button>
+        <button id="a-com" aria-pressed="false">Coma</button>
+        <button id="a-ast" aria-pressed="false">Astigmatismo</button>
+        <button id="a-cur" aria-pressed="false">Curvatura</button>
+        <button id="a-dis" aria-pressed="false">Distorsión</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-w">Coeficiente de onda &nbsp;W</label>
+          <output id="s1-w-v">1.00 λ</output>
+        </div>
+        <input type="range" id="s1-w" min="0" max="3" step="0.05" value="1">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-h">Posición en el campo &nbsp;h</label>
+          <output id="s1-h-v">1.00</output>
+        </div>
+        <input type="range" id="s1-h" min="0" max="1" step="0.01" value="1">
+      </div>
+
+      <div class="form" id="s1-form">
+        <span class="lb" id="s1-form-lb">Desplazamiento transversal del rayo</span>
+        <div id="s1-fx">εx = 4·W·x·r²</div>
+        <div id="s1-fy">εy = 4·W·y·r²</div>
+      </div>
+
+      <div class="readout">
+        <div class="sect">La figura que resulta</div>
+        <div class="row pair">
+          <div class="k">Extensión en &nbsp;<em>x</em></div>
+          <div class="v acc" id="s1-ex">−17.6 … +17.6 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Extensión en &nbsp;<em>y</em></div>
+          <div class="v cy" id="s1-ey">−17.6 … +17.6 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Centro de la mancha</div>
+          <div class="v vi" id="s1-cen">(0.0, 0.0) µm</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Radio RMS</div>
+          <div class="v acc" id="s1-rms">— µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Cómo crece con el campo</div>
+          <div class="v dim" id="s1-dep">no depende de h</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i class="dot" style="background:var(--acc)"></i> rayo del borde de la pupila</span>
+        <span><i class="dot" style="background:var(--cy)"></i> rayo interior</span>
+        <span><i style="background:var(--vi)"></i> imagen paraxial</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 COMPROMISO ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">La aberración empeora al abrir el diafragma; la difracción empeora al cerrarlo. <b>El mejor diámetro no es ni el máximo ni el mínimo.</b></p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-d">Diámetro del diafragma &nbsp;D</label>
+          <output id="s2-d-v">20.0 mm</output>
+        </div>
+        <input type="range" id="s2-d" min="1" max="25" step="0.1" value="20">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-k">Calidad de la lente &nbsp;k</label>
+          <output id="s2-k-v">2.00 × 10⁻⁵</output>
+        </div>
+        <input type="range" id="s2-k" min="0.2" max="6" step="0.05" value="2">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-l">Longitud de onda &nbsp;λ</label>
+          <output id="s2-l-v">550 nm</output>
+        </div>
+        <input type="range" id="s2-l" min="400" max="700" step="1" value="550">
+      </div>
+
+      <div class="readout">
+        <div class="sect">En el diámetro elegido</div>
+        <div class="row pair">
+          <div class="k">Por aberración &nbsp;<em>k·D³</em></div>
+          <div class="v no" id="s2-geo">160.0 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Por difracción &nbsp;<em>1.22 λ f / D</em></div>
+          <div class="v cy" id="s2-air">3.4 µm</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Radio de la mancha, en cuadratura</div>
+          <div class="v acc" id="s2-tot">160.0 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Número f</div>
+          <div class="v dim" id="s2-fn">f/5.0</div>
+        </div>
+
+        <div class="sect">El óptimo</div>
+        <div class="row pair">
+          <div class="k">Diámetro que minimiza la mancha</div>
+          <div class="v ok" id="s2-dopt">6.63 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Mancha ahí</div>
+          <div class="v ok" id="s2-mopt">11.7 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Qué manda en el óptimo</div>
+          <div class="v dim" id="s2-who">las dos, casi igual</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--no)"></i> aberración, ∝ D³</span>
+        <span><i style="background:var(--cy)"></i> difracción, ∝ 1/D</span>
+        <span><i style="background:var(--acc)"></i> las dos juntas</span>
+        <span><i style="background:var(--ok)"></i> óptimo</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    El trazado del montaje 01 resuelve la intersección rayo–esfera y aplica Snell en forma vectorial en cada superficie: <code>n₁ sin θ₁ = n₂ sin θ₂</code>, sin ninguna aproximación de ángulo pequeño. Vidrio BK7, <code>n = 1.5168</code> a 550 nm, espesor 5 mm, y la forma varía con <code>q = (R₂+R₁)/(R₂−R₁)</code> manteniendo <code>f = 100 mm</code>. Los radios salen de la ecuación del fabricante <b>sin despreciar el espesor</b>, así que la focal efectiva se mantiene en 100.000 mm para toda forma y el lector puede comprobarlo en la lectura. En el montaje 02 el desplazamiento transversal sale del gradiente del frente de onda, <code>ε = 2·(f/#)·λ·∂W/∂ρ</code>, evaluado a <code>f/4</code> y <code>λ = 550 nm</code>; el signo global sólo refleja la figura. El montaje 03 usa la misma lente del 01: su <code>k ≈ 2 × 10⁻⁵ mm⁻²</code> se mide de su propio trazado. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    draw();
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;      // evita el "−0.0"
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  function sgn(x, d) { return (x >= 0 ? "+" : "−") + fmt(Math.abs(x), d); }
+  // 1, 2, 5, 10, 20, 50 ... para la barra de escala
+  function nice(v) {
+    var e = Math.pow(10, Math.floor(Math.log10(v))), m = v / e;
+    return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * e;
+  }
+  // mezcla acc -> no segun t en [0,1]: los rayos del borde se van poniendo rojos
+  function rayCol(t) {
+    var a = [242, 196, 84], b = [212, 98, 74];
+    return "rgb(" + Math.round(a[0] + (b[0] - a[0]) * t) + "," +
+                    Math.round(a[1] + (b[1] - a[1]) * t) + "," +
+                    Math.round(a[2] + (b[2] - a[2]) * t) + ")";
+  }
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  // etiqueta con fondo, para cuando cae encima del dibujo
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+
+  // ================================================================
+  // 01  trazado exacto por una lente de dos superficies
+  // ================================================================
+  var NG = 1.5168, TC = 5.0, FOBJ = 100.0;
+  var INF = 1e9;
+
+  // Radios que dan la focal pedida SIN despreciar el espesor. Con
+  // C = 1/R1 − 1/R2, la ecuacion del fabricante en su forma gruesa queda
+  //   A·C² − (n−1)·C + 1/f = 0,   A = (n−1)²(1−q²)·t/(4n)
+  // y se toma la raiz que tiende a 1/((n−1)f) cuando el espesor va a cero.
+  function radii(q) {
+    var A = (NG - 1) * (NG - 1) * (1 - q * q) * TC / (4 * NG), Cc;
+    if (Math.abs(A) < 1e-14) Cc = 1 / ((NG - 1) * FOBJ);
+    else {
+      var disc = (NG - 1) * (NG - 1) - 4 * A / FOBJ;
+      Cc = ((NG - 1) - Math.sqrt(Math.max(disc, 0))) / (2 * A);
+    }
+    var R1 = (Math.abs(1 + q) < 1e-6) ? INF : 2 / (Cc * (1 + q));
+    var R2 = (Math.abs(q - 1) < 1e-6) ? INF : 2 / (Cc * (q - 1));
+    return [R1, R2];
+  }
+
+  // focal efectiva por matrices, para poder mostrarla y que se compruebe
+  function eflThick(R1, R2) {
+    var P1 = (Math.abs(R1) > 1e7) ? 0 : (NG - 1) / R1;
+    var P2 = (Math.abs(R2) > 1e7) ? 0 : (1 - NG) / R2;
+    return 1 / (P1 + P2 - P1 * P2 * TC / NG);
+  }
+
+  function sag(R, y) {
+    if (Math.abs(R) > 1e7) return 0;
+    var s = R * R - y * y;
+    return (s < 0) ? null : R - Math.sign(R) * Math.sqrt(s);
+  }
+
+  // Snell vectorial. d y N unitarios, N apuntando contra el rayo.
+  function refract(d, N, n1, n2) {
+    var ci = -(N[0] * d[0] + N[1] * d[1]);
+    if (ci < 0) { N = [-N[0], -N[1]]; ci = -(N[0] * d[0] + N[1] * d[1]); }
+    var eta = n1 / n2, k = 1 - eta * eta * (1 - ci * ci);
+    if (k < 0) return null;                      // reflexion total
+    var c2 = eta * ci - Math.sqrt(k);
+    return [eta * d[0] + c2 * N[0], eta * d[1] + c2 * N[1]];
+  }
+
+  // devuelve { P1, P2, dOut, xCross }  o null si el rayo no pasa
+  function traceRay(h, R1, R2) {
+    var s1 = sag(R1, h);
+    if (s1 === null) return null;
+    var P1 = [s1, h], N1;
+    if (Math.abs(R1) > 1e7) N1 = [-1, 0];
+    else {
+      var v = [P1[0] - R1, P1[1]], L = Math.hypot(v[0], v[1]);
+      N1 = [v[0] / L * Math.sign(R1), v[1] / L * Math.sign(R1)];
+    }
+    var d2 = refract([1, 0], N1, 1, NG);
+    if (!d2) return null;
+
+    var P2, N2;
+    if (Math.abs(R2) > 1e7) {
+      var s = (TC - P1[0]) / d2[0];
+      P2 = [P1[0] + s * d2[0], P1[1] + s * d2[1]];
+      N2 = [-1, 0];
+    } else {
+      var Cx = TC + R2;
+      var fx = P1[0] - Cx, fy = P1[1];
+      var b = fx * d2[0] + fy * d2[1], c = fx * fx + fy * fy - R2 * R2;
+      var disc = b * b - c;
+      if (disc < 0) return null;
+      var sr = Math.sqrt(disc), t1 = -b - sr, t2 = -b + sr;
+      var tt = (t1 > 1e-9) ? t1 : ((t2 > 1e-9) ? t2 : null);
+      if (tt === null) return null;
+      P2 = [P1[0] + tt * d2[0], P1[1] + tt * d2[1]];
+      var w = [P2[0] - Cx, P2[1]], L2 = Math.hypot(w[0], w[1]);
+      N2 = [w[0] / L2 * Math.sign(R2), w[1] / L2 * Math.sign(R2)];
+    }
+    if (Math.abs(sag(R2, P2[1])) > 1e8) return null;
+    var d3 = refract(d2, N2, NG, 1);
+    if (!d3 || Math.abs(d3[1]) < 1e-14) return null;
+    var xc = P2[0] - P2[1] * d3[0] / d3[1];
+    return { P1: P1, P2: P2, d: d3, xc: xc };
+  }
+
+  // altura transversal del rayo en el plano x = z
+  function heightAt(r, z) { return r.P2[1] + (z - r.P2[0]) * r.d[1] / r.d[0]; }
+
+  var s0 = { hmax: 12, q: 0, dz: 0 };
+
+  function rayFan(R1, R2, hmax, n) {
+    var out = [];
+    for (var i = 1; i <= n; i++) {
+      var h = hmax * i / n;
+      var r = traceRay(h, R1, R2);
+      if (r) { r.h = h; r.t = i / n; out.push(r); }
+    }
+    return out;
+  }
+
+  function bestPlane(R1, R2, hmax, fp) {
+    var fan = rayFan(R1, R2, hmax, 40);
+    if (!fan.length) return { dz: 0, rms: 0 };
+    var best = null;
+    for (var i = 0; i <= 400; i++) {
+      var dz = -3.2 + (i / 400) * 4.0, s = 0;
+      for (var j = 0; j < fan.length; j++) { var y = heightAt(fan[j], fp + dz); s += y * y; }
+      var rms = Math.sqrt(s / fan.length);
+      if (!best || rms < best.rms) best = { dz: dz, rms: rms };
+    }
+    return best;
+  }
+
+  function update0() {
+    s0.hmax = +$("s0-h").value;
+    s0.q = +$("s0-q").value;
+    s0.dz = +$("s0-z").value;
+    $("s0-h-v").textContent = fmt(s0.hmax, 1) + " mm";
+    $("s0-q-v").textContent = fmt(s0.q, 2);
+    $("s0-z-v").textContent = sgn(s0.dz, 2) + " mm";
+
+    var R = radii(s0.q), R1 = R[0], R2 = R[1];
+    var sR = function (x) { return (Math.abs(x) > 1e7) ? "∞" : fmt(x, 1); };
+    $("s0-r").textContent = sR(R1) + " / " + sR(R2);
+    $("s0-efl").textContent = fmt(eflThick(R1, R2), 3) + " mm";
+
+    $("s0-eq").setAttribute("aria-pressed", Math.abs(s0.q) < 1e-6 ? "true" : "false");
+    $("s0-pc").setAttribute("aria-pressed", Math.abs(s0.q - 1) < 1e-6 ? "true" : "false");
+    $("s0-rev").setAttribute("aria-pressed", Math.abs(s0.q + 1) < 1e-6 ? "true" : "false");
+
+    var rp = traceRay(0.15, R1, R2);
+    var rm = traceRay(s0.hmax, R1, R2);
+    var fp = rp ? rp.xc : FOBJ;
+
+    $("s0-fp").textContent = fmt(fp, 3) + " mm";
+    if (rm) {
+      $("s0-fm").textContent = fmt(rm.xc, 3) + " mm";
+      $("s0-lsa").textContent = sgn(rm.xc - fp, 3) + " mm";
+    } else {
+      $("s0-fm").textContent = "no pasa";
+      $("s0-lsa").textContent = "—";
+    }
+
+    var fan = rayFan(R1, R2, s0.hmax, 40);
+    var ss = 0;
+    for (var i = 0; i < fan.length; i++) { var y = heightAt(fan[i], fp + s0.dz); ss += y * y; }
+    var rms = fan.length ? Math.sqrt(ss / fan.length) : 0;
+    $("s0-rms").textContent = fmt(rms * 1000, 1) + " µm";
+
+    var bp = bestPlane(R1, R2, s0.hmax, fp);
+    $("s0-best").textContent = sgn(bp.dz, 2) + " mm · " + fmt(bp.rms * 1000, 1) + " µm";
+
+    // nota
+    var lsa = rm ? (rm.xc - fp) : 0;
+    var nt = $("s0-note"), cls = "note", txt;
+    if (s0.hmax <= 2.5) {
+      cls = "note good";
+      txt = "<b>Con el haz casi cerrado los rayos sí convergen en un punto.</b> El cruce está en <code>" +
+            fmt(fp, 2) + " mm</code> y la mancha mide menos de un micrómetro: aquí la predicción paraxial de las matrices es exacta. Abre la apertura y observa a partir de qué altura deja de serlo.";
+    } else if (Math.abs(s0.q + 1) < 1e-6) {
+      cls = "note hot";
+      txt = "<b>La misma lente plano-convexa, montada al revés.</b> La cara curva recibe ahora el haz colimado y toda la desviación ocurre en una sola superficie: la LSA se cuadruplica frente a <code>q = +1</code>. Es el error de montaje más común en el banco óptico, y no se nota a simple vista.";
+    } else if (Math.abs(s0.q - 0.70) < 0.08) {
+      cls = "note good";
+      txt = "<b>Ésta es la mejor forma para esta focal.</b> Cerca de <code>q ≈ 0.7</code> la LSA toca un mínimo: el trabajo de desviar el haz se reparte entre las dos superficies. No se anula —una sola lente no puede—, pero es el menor valor que esta focal admite.";
+    } else if (Math.abs(lsa) > 0.1) {
+      txt = "<b>Los rayos del borde cruzan antes que los del centro.</b> No hay un foco, hay una superficie de cruces: la cáustica del zoom de abajo. La diferencia entre el cruce marginal y el paraxial es la <code>LSA</code>, y crece como <code>h²</code>: al duplicar la apertura se cuadruplica.";
+    } else {
+      txt = "<b>La mancha no es mínima en el plano paraxial.</b> Mueve el plano de observación: el radio RMS baja hasta un mínimo situado entre el cruce marginal y el paraxial. Enfocar bien una lente con esférica no es ponerla en el foco paraxial.";
+    }
+    nt.className = cls; nt.innerHTML = txt;
+
+    draw0(R1, R2, fp, fan, rm);
+  }
+
+  function draw0(R1, R2, fp, fan, rm) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var splitY = Math.round(h * 0.56);
+
+    // ---------- panel de arriba: sistema completo ----------
+    var mL = 12, mR = 18, mT = 16;
+    var x0 = -14, x1 = fp + 16;
+    var pw = w - mL - mR, ph = splitY - mT - 14;
+    var sx = pw / (x1 - x0);
+    var sy = (ph / 2) / 17;                    // y exagerada
+    var X = function (x) { return mL + (x - x0) * sx; };
+    var Y = function (y) { return mT + ph / 2 - y * sy; };
+
+    ctx.strokeStyle = "rgba(134,149,170,.3)"; ctx.lineWidth = 1;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(X(x0), Y(0)); ctx.lineTo(X(x1), Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // vidrio
+    var hL = Math.max(s0.hmax + 1.6, 4);
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 1.7;
+    ctx.fillStyle = "rgba(95,168,216,.09)";
+    ctx.beginPath();
+    var k, yy;
+    for (k = 0; k <= 40; k++) { yy = -hL + 2 * hL * k / 40; var sg = sag(R1, yy); if (sg === null) sg = 0; (k ? ctx.lineTo : ctx.moveTo).call(ctx, X(sg), Y(yy)); }
+    for (k = 40; k >= 0; k--) { yy = -hL + 2 * hL * k / 40; var sg2 = sag(R2, yy); if (sg2 === null) sg2 = 0; ctx.lineTo(X(TC + sg2), Y(yy)); }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    // foco paraxial
+    ctx.strokeStyle = C.vi; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(X(fp), Y(hL)); ctx.lineTo(X(fp), Y(-hL)); ctx.stroke();
+    ctx.setLineDash([]);
+    lab(ctx, "foco paraxial", X(fp) + 5, Y(hL) + 6, C.vi, "left", 10);
+
+    // rayos, arriba y abajo
+    var i, r, sgnY;
+    for (i = 0; i < fan.length; i++) {
+      r = fan[i];
+      if (i % 4 !== 3 && i !== fan.length - 1) continue;    // 10 rayos visibles
+      for (sgnY = -1; sgnY <= 1; sgnY += 2) {
+        ctx.strokeStyle = rayCol(r.t); ctx.lineWidth = (i === fan.length - 1) ? 1.6 : 1.1;
+        ctx.beginPath();
+        ctx.moveTo(X(x0), Y(sgnY * r.h));
+        ctx.lineTo(X(r.P1[0]), Y(sgnY * r.P1[1]));
+        ctx.lineTo(X(r.P2[0]), Y(sgnY * r.P2[1]));
+        var yEnd = sgnY * heightAt(r, x1);
+        ctx.lineTo(X(x1), Y(yEnd));
+        ctx.stroke();
+      }
+    }
+    lab(ctx, "h = " + fmt(s0.hmax, 1), X(x0) + 3, Y(s0.hmax) - 9, rayCol(1), "left", 10);
+
+    // ---------- panel de abajo: zoom del foco ----------
+    var zT = splitY + 10, zB = h - 26;
+    var zx0 = fp - 2.9, zx1 = fp + 1.0;
+    var zL = 12, zR = w - 16;
+    var ZX = function (x) { return zL + (x - zx0) * (zR - zL) / (zx1 - zx0); };
+    var yHalf = 0.42;
+    var zMid = (zT + zB) / 2;
+    var ZY = function (y) { return zMid - y * (zB - zT) / (2 * yHalf); };
+
+    ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+    ctx.strokeRect(zL, zT, zR - zL, zB - zT);
+
+    ctx.strokeStyle = "rgba(134,149,170,.3)"; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(zL, ZY(0)); ctx.lineTo(zR, ZY(0)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // foco paraxial en el zoom
+    ctx.strokeStyle = C.vi; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(ZX(fp), zT + 2); ctx.lineTo(ZX(fp), zB - 2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // rayos en el zoom: toda la cáustica
+    for (i = 0; i < fan.length; i++) {
+      r = fan[i];
+      if (i % 2 !== 1) continue;
+      for (sgnY = -1; sgnY <= 1; sgnY += 2) {
+        ctx.strokeStyle = rayCol(r.t); ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ZX(zx0), ZY(sgnY * heightAt(r, zx0)));
+        ctx.lineTo(ZX(zx1), ZY(sgnY * heightAt(r, zx1)));
+        ctx.stroke();
+      }
+    }
+
+    // plano de observación y mancha
+    var zobs = fp + s0.dz;
+    if (zobs > zx0 && zobs < zx1) {
+      // el plano, en linea fina punteada; la mancha, en trazo grueso encima
+      ctx.strokeStyle = "rgba(95,168,216,.55)"; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+      ctx.beginPath(); ctx.moveTo(ZX(zobs), zT + 2); ctx.lineTo(ZX(zobs), zB - 2); ctx.stroke();
+      ctx.setLineDash([]);
+      var ymax = 0;
+      for (i = 0; i < fan.length; i++) ymax = Math.max(ymax, Math.abs(heightAt(fan[i], zobs)));
+      ymax = Math.min(ymax, yHalf);
+      ctx.strokeStyle = C.acc; ctx.lineWidth = 4; ctx.lineCap = "butt";
+      ctx.beginPath(); ctx.moveTo(ZX(zobs), ZY(ymax)); ctx.lineTo(ZX(zobs), ZY(-ymax)); ctx.stroke();
+      ctx.strokeStyle = C.cy; ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(ZX(zobs) - 6, ZY(ymax)); ctx.lineTo(ZX(zobs) + 6, ZY(ymax));
+      ctx.moveTo(ZX(zobs) - 6, ZY(-ymax)); ctx.lineTo(ZX(zobs) + 6, ZY(-ymax));
+      ctx.stroke();
+      var toRight = ZX(zobs) < (zL + zR) / 2;
+      labBg(ctx, "mancha " + fmt(2 * ymax * 1000, 0) + " µm",
+            ZX(zobs) + (toRight ? 10 : -10), zT + 14, C.acc, toRight ? "left" : "right", 10);
+    }
+
+    if (rm && rm.xc > zx0 && rm.xc < zx1) {
+      ctx.strokeStyle = "rgba(212,98,74,.55)"; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(ZX(rm.xc), ZY(0)); ctx.lineTo(ZX(rm.xc), zB - 19); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = C.no;
+      ctx.beginPath(); ctx.arc(ZX(rm.xc), ZY(0), 3.2, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.2; ctx.stroke();
+      labBg(ctx, "cruce marginal", ZX(rm.xc), zB - 11, C.no, "center", 10);
+    }
+
+    lab(ctx, "zoom de la región focal", zL + 5, zT + 12, C.dim, "left", 10);
+    lab(ctx, "alto del recuadro ±" + fmt(yHalf * 1000, 0) + " µm · ancho " + fmt(zx1 - zx0, 1) + " mm",
+        zR - 6, zB - 11, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // 02  las cinco de Seidel
+  // ================================================================
+  var ABS = ["sph", "com", "ast", "cur", "dis"];
+  var s1 = { which: "sph", W: 1, hf: 1 };
+  var SCALE = 2 * 4 * 0.55;        // 2·(f/#)·λ en µm, con f/4 y 550 nm = 4.4 µm por onda
+
+  // gradiente del frente de onda, en ondas por unidad de pupila
+  function eps(which, W, hf, x, y) {
+    var r2 = x * x + y * y;
+    switch (which) {
+      case "sph": return [4 * W * x * r2, 4 * W * y * r2];
+      case "com": return [W * hf * (3 * x * x + y * y), W * hf * (2 * x * y)];
+      case "ast": return [2 * W * hf * hf * x, 0];
+      case "cur": return [2 * W * hf * hf * x, 2 * W * hf * hf * y];
+      case "dis": return [W * hf * hf * hf, 0];
+    }
+    return [0, 0];
+  }
+
+  var META = {
+    sph: { n: "Esférica", f: ["εx = 4·W·x·r²", "εy = 4·W·y·r²"], dep: "no depende de h",
+           nt: "<b>Un disco simétrico, igual en todo el campo.</b> Depende de la pupila a la cuarta potencia y del campo en nada: aparece incluso en el centro de la imagen, y es la única de las cinco que lo hace. Es la que se vio trazada en el montaje 01." },
+    com: { n: "Coma", f: ["εx = W·h·(3x² + y²)", "εy = W·h·(2xy)"], dep: "crece como h",
+           nt: "<b>Una figura asimétrica con vértice y cola</b>, siempre apuntando en dirección radial al centro del campo. El centro de la mancha se corre del punto paraxial, así que la coma además desplaza la imagen. Crece linealmente con el campo: en el eje no existe." },
+    ast: { n: "Astigmatismo", f: ["εx = 2·W·h²·x", "εy = 0"], dep: "crece como h²",
+           nt: "<b>Una línea, no una mancha.</b> Los rayos se juntan en un segmento porque la aberración actúa sólo en una dirección de la pupila. Al desenfocar, la línea gira 90°: entre las dos orientaciones está el foco de mínima confusión. Crece con el cuadrado del campo." },
+    cur: { n: "Curvatura de campo", f: ["εx = 2·W·h²·x", "εy = 2·W·h²·y"], dep: "crece como h²",
+           nt: "<b>Un círculo: es desenfoque puro.</b> La imagen sí es nítida, pero no sobre un plano, sino sobre una superficie curva. Cada punto del campo tiene su propio plano de enfoque, y un sensor plano sólo puede estar en foco a un radio por vez." },
+    dis: { n: "Distorsión", f: ["εx = W·h³", "εy = 0"], dep: "crece como h³",
+           nt: "<b>La mancha es un punto: no hay borrosidad.</b> Todos los rayos van al mismo sitio, sólo que no al que predice la óptica paraxial. La imagen es nítida y está mal colocada —líneas rectas salen curvas—, y por eso es la única de las cinco que se puede corregir después, por software." }
+  };
+
+  function update1() {
+    s1.W = +$("s1-w").value;
+    s1.hf = +$("s1-h").value;
+    $("s1-w-v").textContent = fmt(s1.W, 2) + " λ";
+    $("s1-h-v").textContent = fmt(s1.hf, 2);
+
+    var ids = { sph: "a-sph", com: "a-com", ast: "a-ast", cur: "a-cur", dis: "a-dis" };
+    ABS.forEach(function (a) { $(ids[a]).setAttribute("aria-pressed", a === s1.which ? "true" : "false"); });
+
+    var m = META[s1.which];
+    $("s1-form-lb").textContent = m.n + " · desplazamiento transversal del rayo";
+    $("s1-fx").textContent = m.f[0];
+    $("s1-fy").textContent = m.f[1];
+    $("s1-dep").textContent = m.dep;
+
+    // muestreo de la pupila en anillos
+    var pts = pupil();
+    var xs = [], ys = [], sx = 0, sy = 0;
+    for (var i = 0; i < pts.length; i++) {
+      var e = eps(s1.which, s1.W, s1.hf, pts[i][0], pts[i][1]);
+      xs.push(e[0] * SCALE); ys.push(e[1] * SCALE);
+      sx += e[0] * SCALE; sy += e[1] * SCALE;
+    }
+    var cx = sx / pts.length, cy2 = sy / pts.length;
+    var xmin = Math.min.apply(null, xs), xmax = Math.max.apply(null, xs);
+    var ymin = Math.min.apply(null, ys), ymax = Math.max.apply(null, ys);
+    var ss = 0;
+    for (i = 0; i < xs.length; i++) ss += (xs[i] - cx) * (xs[i] - cx) + (ys[i] - cy2) * (ys[i] - cy2);
+    var rms = Math.sqrt(ss / xs.length);
+
+    $("s1-ex").textContent = fmt(xmin, 1) + " … " + fmt(xmax, 1) + " µm";
+    $("s1-ey").textContent = fmt(ymin, 1) + " … " + fmt(ymax, 1) + " µm";
+    $("s1-cen").textContent = "(" + fmt(cx, 1) + ", " + fmt(cy2, 1) + ") µm";
+    $("s1-rms").textContent = fmt(rms, 2) + " µm";
+
+    var nt = $("s1-note");
+    nt.className = "note";
+    if (s1.W < 0.03) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Sin aberración, todos los rayos de la pupila llegan al mismo punto.</b> Eso es exactamente lo que predicen las matrices ABCD. Sube el coeficiente y mira hacia dónde se abre la figura.";
+    } else if (s1.hf < 0.03 && s1.which !== "sph") {
+      nt.className = "note good";
+      nt.innerHTML = "<b>En el eje del campo esta aberración desaparece.</b> Las cuatro últimas de Seidel llevan un factor de <code>h</code>, así que en el centro de la imagen sólo sobrevive la esférica. Mueve el campo hacia afuera.";
+    } else {
+      nt.innerHTML = m.nt;
+    }
+
+    draw1(xs, ys, pts, cx, cy2);
+  }
+
+  function pupil() {
+    var pts = [[0, 0]], rings = [0.25, 0.5, 0.75, 1.0], nn = [8, 12, 18, 26];
+    for (var r = 0; r < rings.length; r++) {
+      for (var i = 0; i < nn[r]; i++) {
+        var a = 2 * Math.PI * i / nn[r];
+        pts.push([rings[r] * Math.cos(a), rings[r] * Math.sin(a), rings[r]]);
+      }
+    }
+    return pts;
+  }
+
+  function draw1(xs, ys, pts, cx, cy2) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var m = 34;
+    var side = Math.min(w - 2 * m, h - 2 * m);
+    var ox = (w - side) / 2, oy = (h - side) / 2;
+
+    // el cuadro se ajusta a la figura, como en un diagrama de manchas de verdad:
+    // la barra de escala dice cuánto mide. Hay un piso para que W=0 no se amplifique.
+    var ext = 0;
+    for (var q = 0; q < xs.length; q++) ext = Math.max(ext, Math.abs(xs[q]), Math.abs(ys[q]));
+    var lim = Math.max(ext * 1.12, 2.0);
+
+    var P = function (vx, vy) { return [ox + side / 2 + vx / lim * side / 2, oy + side / 2 - vy / lim * side / 2]; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+    ctx.strokeRect(ox, oy, side, side);
+    ctx.strokeStyle = "rgba(34,48,68,.6)";
+    ctx.beginPath();
+    ctx.moveTo(ox, oy + side / 2); ctx.lineTo(ox + side, oy + side / 2);
+    ctx.moveTo(ox + side / 2, oy); ctx.lineTo(ox + side / 2, oy + side);
+    ctx.stroke();
+
+    // imagen paraxial
+    ctx.strokeStyle = C.vi; ctx.lineWidth = 1.2;
+    var c0 = P(0, 0), rr = 4.5;
+    ctx.beginPath();
+    ctx.moveTo(c0[0] - rr, c0[1]); ctx.lineTo(c0[0] + rr, c0[1]);
+    ctx.moveTo(c0[0], c0[1] - rr); ctx.lineTo(c0[0], c0[1] + rr);
+    ctx.stroke();
+
+    // puntos
+    for (var i = 0; i < xs.length; i++) {
+      var p = P(xs[i], ys[i]);
+      if (p[0] < ox - 2 || p[0] > ox + side + 2 || p[1] < oy - 2 || p[1] > oy + side + 2) continue;
+      var rho = pts[i][2] || 0;
+      ctx.fillStyle = rho > 0.95 ? C.acc : (rho > 0.6 ? "rgba(95,168,216,.95)" : "rgba(95,168,216,.55)");
+      ctx.beginPath(); ctx.arc(p[0], p[1], rho > 0.95 ? 2.5 : 2, 0, 6.2832); ctx.fill();
+    }
+
+    // centro de la mancha, si se corrió
+    if (Math.hypot(cx, cy2) > lim * 0.04) {
+      var pc = P(cx, cy2);
+      ctx.strokeStyle = C.ok; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.arc(pc[0], pc[1], 7, 0, 6.2832); ctx.stroke();
+      labBg(ctx, "centro", pc[0], pc[1] - 17, C.ok, "center", 10);
+    }
+
+    // escala
+    ctx.strokeStyle = C.dim; ctx.lineWidth = 1.4;
+    var barUm = nice(lim * 0.6), bx = ox + 8, by = oy + side - 10;
+    var bw = (barUm / lim) * side / 2;
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by);
+    ctx.moveTo(bx, by - 3); ctx.lineTo(bx, by + 3);
+    ctx.moveTo(bx + bw, by - 3); ctx.lineTo(bx + bw, by + 3);
+    ctx.stroke();
+    lab(ctx, fmt(barUm, 0) + " µm", bx + bw + 6, by, C.dim, "left", 10);
+
+    lab(ctx, META[s1.which].n.toLowerCase(), ox, oy - 10, C.acc, "left", 11);
+    lab(ctx, "plano imagen · h = " + fmt(s1.hf, 2), ox + side, oy - 10, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // 03  el compromiso de la apertura
+  // ================================================================
+  var s2 = { D: 20, k: 2, lam: 550 };
+
+  function blurGeo(D, k) { return k * 1e-5 * D * D * D * 1000; }          // µm
+  function blurAir(D, lam) { return 1.22 * (lam * 1e-6) * FOBJ / D * 1000; } // µm
+  function blurTot(D, k, lam) { var g = blurGeo(D, k), a = blurAir(D, lam); return Math.sqrt(g * g + a * a); }
+
+  function update2() {
+    s2.D = +$("s2-d").value;
+    s2.k = +$("s2-k").value;
+    s2.lam = +$("s2-l").value;
+    $("s2-d-v").textContent = fmt(s2.D, 1) + " mm";
+    $("s2-k-v").textContent = fmt(s2.k, 2) + " × 10⁻⁵";
+    $("s2-l-v").textContent = fmt(s2.lam, 0) + " nm";
+
+    var g = blurGeo(s2.D, s2.k), a = blurAir(s2.D, s2.lam), t = blurTot(s2.D, s2.k, s2.lam);
+    $("s2-geo").textContent = fmt(g, 1) + " µm";
+    $("s2-air").textContent = fmt(a, 1) + " µm";
+    $("s2-tot").textContent = fmt(t, 1) + " µm";
+    $("s2-fn").textContent = "f/" + fmt(FOBJ / s2.D, 1);
+
+    // óptimo analítico: minimizar g²+a² -> D⁸ = A²/(3K²)
+    var K = s2.k * 1e-5 * 1000, A = 1.22 * (s2.lam * 1e-6) * FOBJ * 1000;
+    var Dopt = Math.pow(A / (K * Math.sqrt(3)), 0.25);
+    var Mopt = blurTot(Dopt, s2.k, s2.lam);
+    $("s2-dopt").textContent = fmt(Dopt, 2) + " mm · f/" + fmt(FOBJ / Dopt, 1);
+    $("s2-mopt").textContent = fmt(Mopt, 1) + " µm";
+    var go = blurGeo(Dopt, s2.k), ao = blurAir(Dopt, s2.lam);
+    $("s2-who").textContent = "aberración " + fmt(go, 1) + " · difracción " + fmt(ao, 1) + " µm";
+
+    var nt = $("s2-note");
+    nt.className = "note";
+    if (s2.D > Dopt * 2.2) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Abierta de más.</b> A este diámetro la mancha es " + fmt(t / Mopt, 1) +
+        " veces mayor que la mejor posible, y manda la aberración: toda la luz extra que entra sólo sirve para ensanchar la imagen. Cerrar el diafragma mejora la resolución, aunque parezca lo contrario.";
+    } else if (s2.D < Dopt * 0.5) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Cerrada de más.</b> La aberración ya es despreciable, pero ahora manda la difracción: el límite no es la lente, es el tamaño del agujero. La mancha es " +
+        fmt(t / Mopt, 1) + " veces la mejor posible, y además entra mucha menos luz.";
+    } else if (Math.abs(s2.D - Dopt) < Dopt * 0.12) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Aquí está el óptimo:</b> <code>f/" + fmt(FOBJ / Dopt, 1) +
+        "</code>. Las dos contribuciones son comparables, y ninguna de las dos se puede reducir sin empeorar la otra. Fíjate en que el óptimo depende de la lente: sube <code>k</code> y se corre hacia diámetros más chicos.";
+    } else {
+      nt.innerHTML = "<b>Las dos curvas van en sentidos opuestos</b>, así que su suma tiene un mínimo. En escala log–log la aberración es una recta de pendiente +3 y la difracción una de pendiente −1: el cruce de pendientes es lo que fija el diámetro útil de cualquier sistema.";
+    }
+
+    draw2(Dopt, Mopt);
+  }
+
+  function draw2(Dopt, Mopt) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var mL = 46, mR = 20, mT = 26, mB = 48;
+    var pw = w - mL - mR, ph = h - mT - mB;
+
+    var d0 = 1, d1 = 25, y0 = 0.5, y1 = 500;      // µm, log
+    var LX = function (D) { return mL + (Math.log10(D) - Math.log10(d0)) / (Math.log10(d1) - Math.log10(d0)) * pw; };
+    var LY = function (u) { return mT + ph - (Math.log10(u) - Math.log10(y0)) / (Math.log10(y1) - Math.log10(y0)) * ph; };
+
+    // rejilla
+    ctx.strokeStyle = "rgba(34,48,68,.75)"; ctx.lineWidth = 1;
+    var dt = [1, 2, 5, 10, 20], ut = [1, 10, 100];
+    var i, j;
+    for (i = 0; i < dt.length; i++) {
+      ctx.beginPath(); ctx.moveTo(LX(dt[i]), mT); ctx.lineTo(LX(dt[i]), mT + ph); ctx.stroke();
+      lab(ctx, dt[i] + "", LX(dt[i]), mT + ph + 13, C.dim, "center", 10);
+    }
+    for (j = 0; j < ut.length; j++) {
+      ctx.beginPath(); ctx.moveTo(mL, LY(ut[j])); ctx.lineTo(mL + pw, LY(ut[j])); ctx.stroke();
+      lab(ctx, ut[j] + "", mL - 7, LY(ut[j]), C.dim, "right", 10);
+    }
+    lab(ctx, "D  [mm]", mL + pw, mT + ph + 30, C.dim, "right", 10);
+    lab(ctx, "radio de la mancha  [µm]", mL, mT - 12, C.dim, "left", 10);
+
+    function curve(fn, col, lw, dash) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw;
+      ctx.setLineDash(dash || []);
+      ctx.beginPath();
+      var started = false;
+      for (var n = 0; n <= 300; n++) {
+        var D = Math.pow(10, Math.log10(d0) + (n / 300) * (Math.log10(d1) - Math.log10(d0)));
+        var u = fn(D);
+        if (u < y0 || u > y1) { started = false; continue; }
+        var px = LX(D), py = LY(u);
+        if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    curve(function (D) { return blurGeo(D, s2.k); }, C.no, 1.6, [5, 4]);
+    curve(function (D) { return blurAir(D, s2.lam); }, C.cy, 1.6, [5, 4]);
+    curve(function (D) { return blurTot(D, s2.k, s2.lam); }, C.acc, 2.4);
+
+    // etiquetas de las asíntotas, cada una donde su curva va sola:
+    // la de aberración abajo a la izquierda, la de difracción abajo a la derecha
+    var dA = 4, uA = blurGeo(dA, s2.k);
+    if (uA > y0 * 1.6 && uA < y1) lab(ctx, "∝ D³", LX(dA) + 5, LY(uA) + 12, C.no, "left", 10);
+    var dB = 22, uB = blurAir(dB, s2.lam);
+    if (uB > y0 * 1.6 && uB < y1) lab(ctx, "∝ 1/D", LX(dB) - 5, LY(uB) + 12, C.cy, "right", 10);
+
+    // óptimo
+    if (Dopt > d0 && Dopt < d1) {
+      ctx.strokeStyle = C.ok; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(LX(Dopt), LY(Mopt)); ctx.lineTo(LX(Dopt), mT + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = C.ok;
+      ctx.beginPath(); ctx.arc(LX(Dopt), LY(Mopt), 3.4, 0, 6.2832); ctx.fill();
+      lab(ctx, "óptimo f/" + fmt(FOBJ / Dopt, 1), LX(Dopt) + 9, LY(Mopt) + 17, C.ok, "left", 10);
+    }
+
+    // posición actual
+    var tt = blurTot(s2.D, s2.k, s2.lam);
+    ctx.strokeStyle = "rgba(221,229,240,.5)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(LX(s2.D), mT); ctx.lineTo(LX(s2.D), mT + ph); ctx.stroke();
+    if (tt > y0 && tt < y1) {
+      ctx.fillStyle = C.acc;
+      ctx.beginPath(); ctx.arc(LX(s2.D), LY(tt), 4.2, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.4; ctx.stroke();
+      // si el punto actual ya está sobre el óptimo, su etiqueta sobra
+      if (Math.abs(LX(s2.D) - LX(Dopt)) > 26) {
+        labBg(ctx, fmt(tt, 1) + " µm", LX(s2.D) + (s2.D > 8 ? -9 : 9), LY(tt) + 14,
+              C.acc, s2.D > 8 ? "right" : "left", 10);
+      }
+    }
+  }
+
+  // ================================================================
+  // pestañas
+  // ================================================================
+  var cur = 0;
+  function draw() {
+    if (cur === 0) update0();
+    else if (cur === 1) update1();
+    else update2();
+  }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "abre la apertura y mira dónde cruza cada rayo" },
+    { p: "p1", t: "tab1", u: update1, hint: "cambia de aberración y compara las figuras" },
+    { p: "p2", t: "tab2", u: update2, hint: "busca el diámetro de mancha mínima" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-h", "s0-q", "s0-z"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-w", "s1-h"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-d", "s2-k", "s2-l"].forEach(function (id) { $(id).addEventListener("input", update2); });
+
+  $("s0-eq").addEventListener("click", function () { $("s0-q").value = 0; update0(); });
+  $("s0-pc").addEventListener("click", function () { $("s0-q").value = 1; update0(); });
+  $("s0-rev").addEventListener("click", function () { $("s0-q").value = -1; update0(); });
+
+  var aid = { "a-sph": "sph", "a-com": "com", "a-ast": "ast", "a-cur": "cur", "a-dis": "dis" };
+  Object.keys(aid).forEach(function (b) {
+    $(b).addEventListener("click", function () { s1.which = aid[b]; update1(); });
+  });
+
+  resize();
+  show(0);
+  window.addEventListener("load", resize);
+  // la fuente web puede llegar despues del primer trazo: se redibuja al cargarla
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+
+</body></html>

@@ -1,0 +1,1057 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Polarización</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Layout: visor a la izquierda, panel de instrumento a la derecha; apila bajo 880px.
+   Mismo sistema visual que el resto del banco. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* campo total     */
+  --ex:      #e0743c;   /* componente x    */
+  --ey:      #5fa8d8;   /* componente y    */
+  --vi:      #a888d8;   /* elipse, eje     */
+  --ok:      #52b87c;
+  --no:      #d4624a;
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--ey); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#gl, #c2 { display: block; width: 100%; height: 100%; }
+#c2 { background: #070a10; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+.ctrl.cx output { color: var(--ex); }
+.ctrl.cy output { color: var(--ey); }
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--ey); outline-offset: 4px; }
+.ctrl.cx input[type="range"]::-webkit-slider-thumb { background: var(--ex); }
+.ctrl.cx input[type="range"]::-moz-range-thumb { background: var(--ex); }
+.ctrl.cy input[type="range"]::-webkit-slider-thumb { background: var(--ey); }
+.ctrl.cy input[type="range"]::-moz-range-thumb { background: var(--ey); }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--ey); outline-offset: 2px; }
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.ex  { color: var(--ex);  }
+.v.ey  { color: var(--ey);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.bar {
+  height: 9px; border-radius: 5px; overflow: hidden;
+  background: var(--panel-2); border: 1px solid var(--line);
+  display: flex; margin-top: 4px;
+}
+.bar i { display: block; height: 100%; background: var(--acc); transition: width .12s linear; }
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Banco de polarización</h1>
+    <p class="lede">La luz no es una onda escalar: el campo eléctrico apunta a algún lado, y al avanzar va girando. Esa figura que traza la punta del vector es todo lo que hay que entender.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> La elipse</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Polarizadores</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Retardadores</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="gl"></canvas>
+      <canvas id="c2" hidden></canvas>
+      <div class="hint" id="hint">arrastra para girar · rueda para acercar</div>
+    </div>
+
+    <!-- ============ 01 LA ELIPSE ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Dos componentes perpendiculares y <b>un desfase entre ellas</b>. De ahí sale todo estado posible.</p>
+
+      <div class="toggle" role="group" aria-label="Estados de ejemplo">
+        <button id="pr-lin" aria-pressed="false">Lineal 45°</button>
+        <button id="pr-cir" aria-pressed="false">Circular</button>
+        <button id="pr-eli" aria-pressed="true">Elíptica</button>
+      </div>
+
+      <div class="ctrl cx">
+        <div class="ctrl-top">
+          <label for="s0-ax">Amplitud en x &nbsp;E<sub>x</sub></label>
+          <output id="s0-ax-v">1.00</output>
+        </div>
+        <input type="range" id="s0-ax" min="0" max="1" step="0.01" value="1">
+      </div>
+
+      <div class="ctrl cy">
+        <div class="ctrl-top">
+          <label for="s0-ay">Amplitud en y &nbsp;E<sub>y</sub></label>
+          <output id="s0-ay-v">0.60</output>
+        </div>
+        <input type="range" id="s0-ay" min="0" max="1" step="0.01" value="0.6">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-d">Desfase &nbsp;δ</label>
+          <output id="s0-d-v">45°</output>
+        </div>
+        <input type="range" id="s0-d" min="-180" max="180" step="1" value="45">
+      </div>
+
+      <div class="readout">
+        <div class="row hero">
+          <div class="k">Estado</div>
+          <div class="v acc" id="s0-tipo">elíptica</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Azimut de la elipse &nbsp;<em>ψ</em></div>
+          <div class="v vi" id="s0-psi">26.49°</div>
+        </div>
+        <div class="row">
+          <div class="k">Elipticidad &nbsp;<em>χ</em></div>
+          <div class="v vi" id="s0-chi">19.30°</div>
+        </div>
+        <div class="row">
+          <div class="k">Sentido de giro</div>
+          <div class="v dim" id="s0-giro">antihorario</div>
+        </div>
+
+        <div class="sect">Parámetros de Stokes</div>
+        <div class="row pair">
+          <div class="k"><em>S₀</em> &nbsp;intensidad</div>
+          <div class="v dim" id="s0-s0">1.3600</div>
+        </div>
+        <div class="row">
+          <div class="k"><em>S₁</em> &nbsp;horizontal menos vertical</div>
+          <div class="v ex" id="s0-s1">0.6400</div>
+        </div>
+        <div class="row">
+          <div class="k"><em>S₂</em> &nbsp;a 45° menos a −45°</div>
+          <div class="v ey" id="s0-s2">0.8485</div>
+        </div>
+        <div class="row">
+          <div class="k"><em>S₃</em> &nbsp;circular</div>
+          <div class="v vi" id="s0-s3">0.8485</div>
+        </div>
+        <div class="row">
+          <div class="k">Grado de polarización</div>
+          <div class="v ok" id="s0-pol">100.0 %</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note"><b>Qué estás viendo:</b> la hélice es la punta del vector campo a lo largo del haz, congelada en un instante. La elipse del frente es su sombra sobre el plano transversal, que es lo que vería un detector. Lineal y circular no son dos cosas distintas de la elipse: son los dos casos extremos.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--ex)"></i> componente x</span>
+        <span><i style="background:var(--ey)"></i> componente y</span>
+        <span><i style="background:var(--acc)"></i> campo total</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 POLARIZADORES ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">Dos polarizadores cruzados no dejan pasar nada. <b>Mete un tercero en medio y aparece luz</b>.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-a1">Polarizador 1 &nbsp;θ₁</label>
+          <output id="s1-a1-v">0°</output>
+        </div>
+        <input type="range" id="s1-a1" min="0" max="180" step="1" value="0">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-a2">Polarizador 2 &nbsp;θ₂</label>
+          <output id="s1-a2-v">45°</output>
+        </div>
+        <input type="range" id="s1-a2" min="0" max="180" step="1" value="45">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-a3">Polarizador 3 &nbsp;θ₃</label>
+          <output id="s1-a3-v">90°</output>
+        </div>
+        <input type="range" id="s1-a3" min="0" max="180" step="1" value="90">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Número de polarizadores">
+        <button id="s1-n2" aria-pressed="false">Sólo 1 y 3</button>
+        <button id="s1-n3" aria-pressed="true">Los tres</button>
+      </div>
+
+      <div class="readout">
+        <div class="row hero">
+          <div class="k">Transmisión total</div>
+          <div class="v acc" id="s1-T">12.50 %</div>
+        </div>
+        <div class="bar"><i id="s1-bar" style="width:12.5%"></i></div>
+
+        <div class="sect">Paso a paso</div>
+        <div class="row pair">
+          <div class="k">Luz natural, tras el primero</div>
+          <div class="v dim" id="s1-t1">50.00 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Tras el segundo &nbsp;<em>cos²(θ₂−θ₁)</em></div>
+          <div class="v dim" id="s1-t2">25.00 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Tras el tercero &nbsp;<em>cos²(θ₃−θ₂)</em></div>
+          <div class="v dim" id="s1-t3">12.50 %</div>
+        </div>
+
+        <div class="sect">Comparación</div>
+        <div class="row pair">
+          <div class="k">Sin el polarizador intermedio</div>
+          <div class="v no" id="s1-sin">0.00 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Ángulo entre el primero y el último</div>
+          <div class="v dim" id="s1-cruz">90°</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note"><b>Por qué no es un truco:</b> un polarizador no filtra fotones que ya venían alineados, los <b>proyecta</b>. El segundo recibe luz horizontal y entrega luz a 45°, que ya no es la misma que entró. El tercero recibe esos 45° y vuelve a proyectar. Quitar el intermedio no quita un obstáculo: quita el paso que giró la polarización.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> haz</span>
+        <span><i style="background:var(--vi)"></i> eje de transmisión</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 RETARDADORES ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Una lámina birrefringente <b>retrasa una componente respecto de la otra</b>. Con eso se transforma cualquier estado.</p>
+
+      <div class="toggle" role="group" aria-label="Tipo de lámina">
+        <button id="w-q" aria-pressed="true">Cuarto de onda</button>
+        <button id="w-h" aria-pressed="false">Media onda</button>
+        <button id="w-v" aria-pressed="false">Variable</button>
+      </div>
+
+      <div class="ctrl" id="w-g-ctrl" hidden>
+        <div class="ctrl-top">
+          <label for="s2-g">Retardo &nbsp;Γ</label>
+          <output id="s2-g-v">90°</output>
+        </div>
+        <input type="range" id="s2-g" min="0" max="360" step="1" value="90">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-th">Ángulo del eje rápido &nbsp;θ</label>
+          <output id="s2-th-v">45°</output>
+        </div>
+        <input type="range" id="s2-th" min="0" max="180" step="0.5" value="45">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-in">Polarización de entrada, lineal a &nbsp;α</label>
+          <output id="s2-in-v">0°</output>
+        </div>
+        <input type="range" id="s2-in" min="0" max="180" step="0.5" value="0">
+      </div>
+
+      <div class="readout">
+        <div class="row hero">
+          <div class="k">Estado de salida</div>
+          <div class="v acc" id="s2-tipo">circular</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Azimut &nbsp;<em>ψ</em></div>
+          <div class="v vi" id="s2-psi">indefinido</div>
+        </div>
+        <div class="row">
+          <div class="k">Elipticidad &nbsp;<em>χ</em></div>
+          <div class="v vi" id="s2-chi">−45.00°</div>
+        </div>
+        <div class="row">
+          <div class="k">Sentido de giro</div>
+          <div class="v dim" id="s2-giro">horario</div>
+        </div>
+
+        <div class="sect">Matriz de Jones de la lámina</div>
+        <div class="row pair">
+          <div class="k">Retardo &nbsp;<em>Γ</em></div>
+          <div class="v acc" id="s2-g2">90°  (λ/4)</div>
+        </div>
+        <div class="row">
+          <div class="k">Intensidad de salida</div>
+          <div class="v ok" id="s2-I">100.0 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Ángulo entre la entrada y el eje</div>
+          <div class="v dim" id="s2-ang">45°</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note"><b>El caso clásico:</b> una lámina de cuarto de onda con su eje a 45° de una polarización lineal convierte esa luz en circular, porque parte las dos componentes iguales y las desfasa 90°. Gira el eje a 0° y no pasa nada: toda la luz va por un solo eje, y retrasar algo que no existe no cambia nada.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--dim)"></i> entrada</span>
+        <span><i style="background:var(--acc)"></i> salida</span>
+        <span><i style="background:var(--vi)"></i> eje rápido</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    El estado se calcula con el vector de Jones <code>(E_x, E_y e^{iδ})</code> y las matrices de polarizador y retardador; los parámetros de Stokes salen de ahí. El campo físico usa la convención <code>e^{−iωt}</code>, y el sentido de giro se describe mirando hacia la fuente. Los nombres «derecha» e «izquierda» para la luz circular cambian de un libro a otro, así que aquí se indica el giro y no el nombre. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var D = function (r) { return r * 180 / Math.PI; };
+  var R_ = function (d) { return d * Math.PI / 180; };
+  function fmt(x, d) { return x.toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+
+  // ================================================================
+  // complejos y Jones
+  // ================================================================
+  function cx(re, im) { return [re, im || 0]; }
+  function cmul(a, b) { return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]; }
+  function cadd(a, b) { return [a[0] + b[0], a[1] + b[1]]; }
+  function cabs2(a) { return a[0] * a[0] + a[1] * a[1]; }
+  function cconj(a) { return [a[0], -a[1]]; }
+  function cexp(th) { return [Math.cos(th), Math.sin(th)]; }
+
+  // M es [[m00,m01],[m10,m11]] con entradas complejas; v es [Ex, Ey]
+  function jApply(M, v) {
+    return [
+      cadd(cmul(M[0][0], v[0]), cmul(M[0][1], v[1])),
+      cadd(cmul(M[1][0], v[0]), cmul(M[1][1], v[1]))
+    ];
+  }
+  function jPolarizer(thDeg) {
+    var c = Math.cos(R_(thDeg)), s = Math.sin(R_(thDeg));
+    return [[cx(c * c), cx(c * s)], [cx(c * s), cx(s * s)]];
+  }
+  function jRetarder(gammaDeg, thDeg) {
+    var g = R_(gammaDeg), c = Math.cos(R_(thDeg)), s = Math.sin(R_(thDeg));
+    var e = cexp(g);
+    // R(-th) · diag(1, e^{iG}) · R(th)
+    return [
+      [cadd(cx(c * c), cmul(cx(s * s), e)), cadd(cx(c * s), cmul(cx(-c * s), e))],
+      [cadd(cx(c * s), cmul(cx(-c * s), e)), cadd(cx(s * s), cmul(cx(c * c), e))]
+    ];
+  }
+
+  function stokes(v) {
+    var Ex = v[0], Ey = v[1];
+    var S0 = cabs2(Ex) + cabs2(Ey);
+    var S1 = cabs2(Ex) - cabs2(Ey);
+    var p = cmul(cconj(Ex), Ey);
+    var S2 = 2 * p[0];
+    var S3 = 2 * p[1];
+    return [S0, S1, S2, S3];
+  }
+
+  function estado(v) {
+    var S = stokes(v), S0 = S[0], S1 = S[1], S2 = S[2], S3 = S[3];
+    if (S0 < 1e-12) return { tipo: "sin luz", psi: null, chi: 0, S: S, giro: "—", P: 0 };
+    var chi = 0.5 * D(Math.asin(Math.max(-1, Math.min(1, S3 / S0))));
+    var lin = Math.sqrt(S1 * S1 + S2 * S2);
+    var psi = lin / S0 < 1e-6 ? null : 0.5 * D(Math.atan2(S2, S1));
+    var P = Math.sqrt(S1 * S1 + S2 * S2 + S3 * S3) / S0;
+    var tipo;
+    if (Math.abs(chi) < 0.6) tipo = "lineal";
+    else if (Math.abs(Math.abs(chi) - 45) < 0.6) tipo = "circular";
+    else tipo = "elíptica";
+    var giro = Math.abs(chi) < 0.6 ? "no gira" : (S3 > 0 ? "antihorario" : "horario");
+    return { tipo: tipo, psi: psi, chi: chi, S: S, giro: giro, P: P };
+  }
+
+  // campo físico en el instante t (convención e^{-iωt})
+  function campo(v, wt) {
+    var e = cexp(-wt);
+    return [cmul(v[0], e)[0], cmul(v[1], e)[0]];
+  }
+
+  // ================================================================
+  // lienzos
+  // ================================================================
+  var glc = $("gl"), c2 = $("c2");
+  var viewport = glc.parentElement, hint = $("hint");
+  var dpr = 1;
+
+  var renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: true });
+  renderer.setClearColor(0x070a10, 1);
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(42, 4 / 3, 0.1, 300);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+
+  var COL = { ex: 0xe0743c, ey: 0x5fa8d8, acc: 0xf2c454, vi: 0xa888d8, dim: 0x8695aa, ok: 0x52b87c };
+
+  var orbit = { az: 0.95, el: 0.28, dist: 10.4, target: new THREE.Vector3(2.9, 0, 0) };
+  function place() {
+    var ce = Math.cos(orbit.el), se = Math.sin(orbit.el);
+    camera.position.set(
+      orbit.target.x + orbit.dist * ce * Math.sin(orbit.az),
+      orbit.target.y + orbit.dist * se,
+      orbit.target.z + orbit.dist * ce * Math.cos(orbit.az)
+    );
+    camera.lookAt(orbit.target);
+  }
+  var drag = null;
+  function ptr(e) { var t = e.touches ? e.touches[0] : e; return { x: t.clientX, y: t.clientY }; }
+  function mv(e) {
+    if (!drag) return;
+    var p = ptr(e);
+    orbit.az -= (p.x - drag.x) * 0.0075;
+    orbit.el += (p.y - drag.y) * 0.0075;
+    orbit.el = Math.max(-1.42, Math.min(1.42, orbit.el));
+    drag = p; place();
+    if (e.cancelable) e.preventDefault();
+  }
+  glc.addEventListener("mousedown", function (e) { drag = ptr(e); });
+  window.addEventListener("mousemove", mv);
+  window.addEventListener("mouseup", function () { drag = null; });
+  glc.addEventListener("touchstart", function (e) { drag = ptr(e); }, { passive: true });
+  glc.addEventListener("touchmove", mv, { passive: false });
+  glc.addEventListener("touchend", function () { drag = null; });
+  glc.addEventListener("wheel", function (e) {
+    orbit.dist = Math.max(3.5, Math.min(22, orbit.dist + e.deltaY * 0.0045));
+    place(); e.preventDefault();
+  }, { passive: false });
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (c2.width !== W || c2.height !== H) { c2.width = W; c2.height = H; if (!c2.hidden) draw2(); }
+  }
+  window.addEventListener("resize", resize);
+
+  function lineMat(c, o) {
+    return new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: o === undefined ? 1 : o });
+  }
+  function seg(a, b, c, o) {
+    return new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), lineMat(c, o));
+  }
+  function clearG(g) {
+    while (g.children.length) {
+      var c = g.children.pop();
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) c.material.dispose();
+      if (c.children && c.children.length) clearG(c);
+    }
+  }
+  function arrow(from, to, color, rad, op) {
+    var g = new THREE.Group();
+    var dir = new THREE.Vector3().subVectors(to, from);
+    var len = dir.length();
+    if (len < 1e-5) return g;
+    dir.normalize();
+    var headL = Math.min(0.26, len * 0.3), bodyL = len - headL;
+    var mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: op === undefined ? 1 : op });
+    var q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    var body = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad, bodyL, 8), mat);
+    body.position.copy(from).addScaledVector(dir, bodyL / 2); body.quaternion.copy(q);
+    var head = new THREE.Mesh(new THREE.ConeGeometry(rad * 2.6, headL, 12), mat);
+    head.position.copy(from).addScaledVector(dir, bodyL + headL / 2); head.quaternion.copy(q);
+    g.add(body, head);
+    return g;
+  }
+
+  // ================================================================
+  // 01 — la elipse (3D)
+  // ================================================================
+  var LZ = 6.4, SC = 1.25;
+  var g0 = new THREE.Group(), g0s = new THREE.Group(), g0d = new THREE.Group();
+  g0.add(g0s, g0d); scene.add(g0);
+  (function () {
+    g0s.add(seg(new THREE.Vector3(-0.4, 0, 0), new THREE.Vector3(LZ + 0.6, 0, 0), COL.dim, 0.4));
+    // marco del plano transversal al final
+    var r = 1.45;
+    var pts = [];
+    for (var i = 0; i <= 64; i++) {
+      var a = i / 64 * Math.PI * 2;
+      pts.push(new THREE.Vector3(LZ, Math.cos(a) * r, Math.sin(a) * r));
+    }
+    g0s.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(COL.dim, 0.25)));
+    g0s.add(seg(new THREE.Vector3(LZ, -r, 0), new THREE.Vector3(LZ, r, 0), COL.dim, 0.25));
+    g0s.add(seg(new THREE.Vector3(LZ, 0, -r), new THREE.Vector3(LZ, 0, r), COL.dim, 0.25));
+  })();
+
+  // y del campo -> eje Y de la escena; x del campo -> eje Z de la escena
+  function vec3(E, z) { return new THREE.Vector3(z, E[1] * SC, E[0] * SC); }
+
+  function build0(v) {
+    clearG(g0d);
+    var N = 170, pts = [], i;
+    for (i = 0; i <= N; i++) {
+      var z = i / N * LZ;
+      var E = campo(v, 2 * Math.PI * z / (LZ / 2));   // dos ciclos a lo largo del tramo
+      pts.push(vec3(E, z));
+    }
+    g0d.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(COL.acc, 0.95)));
+
+    // vectores a lo largo del haz
+    for (i = 0; i <= 16; i++) {
+      var zz = i / 16 * LZ;
+      var Ee = campo(v, 2 * Math.PI * zz / (LZ / 2));
+      g0d.add(seg(new THREE.Vector3(zz, 0, 0), vec3(Ee, zz), COL.acc, 0.3));
+    }
+
+    // elipse proyectada en el plano final
+    var ep = [];
+    for (i = 0; i <= 120; i++) {
+      var wt = i / 120 * Math.PI * 2;
+      var Ec = campo(v, wt);
+      ep.push(vec3(Ec, LZ));
+    }
+    g0d.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ep), lineMat(COL.vi, 0.95)));
+
+    // vector instantáneo y sus dos componentes, en el plano final
+    var E0 = campo(v, 0);
+    g0d.add(arrow(new THREE.Vector3(LZ, 0, 0), vec3(E0, LZ), COL.acc, 0.032));
+    g0d.add(seg(new THREE.Vector3(LZ, 0, 0), new THREE.Vector3(LZ, 0, E0[0] * SC), COL.ex, 0.9));
+    g0d.add(seg(new THREE.Vector3(LZ, 0, E0[0] * SC), vec3(E0, LZ), COL.ey, 0.55));
+    g0d.add(seg(new THREE.Vector3(LZ, 0, 0), new THREE.Vector3(LZ, E0[1] * SC, 0), COL.ey, 0.9));
+  }
+
+  // ================================================================
+  // 02 — polarizadores (3D)
+  // ================================================================
+  var g1 = new THREE.Group(), g1s = new THREE.Group(), g1d = new THREE.Group();
+  g1.add(g1s, g1d); g1.visible = false; scene.add(g1);
+  g1s.add(seg(new THREE.Vector3(-1.4, 0, 0), new THREE.Vector3(7.4, 0, 0), COL.dim, 0.3));
+
+  function discPol(x, thDeg, activo) {
+    var g = new THREE.Group();
+    var r = 1.15;
+    var disc = new THREE.Mesh(
+      new THREE.CircleGeometry(r, 48),
+      new THREE.MeshBasicMaterial({
+        color: activo ? 0x1d2a3a : 0x141a24, transparent: true,
+        opacity: activo ? 0.72 : 0.25, side: THREE.DoubleSide
+      })
+    );
+    disc.rotation.y = Math.PI / 2; disc.position.x = x;
+    g.add(disc);
+    var pts = [];
+    for (var i = 0; i <= 48; i++) {
+      var a = i / 48 * Math.PI * 2;
+      pts.push(new THREE.Vector3(x, Math.cos(a) * r, Math.sin(a) * r));
+    }
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      lineMat(activo ? COL.vi : COL.dim, activo ? 0.85 : 0.3)));
+    if (activo) {
+      // rayas del eje de transmisión
+      var t = R_(thDeg);
+      for (var k = -4; k <= 4; k++) {
+        var off = k * 0.22;
+        var hw = Math.sqrt(Math.max(0, r * r - off * off));
+        var ax = new THREE.Vector3(x, Math.sin(t) * hw + Math.cos(t) * off, Math.cos(t) * hw - Math.sin(t) * off);
+        var bx = new THREE.Vector3(x, -Math.sin(t) * hw + Math.cos(t) * off, -Math.cos(t) * hw - Math.sin(t) * off);
+        g.add(seg(ax, bx, COL.vi, k === 0 ? 0.9 : 0.35));
+      }
+    }
+    return g;
+  }
+
+  function build1(angs, usados, intens) {
+    clearG(g1d);
+    var xs = [0, 2.8, 5.6];
+    for (var i = 0; i < 3; i++) g1d.add(discPol(xs[i], angs[i], usados[i]));
+
+    // haz por tramos, con el grosor y el brillo siguiendo la intensidad
+    var tramos = [[-1.4, 0, intens[0]], [0, 2.8, intens[1]], [2.8, 5.6, intens[2]], [5.6, 7.4, intens[3]]];
+    tramos.forEach(function (t) {
+      var I = Math.max(0, t[2]);
+      if (I < 1e-4) return;
+      var rad = 0.045 + 0.1 * Math.sqrt(I);
+      var mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(rad, rad, t[1] - t[0], 12),
+        new THREE.MeshBasicMaterial({ color: COL.acc, transparent: true, opacity: 0.2 + 0.7 * Math.sqrt(I) })
+      );
+      mesh.rotation.z = Math.PI / 2;
+      mesh.position.x = (t[0] + t[1]) / 2;
+      g1d.add(mesh);
+    });
+  }
+
+  // ================================================================
+  // 03 — retardadores (2D)
+  // ================================================================
+  function draw2() {
+    var ctx = c2.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10"; ctx.fillRect(0, 0, c2.width, c2.height);
+    ctx.scale(dpr, dpr);
+    var w = c2.width / dpr, h = c2.height / dpr;
+
+    var gD = wavePlateGamma();
+    var th = parseFloat($("s2-th").value);
+    var al = parseFloat($("s2-in").value);
+    var vin = [cx(Math.cos(R_(al))), cx(Math.sin(R_(al)))];
+    var vout = jApply(jRetarder(gD, th), vin);
+
+    var cy = h * 0.44;
+    var rad = Math.min(w * 0.162, h * 0.27);
+    var cxs = [w * 0.235, w * 0.765];
+
+    function panel(cx0, v, col, titulo) {
+      // marco
+      ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(cx0, cy, rad * 1.2, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx0 - rad * 1.2, cy); ctx.lineTo(cx0 + rad * 1.2, cy);
+      ctx.moveTo(cx0, cy - rad * 1.2); ctx.lineTo(cx0, cy + rad * 1.2);
+      ctx.stroke();
+
+      // trayectoria del campo
+      ctx.beginPath();
+      for (var i = 0; i <= 160; i++) {
+        var wt = i / 160 * Math.PI * 2;
+        var E = campo(v, wt);
+        var X = cx0 + E[0] * rad, Y = cy - E[1] * rad;
+        if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = col; ctx.lineWidth = 2.6; ctx.stroke();
+
+      // vector instantáneo
+      var E0 = campo(v, 0);
+      ctx.beginPath(); ctx.moveTo(cx0, cy);
+      ctx.lineTo(cx0 + E0[0] * rad, cy - E0[1] * rad);
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx0 + E0[0] * rad, cy - E0[1] * rad, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = col; ctx.fill();
+
+      // sentido de giro
+      var st = estado(v);
+      if (st.tipo !== "lineal" && st.tipo !== "sin luz") {
+        var sgnG = st.S[3] > 0 ? 1 : -1;
+        ctx.strokeStyle = col; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(cx0, cy, rad * 0.34, sgnG > 0 ? -0.9 : 0.9, sgnG > 0 ? 0.9 : -0.9, sgnG < 0);
+        ctx.stroke();
+        var ea = sgnG > 0 ? 0.9 : -0.9;
+        var ex = cx0 + Math.cos(ea) * rad * 0.34, ey = cy - Math.sin(ea) * rad * 0.34;
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(ex - sgnG * 6, ey - 7);
+        ctx.lineTo(ex + 6, ey - sgnG * 2);
+        ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+      }
+
+      ctx.font = "600 12.5px 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif";
+      ctx.fillStyle = col; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+      ctx.fillText(titulo, cx0, cy - rad * 1.2 - 14);
+    }
+
+    panel(cxs[0], vin, "#8695aa", "entrada");
+    panel(cxs[1], vout, "#f2c454", "salida");
+
+    // la lámina en medio
+    var mx = w * 0.5;
+    ctx.save();
+    ctx.strokeStyle = "rgba(168,136,216,.85)"; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(mx - 24, cy - rad * 0.95, 48, rad * 1.9, 6)
+                  : ctx.rect(mx - 24, cy - rad * 0.95, 48, rad * 1.9);
+    ctx.fillStyle = "rgba(168,136,216,.09)"; ctx.fill(); ctx.stroke();
+    // eje rápido
+    var t2 = R_(th), L2 = rad * 0.8;
+    ctx.beginPath();
+    ctx.moveTo(mx - Math.cos(t2) * L2 * 0.42, cy + Math.sin(t2) * L2);
+    ctx.lineTo(mx + Math.cos(t2) * L2 * 0.42, cy - Math.sin(t2) * L2);
+    ctx.strokeStyle = "#a888d8"; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.restore();
+
+    ctx.font = "11.5px 'IBM Plex Mono', ui-monospace, monospace";
+    ctx.fillStyle = "#a888d8"; ctx.textAlign = "center";
+    ctx.fillText("Γ = " + gD + "°", mx, cy + rad * 1.25);
+    ctx.fillText("eje a " + fmt(th, 1) + "°", mx, cy + rad * 1.25 + 15);
+
+    // flechas de flujo
+    ctx.strokeStyle = "rgba(134,149,170,.5)"; ctx.lineWidth = 1.4;
+    [[cxs[0] + rad * 1.3, mx - 30], [mx + 30, cxs[1] - rad * 1.3]].forEach(function (p) {
+      ctx.beginPath(); ctx.moveTo(p[0], cy); ctx.lineTo(p[1], cy); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(p[1], cy); ctx.lineTo(p[1] - 7, cy - 4); ctx.lineTo(p[1] - 7, cy + 4);
+      ctx.closePath(); ctx.fillStyle = "rgba(134,149,170,.5)"; ctx.fill();
+    });
+  }
+
+  // ================================================================
+  // lecturas
+  // ================================================================
+  function update0() {
+    var ax = parseFloat($("s0-ax").value);
+    var ay = parseFloat($("s0-ay").value);
+    var dl = parseFloat($("s0-d").value);
+    var v = [cx(ax), cmul(cx(ay), cexp(R_(dl)))];
+    var st = estado(v);
+
+    $("s0-ax-v").textContent = fmt(ax, 2);
+    $("s0-ay-v").textContent = fmt(ay, 2);
+    $("s0-d-v").textContent = fmt(dl, 0) + "°";
+
+    $("s0-tipo").textContent = st.tipo;
+    $("s0-psi").textContent = st.psi === null ? "indefinido" : fmt(st.psi, 2) + "°";
+    $("s0-chi").textContent = fmt(st.chi, 2) + "°";
+    $("s0-giro").textContent = st.giro;
+    $("s0-s0").textContent = fmt(st.S[0], 4);
+    $("s0-s1").textContent = fmt(st.S[1], 4);
+    $("s0-s2").textContent = fmt(st.S[2], 4);
+    $("s0-s3").textContent = fmt(st.S[3], 4);
+    $("s0-pol").textContent = st.S[0] < 1e-9 ? "—" : fmt(st.P * 100, 1) + " %";
+
+    // presets activos
+    $("pr-lin").setAttribute("aria-pressed", String(ax === 1 && ay === 1 && dl === 0));
+    $("pr-cir").setAttribute("aria-pressed", String(ax === 1 && ay === 1 && dl === 90));
+    $("pr-eli").setAttribute("aria-pressed", String(ax === 1 && ay === 0.6 && dl === 45));
+
+    var note = $("s0-note");
+    if (st.tipo === "circular") {
+      note.className = "note good";
+      note.innerHTML = "<b>Circular.</b> Las dos componentes tienen la misma amplitud y van desfasadas 90°, así que la punta del vector describe un círculo y la hélice es perfecta. El azimut deja de tener sentido: no hay un eje mayor que señalar.";
+    } else if (st.tipo === "lineal") {
+      note.className = "note";
+      note.innerHTML = "<b>Lineal.</b> Con desfase 0 o 180° las dos componentes suben y bajan a la vez, así que el vector sólo cambia de longitud, no de dirección. La hélice se aplana hasta ser una onda en un plano, que es como suele dibujarse la luz en los libros: un caso particular, no el caso general.";
+    } else {
+      note.className = "note";
+      note.innerHTML = "<b>Qué estás viendo:</b> la hélice es la punta del vector campo a lo largo del haz, congelada en un instante. La elipse del frente es su sombra sobre el plano transversal, que es lo que vería un detector. Lineal y circular no son dos cosas distintas de la elipse: son los dos casos extremos.";
+    }
+    build0(v);
+  }
+
+  var tres = true;
+  function update1() {
+    var a1 = parseFloat($("s1-a1").value);
+    var a2 = parseFloat($("s1-a2").value);
+    var a3 = parseFloat($("s1-a3").value);
+
+    $("s1-a1-v").textContent = a1 + "°";
+    $("s1-a2-v").textContent = a2 + "°";
+    $("s1-a3-v").textContent = a3 + "°";
+    $("s1-n2").setAttribute("aria-pressed", String(!tres));
+    $("s1-n3").setAttribute("aria-pressed", String(tres));
+
+    // luz natural: el primero deja pasar la mitad y la alinea con su eje
+    var t1 = 0.5;
+    var c2v = Math.cos(R_(a2 - a1)), c3v = Math.cos(R_(a3 - (tres ? a2 : a1)));
+    var t2 = tres ? t1 * c2v * c2v : t1;
+    var t3 = t2 * c3v * c3v;
+    var cruz = Math.cos(R_(a3 - a1));
+    var sinMedio = 0.5 * cruz * cruz;
+
+    $("s1-t1").textContent = fmt(t1 * 100, 2) + " %";
+    $("s1-t2").textContent = tres ? fmt(t2 * 100, 2) + " %" : "—";
+    $("s1-t3").textContent = fmt(t3 * 100, 2) + " %";
+    $("s1-T").textContent = fmt(t3 * 100, 2) + " %";
+    $("s1-bar").style.width = (t3 * 100) + "%";
+    $("s1-sin").textContent = fmt(sinMedio * 100, 2) + " %";
+    $("s1-cruz").textContent = fmt(Math.abs(a3 - a1), 0) + "°";
+
+    var note = $("s1-note");
+    if (tres && sinMedio < 1e-6 && t3 > 1e-4) {
+      note.className = "note good";
+      note.innerHTML = "<b>Ahí está:</b> el primero y el último están cruzados, así que sin el intermedio no pasaría nada, y sin embargo sale " +
+        fmt(t3 * 100, 2) + " %. Un polarizador no filtra: <b>proyecta</b>. El de en medio entrega luz a " + a2 +
+        "°, que ya no es la que entró, y el último la vuelve a proyectar. Quitarlo no quita un obstáculo: quita el paso que giró la polarización.";
+    } else {
+      note.className = "note";
+      note.innerHTML = "<b>Por qué no es un truco:</b> un polarizador no filtra fotones que ya venían alineados, los <b>proyecta</b>. Cada uno entrega luz alineada con su propio eje, sin importar cómo llegó. Pon el primero y el tercero cruzados a 90° y mueve el de en medio para ver cuánto aparece.";
+    }
+
+    var usados = [true, tres, true];
+    build1([a1, a2, a3], usados, [1, t1, tres ? t2 : t1, t3]);
+  }
+
+  var wp = "q";
+  function wavePlateGamma() {
+    if (wp === "q") return 90;
+    if (wp === "h") return 180;
+    return parseFloat($("s2-g").value);
+  }
+  function update2() {
+    var gD = wavePlateGamma();
+    var th = parseFloat($("s2-th").value);
+    var al = parseFloat($("s2-in").value);
+    var vin = [cx(Math.cos(R_(al))), cx(Math.sin(R_(al)))];
+    var vout = jApply(jRetarder(gD, th), vin);
+    var st = estado(vout);
+
+    $("w-q").setAttribute("aria-pressed", String(wp === "q"));
+    $("w-h").setAttribute("aria-pressed", String(wp === "h"));
+    $("w-v").setAttribute("aria-pressed", String(wp === "v"));
+    $("w-g-ctrl").hidden = (wp !== "v");
+    $("s2-g-v").textContent = gD + "°";
+    $("s2-th-v").textContent = fmt(th, 1) + "°";
+    $("s2-in-v").textContent = fmt(al, 1) + "°";
+
+    var nombre = gD === 90 ? "  (λ/4)" : (gD === 180 ? "  (λ/2)" : "");
+    $("s2-g2").textContent = gD + "°" + nombre;
+    $("s2-tipo").textContent = st.tipo;
+    $("s2-psi").textContent = st.psi === null ? "indefinido" : fmt(st.psi, 2) + "°";
+    $("s2-chi").textContent = fmt(st.chi, 2) + "°";
+    $("s2-giro").textContent = st.giro;
+    $("s2-I").textContent = fmt(st.S[0] * 100, 1) + " %";
+    var dif = Math.abs(((al - th) % 180 + 180) % 180);
+    if (dif > 90) dif = 180 - dif;
+    $("s2-ang").textContent = fmt(dif, 0) + "°";
+
+    var note = $("s2-note");
+    if (gD === 180) {
+      note.className = "note good";
+      note.innerHTML = "<b>Media onda.</b> Rota la polarización lineal un ángulo de <code>2θ</code>: con el eje a " + fmt(th, 1) +
+        "° la salida queda a " + (st.psi === null ? "—" : fmt(st.psi, 1)) +
+        "°. Nunca cambia el tipo de estado, sólo lo refleja respecto del eje. Es la manera habitual de girar una polarización sin tocar el montaje.";
+    } else if (st.tipo === "circular") {
+      note.className = "note good";
+      note.innerHTML = "<b>Salió circular.</b> El eje está a 45° de la entrada, así que la lámina parte el campo en dos componentes iguales y las desfasa 90°. Gira el eje hacia 0° y la salida vuelve a ser lineal: si toda la luz va por un solo eje, retrasar el otro no cambia nada.";
+    } else if (Math.abs(dif) < 0.6 || Math.abs(dif - 90) < 0.6) {
+      note.className = "note";
+      note.innerHTML = "<b>La lámina no hace nada.</b> La entrada está alineada con uno de los dos ejes, así que sólo hay una componente que retrasar, y un retraso global no cambia el estado. Mueve el eje para que aparezcan las dos componentes.";
+    } else {
+      note.className = "note";
+      note.innerHTML = "<b>Elíptica.</b> La lámina desfasó las dos componentes en " + gD +
+        "°, y como no eran iguales el resultado es una elipse. La intensidad total no cambia: un retardador no absorbe, sólo redistribuye la fase.";
+    }
+    draw2();
+  }
+
+  // ================================================================
+  // pestañas
+  // ================================================================
+  var cur = 0;
+  var views = [
+    { g: g0, p: "p0", t: "tab0", u: update0, gl: true, o: { az: 0.95, el: 0.28, d: 10.4, tx: 2.9 }, hint: "arrastra para girar · rueda para acercar" },
+    { g: g1, p: "p1", t: "tab1", u: update1, gl: true, o: { az: 0.38, el: 0.19, d: 12.6, tx: 3.0 }, hint: "arrastra para girar · rueda para acercar" },
+    { g: null, p: "p2", t: "tab2", u: update2, gl: false, o: null, hint: "mueve el eje de la lámina" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      if (v.g) v.g.visible = (k === i);
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    glc.hidden = !views[i].gl;
+    c2.hidden = views[i].gl;
+    hint.textContent = views[i].hint;
+    if (views[i].o) {
+      var o = views[i].o;
+      orbit.az = o.az; orbit.el = o.el; orbit.dist = o.d; orbit.target.set(o.tx, 0, 0);
+      place();
+    }
+    resize();
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-ax", "s0-ay", "s0-d"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-a1", "s1-a2", "s1-a3"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-g", "s2-th", "s2-in"].forEach(function (id) { $(id).addEventListener("input", update2); });
+
+  function preset(ax, ay, dl) {
+    $("s0-ax").value = ax; $("s0-ay").value = ay; $("s0-d").value = dl; update0();
+  }
+  $("pr-lin").addEventListener("click", function () { preset(1, 1, 0); });
+  $("pr-cir").addEventListener("click", function () { preset(1, 1, 90); });
+  $("pr-eli").addEventListener("click", function () { preset(1, 0.6, 45); });
+  $("s1-n2").addEventListener("click", function () { tres = false; update1(); });
+  $("s1-n3").addEventListener("click", function () { tres = true; update1(); });
+  $("w-q").addEventListener("click", function () { wp = "q"; update2(); });
+  $("w-h").addEventListener("click", function () { wp = "h"; update2(); });
+  $("w-v").addEventListener("click", function () { wp = "v"; update2(); });
+
+  resize();
+  update0(); update1(); update2();
+  show(0);
+
+  (function loop() {
+    requestAnimationFrame(loop);
+    resize();
+    if (!glc.hidden) renderer.render(scene, camera);
+  })();
+})();
+</script>
+
+</body></html>

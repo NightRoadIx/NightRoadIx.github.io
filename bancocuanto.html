@@ -1,0 +1,1060 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco del Cuanto</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica · Puente hacia los fotones</p>
+    <h1>Banco del cuanto</h1>
+    <p class="lede">Todo un curso tratando la luz como onda, y funcionó. Estos cuatro montajes muestran <b>los tres sitios exactos donde deja de funcionar</b>, y por qué en el laboratorio nunca se nota.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> Cuántos fotones hay</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> El cuerpo negro</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> El efecto fotoeléctrico</button>
+    <button class="tab" role="tab" id="tab3" aria-controls="p3" aria-selected="false"><span class="n">04</span> Contados de uno en uno</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">baja la potencia hasta que los fotones se puedan contar</div>
+    </div>
+
+    <!-- ============ 01 CUANTOS FOTONES ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">La luz viene en paquetes de <b>E = h·ν</b>. La pregunta útil no es si existen, sino <b>cuántos hay</b>.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s0-lam-v">633 nm</output>
+        </div>
+        <input type="range" id="s0-lam" min="200" max="11000" step="5" value="633">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-P">Potencia &nbsp;P</label>
+          <output id="s0-P-v">1.00 mW</output>
+        </div>
+        <input type="range" id="s0-P" min="-18" max="0" step="0.01" value="-3">
+      </div>
+
+      <div class="toggle cinco" role="group" aria-label="Situaciones">
+        <button id="p-laser" aria-pressed="true">Láser 1 mW</button>
+        <button id="p-fib">Fibra, −30 dBm</button>
+        <button id="p-pico">1 pW</button>
+        <button id="p-uno">Un fotón por µs</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">El cuanto</div>
+        <div class="row pair">
+          <div class="k">Energía de un fotón &nbsp;<em>E = hc/λ</em></div>
+          <div class="v acc" id="s0-E">1.959 eV</div>
+        </div>
+        <div class="row">
+          <div class="k">En julios</div>
+          <div class="v dim" id="s0-EJ">3.138 × 10⁻¹⁹ J</div>
+        </div>
+
+        <div class="sect">A esta potencia</div>
+        <div class="row hero">
+          <div class="k">Fotones por segundo</div>
+          <div class="v acc" id="s0-N">3.19 × 10¹⁵</div>
+        </div>
+        <div class="row">
+          <div class="k">Separación media entre fotones</div>
+          <div class="v cy" id="s0-sep">9.4 cm</div>
+        </div>
+        <div class="row">
+          <div class="k">¿Se puede contar de uno en uno?</div>
+          <div class="v no" id="s0-cont">ni de lejos</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> fotones por segundo</span>
+        <span><i style="background:var(--ok)"></i> zona de conteo</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 CUERPO NEGRO ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">Aquí fue donde se rompió la física clásica. <b>La teoría ondulatoria no diverge un poco: diverge sin límite.</b></p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-T">Temperatura &nbsp;T</label>
+          <output id="s1-T-v">5778 K</output>
+        </div>
+        <input type="range" id="s1-T" min="300" max="9000" step="10" value="5778">
+      </div>
+
+      <div class="toggle cinco" role="group" aria-label="Fuentes">
+        <button id="t-amb">Ambiente</button>
+        <button id="t-fil">Filamento</button>
+        <button id="t-sol" aria-pressed="true">El Sol</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Lo que predice Planck</div>
+        <div class="row pair">
+          <div class="k">Máximo &nbsp;<em>Wien: λT = 2898 µm·K</em></div>
+          <div class="v acc" id="s1-wien">501.5 nm</div>
+        </div>
+        <div class="row">
+          <div class="k">Emitancia total &nbsp;<em>Stefan: σT⁴</em></div>
+          <div class="v cy" id="s1-stef">63.20 MW/m²</div>
+        </div>
+        <div class="row">
+          <div class="k">Energía del fotón en el máximo</div>
+          <div class="v dim" id="s1-Epk">2.47 eV</div>
+        </div>
+
+        <div class="sect">Lo que predice la física clásica</div>
+        <div class="row hero">
+          <div class="k">Rayleigh–Jeans a 500 nm, de más</div>
+          <div class="v no" id="s1-rj500">29 ×</div>
+        </div>
+        <div class="row">
+          <div class="k">A 100 nm, de más</div>
+          <div class="v no" id="s1-rj100">2.6 × 10⁹ ×</div>
+        </div>
+        <div class="row">
+          <div class="k">Integrada a todo el espectro</div>
+          <div class="v no">infinita</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> Planck</span>
+        <span><i style="background:var(--no)"></i> Rayleigh–Jeans</span>
+        <span><i style="background:var(--vi)"></i> máximo de Wien</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 FOTOELECTRICO ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">El experimento que no admite réplica ondulatoria: <b>subir la intensidad no cambia la energía de los electrones</b>.</p>
+
+      <div class="toggle cinco" role="group" aria-label="Material">
+        <button id="m-cs" aria-pressed="true">Cesio</button>
+        <button id="m-k">Potasio</button>
+        <button id="m-na">Sodio</button>
+        <button id="m-zn">Zinc</button>
+        <button id="m-au">Oro</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s2-lam-v">405 nm</output>
+        </div>
+        <input type="range" id="s2-lam" min="180" max="750" step="1" value="405">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-I">Intensidad relativa</label>
+          <output id="s2-I-v">1.0 ×</output>
+        </div>
+        <input type="range" id="s2-I" min="0.2" max="5" step="0.1" value="1">
+      </div>
+
+      <div class="readout">
+        <div class="sect">El material</div>
+        <div class="row pair">
+          <div class="k">Función de trabajo &nbsp;<em>W</em></div>
+          <div class="v cy" id="s2-W">2.14 eV</div>
+        </div>
+        <div class="row">
+          <div class="k">Umbral &nbsp;<em>λ₀ = hc/W</em></div>
+          <div class="v vi" id="s2-l0">579.4 nm</div>
+        </div>
+
+        <div class="sect">Con esta luz</div>
+        <div class="row pair">
+          <div class="k">Energía del fotón</div>
+          <div class="v acc" id="s2-E">3.061 eV</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Voltaje de frenado &nbsp;<em>eV = hν − W</em></div>
+          <div class="v acc" id="s2-V">0.921 V</div>
+        </div>
+        <div class="row">
+          <div class="k">Corriente &nbsp;<em>sí depende de la intensidad</em></div>
+          <div class="v ok" id="s2-cor">1.0 ×</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> voltaje de frenado</span>
+        <span><i style="background:var(--cy)"></i> pendiente h/e</span>
+        <span><i style="background:var(--no)"></i> por debajo del umbral</span>
+      </div>
+    </div>
+
+    <!-- ============ 04 UNO EN UNO ============ -->
+    <div class="panel" id="p3" role="tabpanel" aria-labelledby="tab3" hidden>
+      <p class="ask">Un fotón llega entero a un sitio. <b>Las franjas no están en cada fotón: están en cómo se reparten muchos.</b></p>
+
+      <div class="toggle" role="group" aria-label="Simulación">
+        <button id="s3-play" aria-pressed="true">Pausa</button>
+        <button id="s3-reset">Reiniciar</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s3-vel">Impactos por segundo</label>
+          <output id="s3-vel-v">400</output>
+        </div>
+        <input type="range" id="s3-vel" min="20" max="3000" step="10" value="400">
+      </div>
+
+      <div class="toggle cinco" role="group" aria-label="Saltar a">
+        <button id="n-50">50</button>
+        <button id="n-500">500</button>
+        <button id="n-5000">5 000</button>
+        <button id="n-50000">50 000</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Lo que se lleva acumulado</div>
+        <div class="row hero">
+          <div class="k">Impactos registrados</div>
+          <div class="v acc" id="s3-N">0</div>
+        </div>
+        <div class="row">
+          <div class="k">Por franja, en promedio</div>
+          <div class="v cy" id="s3-pf">0.0</div>
+        </div>
+        <div class="row">
+          <div class="k">Relación señal–ruido &nbsp;<em>√N por franja</em></div>
+          <div class="v ok" id="s3-snr">0.0</div>
+        </div>
+
+        <div class="sect">En un láser de verdad</div>
+        <div class="row pair">
+          <div class="k">A 1 mW de 633 nm, esto tarda</div>
+          <div class="v dim" id="s3-t">—</div>
+        </div>
+        <div class="row">
+          <div class="k">Por eso nunca se ve</div>
+          <div class="v dim">el patrón se forma en picosegundos</div>
+        </div>
+      </div>
+
+      <p class="note" id="s3-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> impactos</span>
+        <span><i style="background:var(--vi)"></i> la curva de intensidad</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Las constantes son las del SI exacto desde 2019: <code>h = 6.62607015 × 10⁻³⁴ J·s</code>, <code>k_B = 1.380649 × 10⁻²³ J/K</code>, <code>e = 1.602176634 × 10⁻¹⁹ C</code>. De ellas sale <code>σ = 5.670374 × 10⁻⁸ W/m²K⁴</code>, que es el valor conocido, y la pendiente <code>h/e = 4.1357 fV·s</code> de la recta fotoeléctrica. <b>Una conexión que conviene señalar y que el curso lleva preparando desde el principio</b>: la relación <code>Δx·Δν ≳ 1</code> del banco de Fourier y la <code>τ ≈ 1/Δf</code> de los batidos del banco de oscilaciones son la misma desigualdad que, multiplicada por <code>h</code>, se llama principio de incertidumbre. No es un postulado nuevo de la cuántica: es la aritmética de los paquetes de onda, que ya estaba ahí. El montaje 02 es además el requisito del tratamiento de absorción y emisión: la deducción de Einstein de los coeficientes <code>A</code> y <code>B</code> toma la ley de Planck como dato de partida. Puente.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; borrado = true; }
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+  var H = 6.62607015e-34, CL = 299792458, KB = 1.380649e-23, QE = 1.602176634e-19;
+  var SIG = 2 * Math.pow(Math.PI, 5) * Math.pow(KB, 4) / (15 * Math.pow(H, 3) * CL * CL);
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  var SUP = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻" };
+  function sup(e) { return String(e).split("").map(function (c) { return SUP[c] || c; }).join(""); }
+  function cien(x, d) {
+    if (x === 0) return "0";
+    var ex = Math.floor(Math.log10(Math.abs(x))), m = x / Math.pow(10, ex);
+    return fmt(m, d === undefined ? 2 : d) + " × 10" + sup(ex);
+  }
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+  function lamRGB(lam) {
+    var r = 0, g = 0, b = 0;
+    if (lam >= 380 && lam < 440) { r = -(lam - 440) / 60; b = 1; }
+    else if (lam < 490) { g = (lam - 440) / 50; b = 1; }
+    else if (lam < 510) { g = 1; b = -(lam - 510) / 20; }
+    else if (lam < 580) { r = (lam - 510) / 70; g = 1; }
+    else if (lam < 645) { r = 1; g = -(lam - 645) / 65; }
+    else if (lam <= 780) { r = 1; }
+    else { r = 1; g = .3; b = .3; }
+    var f = 1;
+    if (lam > 700) f = 0.42;
+    else if (lam < 420) f = 0.3 + 0.7 * Math.max(0, lam - 380) / 40;
+    var gm = function (x) { return Math.pow(Math.max(0, Math.min(1, x * f)), 0.8); };
+    return [gm(r), gm(g), gm(b)];
+  }
+  function lamCSS(lam, a) {
+    var c = lamRGB(lam);
+    return "rgba(" + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," +
+           Math.round(c[2] * 255) + "," + (a === undefined ? 1 : a) + ")";
+  }
+
+  // ================================================================
+  // 01  cuantos fotones hay
+  // ================================================================
+  var s0 = { lam: 633, P: 1e-3 };
+  var SITP = { "p-laser": 1e-3, "p-fib": 1e-6, "p-pico": 1e-12, "p-uno": null };
+
+  function update0() {
+    s0.lam = +$("s0-lam").value;
+    s0.P = Math.pow(10, +$("s0-P").value);
+    $("s0-lam-v").textContent = (s0.lam >= 1000) ? fmt(s0.lam / 1000, 2) + " µm" : fmt(s0.lam, 0) + " nm";
+    var E = H * CL / (s0.lam * 1e-9);
+    var N = s0.P / E;
+    $("s0-P-v").textContent = potTxt(s0.P);
+    Object.keys(SITP).forEach(function (k) {
+      var v = SITP[k];
+      var obj = (v === null) ? E * 1e6 : v;
+      $(k).setAttribute("aria-pressed", Math.abs(Math.log10(s0.P / obj)) < 0.03 ? "true" : "false");
+    });
+
+    $("s0-E").textContent = fmt(E / QE, 3) + " eV";
+    $("s0-EJ").textContent = cien(E, 3) + " J";
+    $("s0-N").textContent = cien(N, 2);
+    $("s0-sep").textContent = largo(CL / N);
+    var puede = N < 2e7;
+    $("s0-cont").textContent = puede ? "sí, con un contador" : (N < 1e11 ? "sólo con atenuar mucho" : "ni de lejos");
+    $("s0-cont").className = "v " + (puede ? "ok" : "no");
+
+    var nt = $("s0-note");
+    if (N < 2e6) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Aquí los fotones llegan de uno en uno y se pueden contar.</b> Con " + cien(N, 1) +
+        " por segundo, cada uno está separado del siguiente por <code>" + largo(CL / N) +
+        "</code> de recorrido. En este régimen la luz ya no se comporta como un chorro continuo, y un detector da clics, no una corriente.";
+    } else if (N > 1e14) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Con " + cien(N, 1) + " fotones por segundo, la granularidad es indetectable.</b> " +
+        "Por eso un curso entero de óptica ondulatoria funcionaron sin mencionar el fotón ni una vez: <b>a potencias de laboratorio, el grano es demasiado fino para verlo</b>. Baja la potencia unas doce décadas y aparece.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>Zona intermedia.</b> Con atenuadores y un fotomultiplicador aquí ya se empiezan a distinguir sucesos individuales. La frontera no es física sino instrumental: depende de lo rápido que el detector pueda resolver dos llegadas.";
+    }
+
+    draw0(E, N);
+  }
+  function potTxt(P) {
+    var a = Math.abs(P);
+    if (a >= 1) return fmt(P, 2) + " W";
+    if (a >= 1e-3) return fmt(P * 1e3, 2) + " mW";
+    if (a >= 1e-6) return fmt(P * 1e6, 2) + " µW";
+    if (a >= 1e-9) return fmt(P * 1e9, 2) + " nW";
+    if (a >= 1e-12) return fmt(P * 1e12, 2) + " pW";
+    if (a >= 1e-15) return fmt(P * 1e15, 2) + " fW";
+    return cien(P, 2) + " W";
+  }
+  function largo(m) {
+    var a = Math.abs(m);
+    if (a >= 1000) return fmt(m / 1000, 2) + " km";
+    if (a >= 1) return fmt(m, 2) + " m";
+    if (a >= 1e-2) return fmt(m * 100, 2) + " cm";
+    if (a >= 1e-3) return fmt(m * 1000, 2) + " mm";
+    if (a >= 1e-6) return fmt(m * 1e6, 2) + " µm";
+    return fmt(m * 1e9, 2) + " nm";
+  }
+
+  function draw0(E, N) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var mL = 58, mR = 22, mT = 34, mB = 46;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var e0 = -18, e1 = 0, n0 = 0, n1 = 20;
+    var X = function (P) { return mL + (Math.log10(P) - e0) / (e1 - e0) * pw; };
+    var Y = function (n) { return mT + ph - (Math.log10(n) - n0) / (n1 - n0) * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    var j;
+    for (j = e0; j <= e1; j += 3) {
+      ctx.beginPath(); ctx.moveTo(X(Math.pow(10, j)), mT); ctx.lineTo(X(Math.pow(10, j)), mT + ph); ctx.stroke();
+      lab(ctx, "10" + sup(j), X(Math.pow(10, j)), mT + ph + 13, C.dim, "center", 10);
+    }
+    for (j = 0; j <= n1; j += 4) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(Math.pow(10, j))); ctx.lineTo(mL + pw, Y(Math.pow(10, j))); ctx.stroke();
+      lab(ctx, "10" + sup(j), mL - 7, Y(Math.pow(10, j)), C.dim, "right", 10);
+    }
+    lab(ctx, "fotones por segundo", mL - 46, mT - 14, C.dim, "left", 10);
+    lab(ctx, "potencia  [W]", mL + pw, mT + ph + 30, C.dim, "right", 10);
+
+    // zona donde se puede contar
+    ctx.fillStyle = "rgba(82,184,124,.1)";
+    ctx.fillRect(mL, Y(2e7), pw, mT + ph - Y(2e7));
+    ctx.strokeStyle = "rgba(82,184,124,.5)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(mL, Y(2e7)); ctx.lineTo(mL + pw, Y(2e7)); ctx.stroke();
+    ctx.setLineDash([]);
+    lab(ctx, "aquí se cuentan de uno en uno", mL + 6, Y(2e7) + 14, C.ok, "left", 10);
+
+    ctx.strokeStyle = lamCSS(Math.min(s0.lam, 760), 0.95); ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    for (var i = 0; i <= 200; i++) {
+      var P = Math.pow(10, e0 + (e1 - e0) * i / 200);
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, X(P), Y(P / E));
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(221,229,240,.45)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(s0.P), mT); ctx.lineTo(X(s0.P), mT + ph); ctx.stroke();
+    ctx.fillStyle = C.acc;
+    ctx.beginPath(); ctx.arc(X(s0.P), Y(N), 4.6, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.4; ctx.stroke();
+    labBg(ctx, cien(N, 1) + " /s", X(s0.P) + (s0.P > 1e-6 ? -10 : 10), Y(N) - 13,
+          C.acc, s0.P > 1e-6 ? "right" : "left", 10);
+  }
+
+  // ================================================================
+  // 02  el cuerpo negro
+  // ================================================================
+  var s1 = { T: 5778 };
+  var TS = { "t-amb": 300, "t-fil": 2800, "t-sol": 5778 };
+
+  function planck(lam, T) {                      // lam en m
+    var x = H * CL / (lam * KB * T);
+    if (x > 700) return 0;
+    return 2 * H * CL * CL / Math.pow(lam, 5) / (Math.exp(x) - 1);
+  }
+  function rayleigh(lam, T) { return 2 * CL * KB * T / Math.pow(lam, 4); }
+
+  function update1() {
+    s1.T = +$("s1-T").value;
+    $("s1-T-v").textContent = fmt(s1.T, 0) + " K";
+    Object.keys(TS).forEach(function (k) { $(k).setAttribute("aria-pressed", s1.T === TS[k] ? "true" : "false"); });
+    var lm = 2.8977719e-3 / s1.T;
+    $("s1-wien").textContent = (lm > 1e-6) ? fmt(lm * 1e6, 2) + " µm" : fmt(lm * 1e9, 1) + " nm";
+    var M = SIG * Math.pow(s1.T, 4);
+    $("s1-stef").textContent = (M > 1e6) ? fmt(M / 1e6, 2) + " MW/m²" : (M > 1e3 ? fmt(M / 1e3, 2) + " kW/m²" : fmt(M, 1) + " W/m²");
+    $("s1-Epk").textContent = fmt(H * CL / lm / QE, 2) + " eV";
+    // a baja temperatura el cociente tiene cientos de digitos: hace falta notacion cientifica
+    var r500 = rayleigh(500e-9, s1.T) / planck(500e-9, s1.T);
+    $("s1-rj500").textContent = (r500 > 9999 ? cien(r500, 1) : fmt(r500, 0)) + " ×";
+    var r100 = rayleigh(100e-9, s1.T) / planck(100e-9, s1.T);
+    $("s1-rj100").textContent = (r100 > 1e4) ? cien(r100, 1) + " ×" : fmt(r100, 0) + " ×";
+
+    var nt = $("s1-note");
+    if (s1.T < 800) {
+      nt.className = "note";
+      nt.innerHTML = "<b>A temperatura ambiente todo emite, pero en el infrarrojo lejano.</b> El máximo cae en <code>" +
+        fmt(lm * 1e6, 1) + " µm</code>, invisible para el ojo y justo donde trabajan las cámaras térmicas. Es la misma ley que explica por qué un cuerpo a 300 K no brilla y uno a 3000 sí.";
+    } else if (s1.T > 4500) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>El máximo cae en pleno visible, en " + fmt(lm * 1e9, 0) +
+        " nm.</b> No es casualidad que el ojo sea más sensible justo ahí: evolucionó bajo esta curva. Y fíjate en la clásica: a 100 nm se pasa por un factor de " +
+        cien(r100, 1) + ". <b>No es un error de ajuste, es una divergencia.</b>";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>La curva clásica sigue a la buena mientras λ es grande, y se dispara al acortarla.</b> Rayleigh–Jeans reparte <code>kT</code> por cada modo, y como hay infinitos modos en el ultravioleta, la energía total sale infinita. Planck lo arregló exigiendo que la energía viniera en paquetes de <code>hν</code>.";
+    }
+    draw1();
+  }
+
+  function draw1() {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var mL = 56, mR = 22, mT = 32, mB = 46;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var l0 = 80, l1 = 4000;                        // nm, escala log
+    var lo = Math.log10(l0), hi = Math.log10(l1);
+    var X = function (l) { return mL + (Math.log10(l) - lo) / (hi - lo) * pw; };
+    var pk = planck(2.8977719e-3 / s1.T, s1.T);
+    var y0 = Math.log10(pk) - 6, y1 = Math.log10(pk) + 2.4;
+    var Y = function (v) { return mT + ph - (Math.log10(Math.max(v, 1e-300)) - y0) / (y1 - y0) * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    [100, 200, 500, 1000, 2000, 4000].forEach(function (l) {
+      ctx.beginPath(); ctx.moveTo(X(l), mT); ctx.lineTo(X(l), mT + ph); ctx.stroke();
+      lab(ctx, (l >= 1000 ? (l / 1000) + " µm" : l + ""), X(l), mT + ph + 13, C.dim, "center", 10);
+    });
+    lab(ctx, "longitud de onda  [nm]", mL + pw, mT + ph + 30, C.dim, "right", 10);
+    lab(ctx, "emitancia espectral · escala logarítmica", mL - 44, mT - 14, C.dim, "left", 10);
+
+    // franja visible
+    for (var q = 0; q < pw; q++) {
+      var lq = Math.pow(10, lo + (hi - lo) * q / pw);
+      if (lq >= 380 && lq <= 760) {
+        ctx.fillStyle = lamCSS(lq, 0.25);
+        ctx.fillRect(mL + q, mT, 1.5, ph);
+      }
+    }
+
+    function curva(fn, col, lw, dash) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []);
+      ctx.beginPath();
+      var started = false;
+      for (var i = 0; i <= 360; i++) {
+        var l = Math.pow(10, lo + (hi - lo) * i / 360);
+        var v = fn(l * 1e-9, s1.T), yy = Y(v);
+        if (!isFinite(yy) || yy < mT - 40 || yy > mT + ph + 40) { started = false; continue; }
+        if (!started) { ctx.moveTo(X(l), yy); started = true; } else ctx.lineTo(X(l), yy);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    curva(rayleigh, C.no, 2, [6, 4]);
+    curva(planck, C.acc, 2.6);
+
+    var lm = 2.8977719e-3 / s1.T * 1e9;
+    if (lm > l0 && lm < l1) {
+      ctx.strokeStyle = C.vi; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(X(lm), mT); ctx.lineTo(X(lm), mT + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      labBg(ctx, "Wien · " + (lm > 1000 ? fmt(lm / 1000, 2) + " µm" : fmt(lm, 0) + " nm"),
+            X(lm) + 6, mT + 12, C.vi, "left", 10);
+    }
+    labBg(ctx, "Rayleigh–Jeans", mL + 8, Y(rayleigh(110e-9, s1.T)) + 14, C.no, "left", 10);
+    labBg(ctx, "Planck", X(lm * 2.6), Y(planck(lm * 2.6e-9, s1.T)) - 13, C.acc, "left", 10);
+  }
+
+  // ================================================================
+  // 03  el efecto fotoelectrico
+  // ================================================================
+  var MATS = { "m-cs": ["cesio", 2.14], "m-k": ["potasio", 2.30], "m-na": ["sodio", 2.36], "m-zn": ["zinc", 4.33], "m-au": ["oro", 5.10] };
+  var s2 = { m: "m-cs", lam: 405, I: 1 };
+
+  function update2() {
+    s2.lam = +$("s2-lam").value; s2.I = +$("s2-I").value;
+    Object.keys(MATS).forEach(function (k) { $(k).setAttribute("aria-pressed", k === s2.m ? "true" : "false"); });
+    $("s2-lam-v").textContent = fmt(s2.lam, 0) + " nm";
+    $("s2-I-v").textContent = fmt(s2.I, 1) + " ×";
+
+    var W = MATS[s2.m][1];
+    var E = H * CL / (s2.lam * 1e-9) / QE;
+    var V = E - W;
+    $("s2-W").textContent = fmt(W, 2) + " eV";
+    $("s2-l0").textContent = fmt(H * CL / (W * QE) * 1e9, 1) + " nm";
+    $("s2-E").textContent = fmt(E, 3) + " eV";
+    $("s2-V").textContent = (V > 0) ? fmt(V, 3) + " V" : "no hay emisión";
+    $("s2-V").className = "v " + (V > 0 ? "acc" : "no");
+    $("s2-cor").textContent = (V > 0) ? fmt(s2.I, 1) + " ×" : "cero";
+    $("s2-cor").className = "v " + (V > 0 ? "ok" : "no");
+
+    var nt = $("s2-note");
+    if (V <= 0) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Aquí no sale ni un electrón, por mucha intensidad que pongas.</b> Y eso es lo que la onda no puede explicar: una onda intensa debería acabar arrancando electrones si se espera lo suficiente. No ocurre. <b>Si el fotón no trae los " +
+        fmt(W, 2) + " eV de una vez, no hay emisión.</b>";
+    } else if (Math.abs(s2.I - 1) > 0.5) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Has cambiado la intensidad y el voltaje de frenado no se ha movido.</b> Sólo cambió la corriente, en el mismo factor: más fotones, más electrones, cada uno con la misma energía. <b>Ése es el experimento decisivo</b>, y el que le valió el Nobel a Einstein, no la relatividad.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>La recta tiene pendiente <code>h/e</code> y corta en la función de trabajo.</b> Midiendo voltajes de frenado a varias longitudes de onda se obtiene <code>h</code> con un amperímetro y una fuente: es la medida de laboratorio más directa de la constante de Planck.";
+    }
+    draw2(W, E, V);
+  }
+
+  function draw2(W, E, V) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var mL = 58, mR = 22, mT = 32, mB = 46;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var f0 = 0, f1 = 1.7e15;
+    var X = function (f) { return mL + (f - f0) / (f1 - f0) * pw; };
+    var v0 = -1, v1 = 5.2;
+    var Y = function (v) { return mT + ph - (v - v0) / (v1 - v0) * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    var j;
+    for (j = 0; j <= 5; j++) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(j)); ctx.lineTo(mL + pw, Y(j)); ctx.stroke();
+      lab(ctx, j + " V", mL - 7, Y(j), C.dim, "right", 10);
+    }
+    for (j = 0; j <= 16; j += 4) {
+      var ff = j * 1e14;
+      ctx.beginPath(); ctx.moveTo(X(ff), mT); ctx.lineTo(X(ff), mT + ph); ctx.stroke();
+      lab(ctx, (j / 10) + "", X(ff), mT + ph + 13, C.dim, "center", 10);
+    }
+    lab(ctx, "frecuencia  [10¹⁵ Hz]", mL + pw, mT + ph + 30, C.dim, "right", 10);
+    lab(ctx, "voltaje de frenado", mL - 48, mT - 14, C.dim, "left", 10);
+    ctx.strokeStyle = "rgba(134,149,170,.45)";
+    ctx.beginPath(); ctx.moveTo(mL, Y(0)); ctx.lineTo(mL + pw, Y(0)); ctx.stroke();
+
+    // franja visible en el eje de frecuencias
+    for (var q = 0; q < pw; q++) {
+      var fq = f0 + (f1 - f0) * q / pw, lq = CL / fq * 1e9;
+      if (lq >= 380 && lq <= 760) { ctx.fillStyle = lamCSS(lq, 0.22); ctx.fillRect(mL + q, Y(0), 1.5, 7); }
+    }
+
+    // una recta por material
+    var pend = [];
+    Object.keys(MATS).forEach(function (k) {
+      var Wk = MATS[k][1], act = (k === s2.m);
+      var fmin = Wk * QE / H;
+      ctx.strokeStyle = act ? C.acc : "rgba(134,149,170,.35)";
+      ctx.lineWidth = act ? 2.4 : 1.1;
+      ctx.beginPath();
+      ctx.moveTo(X(fmin), Y(0));
+      ctx.lineTo(X(f1), Y(H * f1 / QE - Wk));
+      ctx.stroke();
+      if (act) labBg(ctx, MATS[k][0] + " · W = " + fmt(Wk, 2) + " eV", X(f1) - 6, Y(H * f1 / QE - Wk) - 12, C.acc, "right", 10);
+      else pend.push([X(fmin), MATS[k][0]]);
+    });
+    // umbrales vecinos (potasio y sodio) caen casi en la misma x: se escalonan
+    pend.sort(function (a, b) { return a[0] - b[0]; });
+    ctx.font = "9.5px 'IBM Plex Mono', ui-monospace, monospace";
+    var fin = [-1e9, -1e9];
+    for (var pi = 0; pi < pend.length; pi++) {
+      var xq = pend[pi][0] + 4, an = ctx.measureText(pend[pi][1]).width;
+      var fila = (xq > fin[0] + 6) ? 0 : ((xq > fin[1] + 6) ? 1 : 0);
+      lab(ctx, pend[pi][1], xq, Y(0) - 9 - fila * 11, C.dim, "left", 9.5);
+      fin[fila] = xq + an;
+    }
+
+    var fact = CL / (s2.lam * 1e-9);
+    ctx.strokeStyle = "rgba(95,168,216,.5)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(fact), mT); ctx.lineTo(X(fact), mT + ph); ctx.stroke();
+    if (V > 0) {
+      ctx.fillStyle = C.cy;
+      ctx.beginPath(); ctx.arc(X(fact), Y(V), 4.8, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.4; ctx.stroke();
+      labBg(ctx, fmt(V, 3) + " V", X(fact) + 10, Y(V) - 12, C.cy, "left", 10);
+    } else {
+      labBg(ctx, "sin emisión", X(fact) + 8, Y(0.4), C.no, "left", 10);
+    }
+    lab(ctx, "pendiente h/e = 4.1357 fV·s · igual para todos los materiales", mL + 4, mT + 10, C.dim, "left", 10);
+  }
+
+  // ================================================================
+  // 04  contados de uno en uno
+  // ================================================================
+  var s3 = { vel: 400 };
+  var impactos = [], N3 = 0, resto = 0, borrado = true;
+  var NFR = 12;
+
+  function nuevoImpacto() {
+    // rechazo contra cos^2: cada foton cae donde la onda dice que es probable
+    for (var k = 0; k < 40; k++) {
+      var u = Math.random(), p = Math.random();
+      var env = Math.exp(-Math.pow((u - 0.5) * 3.1, 2));
+      var I = Math.pow(Math.cos(Math.PI * NFR * (u - 0.5)), 2) * env;
+      if (p < I) return u;
+    }
+    return Math.random();
+  }
+  function reset3() { impactos = []; N3 = 0; borrado = true; }
+  function saltarA(n) {
+    reset3();
+    for (var i = 0; i < n; i++) { impactos.push([nuevoImpacto(), Math.random()]); }
+    N3 = n;
+    if (impactos.length > 60000) impactos = impactos.slice(-60000);
+    borrado = true;
+  }
+
+  function update3() {
+    s3.vel = +$("s3-vel").value;
+    $("s3-vel-v").textContent = fmt(s3.vel, 0);
+    [["n-50", 50], ["n-500", 500], ["n-5000", 5000], ["n-50000", 50000]].forEach(function (p) {
+      $(p[0]).setAttribute("aria-pressed", N3 === p[1] ? "true" : "false");
+    });
+    $("s3-N").textContent = N3.toLocaleString("es-MX");
+    $("s3-pf").textContent = fmt(N3 / NFR, 1);
+    $("s3-snr").textContent = fmt(Math.sqrt(N3 / NFR), 1);
+    var E = H * CL / 633e-9, tasa = 1e-3 / E;
+    $("s3-t").textContent = (N3 === 0) ? "—" : cien(N3 / tasa, 2) + " s";
+
+    var nt = $("s3-note");
+    if (N3 < 120) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Con tan pocos impactos esto parece ruido.</b> Ningún fotón individual «sabe» dónde están las franjas: cada uno llega a un punto y ya. La figura no está en el fotón, <b>está en la estadística de muchos</b>.";
+    } else if (N3 < 2000) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Empiezan a adivinarse las bandas.</b> La relación señal–ruido por franja va como <code>√N</code>, así que el patrón emerge despacio al principio y luego de golpe. Es el mismo <code>√N</code> que gobierna el ruido de disparo de cualquier detector.";
+    } else {
+      nt.className = "note good";
+      nt.innerHTML = "<b>El patrón ya es inequívoco, y nunca hubo que suponer que el fotón se partiera.</b> La onda no describe por dónde pasa cada fotón: describe la probabilidad de dónde aterriza. <b>Con eso se salvan a la vez la interferencia y la granularidad</b>, que es exactamente lo que había que conseguir.";
+    }
+  }
+
+  function draw3(ctx, w, h) {
+    var mL = 30, mR = 24, mT = 26;
+    var pw = w - mL - mR;
+    var hImp = Math.round((h - mT - 54) * 0.62), hCur = (h - mT - 54) - hImp;
+    var yI = mT, yC = mT + hImp + 16;
+
+    if (borrado) {
+      ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+      ctx.strokeRect(mL - .5, yI - .5, pw + 1, hImp + 1);
+      lab(ctx, "la pantalla, impacto a impacto", mL, mT - 13, C.dim, "left", 10);
+      // curva de intensidad de referencia
+      ctx.strokeStyle = "rgba(168,136,216,.75)"; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      for (var i = 0; i <= 400; i++) {
+        var u = i / 400;
+        var env = Math.exp(-Math.pow((u - 0.5) * 3.1, 2));
+        var I = Math.pow(Math.cos(Math.PI * NFR * (u - 0.5)), 2) * env;
+        (i ? ctx.lineTo : ctx.moveTo).call(ctx, mL + u * pw, yC + hCur - I * hCur * 0.92);
+      }
+      ctx.stroke();
+      lab(ctx, "lo que predice la onda", mL, yC - 10, C.vi, "left", 10);
+      lab(ctx, "cada punto es un fotón entero", mL + pw, mT - 13, C.dim, "right", 10);
+      // se repintan todos los impactos acumulados
+      ctx.fillStyle = "rgba(242,196,84,.85)";
+      for (var k = 0; k < impactos.length; k++) {
+        ctx.fillRect(mL + impactos[k][0] * pw, yI + 3 + impactos[k][1] * (hImp - 6), 1.6, 1.6);
+      }
+      borrado = false;
+    } else {
+      // solo se añaden los nuevos, sin borrar el fondo
+      ctx.fillStyle = "rgba(242,196,84,.85)";
+      for (var q = pintados; q < impactos.length; q++) {
+        ctx.fillRect(mL + impactos[q][0] * pw, yI + 3 + impactos[q][1] * (hImp - 6), 1.6, 1.6);
+      }
+    }
+    pintados = impactos.length;
+    lab(ctx, N3.toLocaleString("es-MX") + " impactos", mL + pw, h - 14, C.acc, "right", 10);
+  }
+  var pintados = 0;
+
+  // ================================================================
+  // pestañas y bucle
+  // ================================================================
+  var cur = 0, ultimo = 0, corriendo = true;
+  function draw() { if (cur === 0) update0(); else if (cur === 1) update1(); else if (cur === 2) update2(); }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "baja la potencia hasta que los fotones se puedan contar" },
+    { p: "p1", t: "tab1", u: update1, hint: "mira dónde se dispara la curva clásica" },
+    { p: "p2", t: "tab2", u: update2, hint: "cambia la intensidad y vigila el voltaje" },
+    { p: "p3", t: "tab3", u: update3, hint: "espera a que aparezcan las franjas" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    borrado = true; pintados = 0;
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-lam", "s0-P"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  $("s1-T").addEventListener("input", update1);
+  ["s2-lam", "s2-I"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  $("s3-vel").addEventListener("input", update3);
+  Object.keys(SITP).forEach(function (k) {
+    $(k).addEventListener("click", function () {
+      var E = H * CL / (s0.lam * 1e-9);
+      var P = (SITP[k] === null) ? E * 1e6 : SITP[k];
+      $("s0-P").value = Math.log10(P); update0();
+    });
+  });
+  Object.keys(TS).forEach(function (k) { $(k).addEventListener("click", function () { $("s1-T").value = TS[k]; update1(); }); });
+  Object.keys(MATS).forEach(function (k) { $(k).addEventListener("click", function () { s2.m = k; update2(); }); });
+  [["n-50", 50], ["n-500", 500], ["n-5000", 5000], ["n-50000", 50000]].forEach(function (p) {
+    $(p[0]).addEventListener("click", function () {
+      // se pausa al saltar: si no, el contador ya no coincide con el boton pulsado
+      saltarA(p[1]); pintados = 0;
+      corriendo = false;
+      $("s3-play").textContent = "Reanudar";
+      $("s3-play").setAttribute("aria-pressed", "false");
+      update3();
+    });
+  });
+  $("s3-reset").addEventListener("click", function () { reset3(); pintados = 0; update3(); });
+  $("s3-play").addEventListener("click", function () {
+    corriendo = !corriendo;
+    $("s3-play").textContent = corriendo ? "Pausa" : "Reanudar";
+    $("s3-play").setAttribute("aria-pressed", corriendo ? "true" : "false");
+  });
+
+  resize();
+  show(0);
+  window.addEventListener("load", function () { resize(); borrado = true; });
+
+  (function bucle(ms) {
+    requestAnimationFrame(bucle);
+    if (!ultimo) ultimo = ms || 0;
+    var dt = Math.min(((ms || 0) - ultimo) / 1000, 0.05);
+    ultimo = ms || 0;
+    if (cur !== 3) return;
+    resize();
+    if (corriendo) {
+      resto += s3.vel * dt;
+      var n = Math.floor(resto); resto -= n;
+      for (var i = 0; i < n && impactos.length < 120000; i++) {
+        impactos.push([nuevoImpacto(), Math.random()]); N3++;
+      }
+      if (n > 0) update3();
+    }
+    var ctx = cv.getContext("2d");
+    if (borrado) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = "#070a10"; ctx.fillRect(0, 0, cv.width, cv.height);
+      pintados = 0;
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr, dpr);
+    draw3(ctx, cv.width / dpr, cv.height / dpr);
+  })();
+})();
+</script>
+
+</body></html>

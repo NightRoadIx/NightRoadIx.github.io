@@ -1,0 +1,852 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Maxwell</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica · Puente hacia el campo electromagnético</p>
+    <h1>Banco de Maxwell</h1>
+    <p class="lede">Hasta aquí la luz ha sido un rayo y luego una onda, pero nunca se ha dicho <b>onda de qué</b>. Estos tres montajes responden eso, y de paso explican de dónde salen el índice de refracción y los vatios por metro cuadrado.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> Onda de qué</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> De dónde sale n</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Del campo a los vatios</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">los dos campos se sostienen el uno al otro</div>
+    </div>
+
+    <!-- ============ 01 ONDA DE QUE ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Un campo eléctrico que cambia crea uno magnético, y uno magnético que cambia crea uno eléctrico. <b>Juntos se sostienen y avanzan.</b></p>
+
+      <div class="toggle" role="group" aria-label="Animación">
+        <button id="s0-play" aria-pressed="true">Pausa</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s0-lam-v">633 nm</output>
+        </div>
+        <input type="range" id="s0-lam" min="380" max="780" step="1" value="633">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-E">Amplitud del campo eléctrico &nbsp;E₀</label>
+          <output id="s0-E-v">868 V/m</output>
+        </div>
+        <input type="range" id="s0-E" min="1" max="2000" step="1" value="868">
+      </div>
+
+      <div class="readout">
+        <div class="sect">Los dos campos</div>
+        <div class="row pair">
+          <div class="k">Amplitud magnética &nbsp;<em>B₀ = E₀/c</em></div>
+          <div class="v cy" id="s0-B">2.895 µT</div>
+        </div>
+        <div class="row">
+          <div class="k">Cociente &nbsp;<em>E₀/B₀</em></div>
+          <div class="v ok" id="s0-rel">299 792 458 m/s</div>
+        </div>
+        <div class="row">
+          <div class="k">Impedancia del vacío &nbsp;<em>E₀/H₀</em></div>
+          <div class="v vi" id="s0-Z">376.730 Ω</div>
+        </div>
+
+        <div class="sect">Esta onda en concreto</div>
+        <div class="row hero">
+          <div class="k">Frecuencia &nbsp;<em>f = c/λ</em></div>
+          <div class="v acc" id="s0-f">473.6 THz</div>
+        </div>
+        <div class="row">
+          <div class="k">Periodo</div>
+          <div class="v dim" id="s0-T">2.112 fs</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> campo eléctrico E</span>
+        <span><i style="background:var(--cy)"></i> campo magnético B</span>
+        <span><i style="background:var(--ok)"></i> dirección de avance</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 DE DONDE SALE n ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">La velocidad de la luz no se midió primero: <b>se calculó</b>, a partir de dos constantes de electricidad y magnetismo.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-er">Permitividad relativa &nbsp;ε<sub>r</sub></label>
+          <output id="s1-er-v">2.301</output>
+        </div>
+        <input type="range" id="s1-er" min="1" max="14" step="0.001" value="2.301">
+      </div>
+
+      <div class="toggle cinco" role="group" aria-label="Materiales">
+        <button id="m-vac">Vacío</button>
+        <button id="m-agua">Agua</button>
+        <button id="m-bk7" aria-pressed="true">BK7</button>
+        <button id="m-diam">Diamante</button>
+        <button id="m-si">Silicio</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">En el vacío, sin usar luz para medirlo</div>
+        <div class="row pair">
+          <div class="k">Permitividad &nbsp;<em>ε₀</em>, de un condensador</div>
+          <div class="v dim">8.854 × 10⁻¹² F/m</div>
+        </div>
+        <div class="row">
+          <div class="k">Permeabilidad &nbsp;<em>μ₀</em>, de una bobina</div>
+          <div class="v dim">1.257 × 10⁻⁶ H/m</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Velocidad &nbsp;<em>1/√(ε₀μ₀)</em></div>
+          <div class="v acc">299 792 458 m/s</div>
+        </div>
+
+        <div class="sect">En el material</div>
+        <div class="row pair">
+          <div class="k">Índice &nbsp;<em>n = √(ε<sub>r</sub>μ<sub>r</sub>) ≈ √ε<sub>r</sub></em></div>
+          <div class="v acc" id="s1-n">1.517</div>
+        </div>
+        <div class="row">
+          <div class="k">Velocidad en el medio &nbsp;<em>v = c/n</em></div>
+          <div class="v cy" id="s1-v">197 647 km/s</div>
+        </div>
+        <div class="row">
+          <div class="k">Ángulo crítico contra aire</div>
+          <div class="v vi" id="s1-tc">41.2°</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> n = √εr</span>
+        <span><i style="background:var(--cy)"></i> materiales reales</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 DEL CAMPO A LOS VATIOS ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Un radiómetro mide vatios por metro cuadrado. <b>Debajo hay un campo en voltios por metro</b>, y conviene saber cuánto.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-I">Irradiancia &nbsp;I</label>
+          <output id="s2-I-v">1.00 kW/m²</output>
+        </div>
+        <input type="range" id="s2-I" min="-3" max="11" step="0.01" value="3">
+      </div>
+
+      <div class="toggle cinco" role="group" aria-label="Situaciones">
+        <button id="e-luna">Luna llena</button>
+        <button id="e-ofi">Oficina</button>
+        <button id="e-sol" aria-pressed="true">Sol</button>
+        <button id="e-las">Láser 1 W</button>
+        <button id="e-rup">Ruptura</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">El campo que corresponde</div>
+        <div class="row hero">
+          <div class="k">Campo eléctrico &nbsp;<em>E₀ = √(2I/cε₀)</em></div>
+          <div class="v acc" id="s2-E">868 V/m</div>
+        </div>
+        <div class="row">
+          <div class="k">Campo magnético &nbsp;<em>B₀ = E₀/c</em></div>
+          <div class="v cy" id="s2-B">2.895 µT</div>
+        </div>
+        <div class="row">
+          <div class="k">Comprobación &nbsp;<em>E₀²/(2Z₀)</em></div>
+          <div class="v ok" id="s2-chk">1.00 kW/m²</div>
+        </div>
+
+        <div class="sect">Para hacerse una idea</div>
+        <div class="row pair">
+          <div class="k">Frente al campo magnético terrestre</div>
+          <div class="v vi" id="s2-tierra">0.058 ×</div>
+        </div>
+        <div class="row">
+          <div class="k">Frente a la ruptura del aire</div>
+          <div class="v dim" id="s2-rup">0.0003 ×</div>
+        </div>
+        <div class="row">
+          <div class="k">1 W enfocado daría esto con &nbsp;<em>w₀</em></div>
+          <div class="v cy" id="s2-w0">17.8 mm</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> campo eléctrico</span>
+        <span><i style="background:var(--no)"></i> ruptura del aire</span>
+        <span><i style="background:var(--cy)"></i> punto actual</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Las cuatro ecuaciones de Maxwell, combinadas, dan la ecuación de onda con velocidad <code>1/√(ε₀μ₀)</code>; el valor sale <code>299 792 458 m/s</code> a doce cifras, y ésa fue la razón por la que Maxwell concluyó que la luz era un fenómeno electromagnético. En un dieléctrico no magnético <code>n = √ε_r</code>. <b>Conviene señalar en clase que la permitividad que vale aquí es la de frecuencia óptica, no la estática</b>: el agua tiene <code>ε_r = 80</code> en continua, que daría <code>n = 8.9</code>, y sin embargo su índice óptico es 1.333, porque a esa frecuencia <code>ε_r = 1.777</code>. Esa dependencia con la frecuencia es, exactamente, la dispersión. La irradiancia es el promedio temporal del vector de Poynting, <code>I = ½cε₀E₀² = E₀²/(2Z₀)</code> con <code>Z₀ = 376.73 Ω</code>, y es el puente entre este banco y el de radiometría. Puente.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+  var C0 = 299792458, E0C = 8.8541878128e-12, MU0 = 1.25663706212e-6;
+  var Z0 = Math.sqrt(MU0 / E0C);
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  function ing(x, u) {
+    var a = Math.abs(x), p = [[1e12, "T"], [1e9, "G"], [1e6, "M"], [1e3, "k"], [1, ""], [1e-3, "m"], [1e-6, "µ"], [1e-9, "n"], [1e-12, "p"], [1e-15, "f"]];
+    for (var i = 0; i < p.length; i++) if (a >= p[i][0] * 0.999) return fmt(x / p[i][0], a / p[i][0] >= 100 ? 1 : 3) + " " + p[i][1] + u;
+    return fmt(x, 3) + " " + u;
+  }
+  // los exponentes se dibujan con caracteres de superindice; si no, "10-3"
+  var SUP = { "0": "\u2070", "1": "\u00b9", "2": "\u00b2", "3": "\u00b3", "4": "\u2074",
+              "5": "\u2075", "6": "\u2076", "7": "\u2077", "8": "\u2078", "9": "\u2079",
+              "-": "\u207b" };
+  function pot10(e) {
+    return "10" + String(e).split("").map(function (c) { return SUP[c] || c; }).join("");
+  }
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+  function flecha(ctx, x0, y0, x1, y1, col, lw) {
+    var dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+    if (L < 1.5) return;
+    ctx.strokeStyle = col; ctx.lineWidth = lw || 1.4;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    var a = Math.min(6, L * 0.4), an = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - a * Math.cos(an - 0.45), y1 - a * Math.sin(an - 0.45));
+    ctx.lineTo(x1 - a * Math.cos(an + 0.45), y1 - a * Math.sin(an + 0.45));
+    ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+  }
+  function lamRGB(lam) {
+    var r = 0, g = 0, b = 0;
+    if (lam >= 380 && lam < 440) { r = -(lam - 440) / 60; b = 1; }
+    else if (lam < 490) { g = (lam - 440) / 50; b = 1; }
+    else if (lam < 510) { g = 1; b = -(lam - 510) / 20; }
+    else if (lam < 580) { r = (lam - 510) / 70; g = 1; }
+    else if (lam < 645) { r = 1; g = -(lam - 645) / 65; }
+    else { r = 1; }
+    var f = 1;
+    if (lam > 700) f = 0.3 + 0.7 * (780 - lam) / 80;
+    else if (lam < 420) f = 0.3 + 0.7 * (lam - 380) / 40;
+    var gm = function (x) { return Math.pow(Math.max(0, Math.min(1, x * f)), 0.8); };
+    return [gm(r), gm(g), gm(b)];
+  }
+  function lamCSS(lam, a) {
+    var c = lamRGB(lam);
+    return "rgba(" + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," +
+           Math.round(c[2] * 255) + "," + (a === undefined ? 1 : a) + ")";
+  }
+
+  var t = 0, ultimo = 0, corriendo = true;
+
+  // ================================================================
+  // 01  onda de que
+  // ================================================================
+  var s0 = { lam: 633, E: 868 };
+
+  function update0() {
+    s0.lam = +$("s0-lam").value; s0.E = +$("s0-E").value;
+    $("s0-lam-v").textContent = fmt(s0.lam, 0) + " nm";
+    $("s0-E-v").textContent = fmt(s0.E, 0) + " V/m";
+    var B = s0.E / C0, f = C0 / (s0.lam * 1e-9);
+    $("s0-B").textContent = ing(B, "T");
+    $("s0-rel").textContent = C0.toLocaleString("es-MX") + " m/s";
+    $("s0-Z").textContent = fmt(Z0, 3) + " Ω";
+    $("s0-f").textContent = ing(f, "Hz");
+    $("s0-T").textContent = ing(1 / f, "s");
+
+    var nt = $("s0-note");
+    nt.className = "note";
+    if (!corriendo) {
+      nt.innerHTML = "<b>Detenida se ve lo esencial: los dos campos van en fase.</b> Donde E es máximo, B también lo es; donde uno vale cero, el otro también. No están desfasados un cuarto de periodo como en un circuito LC — en una onda que viaja, suben y bajan juntos.";
+    } else {
+      nt.innerHTML = "<b>E y B son perpendiculares entre sí y los dos al avance.</b> Su cociente es siempre <code>c</code>, pase lo que pase con la amplitud: por eso basta con hablar de <code>E</code> y nunca se menciona <code>B</code> en el resto del curso. <b>El campo magnético está, sólo que es " + fmt(C0 / 1e6, 0) + " millones de veces más pequeño en número.</b>";
+    }
+  }
+
+  function draw0(ctx, w, h) {
+    var mL = 48, mR = 24;
+    var pw = w - mL - mR;
+    var cy = h / 2 + 4;
+    var amp = Math.min(h * 0.27, 112);
+    var ox = 0.46, oy = -0.30;                     // eje oblicuo para B
+    var ciclos = 2.4;
+    var k = 2 * Math.PI * ciclos / pw;
+    var om = 2 * Math.PI * 0.45;
+
+    // eje de avance
+    ctx.strokeStyle = "rgba(134,149,170,.3)"; ctx.lineWidth = 1; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(mL, cy); ctx.lineTo(mL + pw, cy); ctx.stroke();
+    ctx.setLineDash([]);
+    flecha(ctx, mL + pw - 34, cy, mL + pw + 8, cy, C.ok, 1.8);
+    lab(ctx, "avance", mL + pw + 4, cy + 14, C.ok, "right", 10);
+
+    // eje oblicuo de referencia para B
+    ctx.strokeStyle = "rgba(95,168,216,.22)"; ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.moveTo(mL, cy); ctx.lineTo(mL + amp * ox, cy + amp * oy);
+    ctx.stroke(); ctx.setLineDash([]);
+
+    var col = lamCSS(s0.lam, 1);
+    var i, x, fase, s;
+
+    // campo magnetico primero, para que quede detras
+    ctx.strokeStyle = "rgba(95,168,216,.9)"; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (i = 0; i <= 260; i++) {
+      x = pw * i / 260; s = Math.sin(k * x - om * t);
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, mL + x + s * amp * ox, cy + s * amp * oy);
+    }
+    ctx.stroke();
+    for (i = 0; i <= 26; i++) {
+      x = pw * i / 26; s = Math.sin(k * x - om * t);
+      if (Math.abs(s) < 0.06) continue;
+      flecha(ctx, mL + x, cy, mL + x + s * amp * ox, cy + s * amp * oy, "rgba(95,168,216,.55)", 1.1);
+    }
+
+    // campo electrico
+    ctx.strokeStyle = col; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (i = 0; i <= 260; i++) {
+      x = pw * i / 260; s = Math.sin(k * x - om * t);
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, mL + x, cy - s * amp);
+    }
+    ctx.stroke();
+    for (i = 0; i <= 26; i++) {
+      x = pw * i / 26; s = Math.sin(k * x - om * t);
+      if (Math.abs(s) < 0.06) continue;
+      flecha(ctx, mL + x, cy, mL + x, cy - s * amp, lamCSS(s0.lam, 0.6), 1.1);
+    }
+
+    lab(ctx, "E", mL - 12, cy - amp - 6, C.acc, "center", 12);
+    lab(ctx, "B", mL - 12 + amp * ox * 1.3, cy + amp * oy * 1.3 - 4, C.cy, "center", 12);
+    labBg(ctx, "E₀ = " + fmt(s0.E, 0) + " V/m", mL + 6, cy - amp - 16, C.acc, "left", 10);
+    labBg(ctx, "B₀ = " + ing(s0.E / C0, "T"), mL + 6, cy - amp - 32, C.cy, "left", 10);
+
+    // una longitud de onda acotada
+    var lamPx = pw / ciclos;
+    var yb = cy + amp + 30;
+    ctx.strokeStyle = C.vi; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(mL, yb); ctx.lineTo(mL + lamPx, yb);
+    ctx.moveTo(mL, yb - 4); ctx.lineTo(mL, yb + 4);
+    ctx.moveTo(mL + lamPx, yb - 4); ctx.lineTo(mL + lamPx, yb + 4);
+    ctx.stroke();
+    labBg(ctx, "λ = " + fmt(s0.lam, 0) + " nm", mL + lamPx / 2, yb - 11, C.vi, "center", 10);
+    lab(ctx, "escala muy exagerada · las dos curvas están en fase", mL - 34, 16, C.dim, "left", 10);
+  }
+
+  // ================================================================
+  // 02  de donde sale n
+  // ================================================================
+  var MATS = [
+    { id: "m-vac", n: "vacío", er: 1.0 },
+    { id: "m-agua", n: "agua", er: 1.777 },
+    { id: "m-bk7", n: "BK7", er: 2.301 },
+    { id: "m-diam", n: "diamante", er: 5.842 },
+    { id: "m-si", n: "silicio", er: 12.110 }
+  ];
+  var s1 = { er: 2.301 };
+
+  function update1() {
+    s1.er = +$("s1-er").value;
+    $("s1-er-v").textContent = fmt(s1.er, 3);
+    MATS.forEach(function (m) {
+      $(m.id).setAttribute("aria-pressed", Math.abs(s1.er - m.er) < 0.004 ? "true" : "false");
+    });
+    var n = Math.sqrt(s1.er), v = C0 / n;
+    $("s1-n").textContent = fmt(n, 3);
+    $("s1-v").textContent = fmt(v / 1000, 0) + " km/s";
+    $("s1-tc").textContent = (n > 1.0001) ? fmt(Math.asin(1 / n) * 180 / Math.PI, 1) + "°" : "no hay";
+
+    var nt = $("s1-note");
+    if (s1.er < 1.01) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>En el vacío <code>ε_r = 1</code> y la luz va a <code>c</code>.</b> Ése es el único caso en que el índice vale exactamente uno. Todo lo demás la frena, y lo hace porque sus cargas responden al campo que pasa.";
+    } else if (Math.abs(s1.er - 1.777) < 0.01) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Cuidado con el agua: aquí <code>ε_r</code> vale 1.777, no 80.</b> El 80 que viene en las tablas es el valor en continua, y daría <code>n = 8.9</code>, que es absurdo. A frecuencia óptica las moléculas ya no alcanzan a reorientarse y la permitividad cae. <b>Esa dependencia con la frecuencia es la dispersión</b>, y es el montaje que viene después.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>El índice no es una propiedad aparte: es la raíz de la permitividad.</b> Lo que en el banco de refracción era un número que se daba por conocido, aquí sale de cómo responde el material a un campo eléctrico. La luz se frena porque las cargas del medio se mueven con ella.";
+    }
+    draw1(n);
+  }
+
+  function draw1(n) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var mL = 54, mR = 24, mT = 34, mB = 44;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var erMax = 14;
+    var X = function (e) { return mL + (e - 1) / (erMax - 1) * pw; };
+    var Y = function (v) { return mT + ph - (v - 1) / (Math.sqrt(erMax) - 1) * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    var j;
+    for (j = 1; j <= 4; j++) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(j)); ctx.lineTo(mL + pw, Y(j)); ctx.stroke();
+      lab(ctx, "n = " + j, mL - 7, Y(j), C.dim, "right", 10);
+    }
+    for (j = 2; j <= erMax; j += 2) {
+      ctx.beginPath(); ctx.moveTo(X(j), mT); ctx.lineTo(X(j), mT + ph); ctx.stroke();
+      lab(ctx, j + "", X(j), mT + ph + 13, C.dim, "center", 10);
+    }
+    lab(ctx, "permitividad relativa  ε_r", mL + pw, mT + ph + 29, C.dim, "right", 10);
+    lab(ctx, "n = √ε_r", mL, mT - 14, C.dim, "left", 10);
+
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var i = 0; i <= 300; i++) {
+      var e = 1 + (erMax - 1) * i / 300;
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, X(e), Y(Math.sqrt(e)));
+    }
+    ctx.stroke();
+
+    MATS.forEach(function (m) {
+      var px = X(m.er), py = Y(Math.sqrt(m.er));
+      ctx.fillStyle = "rgba(95,168,216,.9)";
+      ctx.beginPath(); ctx.arc(px, py, 3.4, 0, 6.2832); ctx.fill();
+      lab(ctx, m.n, px, py - 13, C.cy, "center", 10);
+    });
+
+    ctx.strokeStyle = "rgba(221,229,240,.5)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(s1.er), mT); ctx.lineTo(X(s1.er), mT + ph); ctx.stroke();
+    ctx.fillStyle = C.acc;
+    ctx.beginPath(); ctx.arc(X(s1.er), Y(n), 4.6, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.4; ctx.stroke();
+    labBg(ctx, "n = " + fmt(n, 3), X(s1.er) + (s1.er > erMax * 0.7 ? -9 : 9), Y(n) + 14,
+          C.acc, s1.er > erMax * 0.7 ? "right" : "left", 10);
+
+    // el agua en continua, fuera del cuadro, como aviso
+    labBg(ctx, "el agua en continua tiene ε_r = 80 · se sale del cuadro y daría n = 8.9",
+          mL + pw, mT + 10, C.no, "right", 10);
+  }
+
+  // ================================================================
+  // 03  del campo a los vatios
+  // ================================================================
+  var SIT = [
+    { id: "e-luna", n: "luna llena", I: 3e-3 },
+    { id: "e-ofi", n: "oficina", I: 5 },
+    { id: "e-sol", n: "sol", I: 1000 },
+    { id: "e-las", n: "láser 1 W en 20 µm", I: 1 / (Math.PI * 2e-5 * 2e-5) },
+    { id: "e-rup", n: "ruptura del aire", I: 0.5 * C0 * E0C * 9e12 }
+  ];
+  var s2 = { I: 1000 };
+  var ERUP = 3e6, BTIERRA = 50e-6;
+
+  function update2() {
+    s2.I = Math.pow(10, +$("s2-I").value);
+    $("s2-I-v").textContent = ing(s2.I, "W/m²");
+    SIT.forEach(function (p) {
+      $(p.id).setAttribute("aria-pressed", Math.abs(Math.log10(s2.I / p.I)) < 0.02 ? "true" : "false");
+    });
+    var E = Math.sqrt(2 * s2.I / (C0 * E0C)), B = E / C0;
+    $("s2-E").textContent = ing(E, "V/m");
+    $("s2-B").textContent = ing(B, "T");
+    $("s2-chk").textContent = ing(E * E / (2 * Z0), "W/m²");
+    $("s2-tierra").textContent = fmt(B / BTIERRA, 3) + " ×";
+    $("s2-rup").textContent = (E / ERUP < 0.001) ? fmt(E / ERUP, 5) + " ×" : fmt(E / ERUP, 3) + " ×";
+    $("s2-w0").textContent = ing(Math.sqrt(1 / (Math.PI * s2.I)), "m");
+
+    var nt = $("s2-note");
+    if (E > ERUP) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Por encima de 3 MV/m el aire se ioniza.</b> El campo de la luz arranca electrones de las moléculas y aparece una chispa en pleno aire. Con un láser de 1 W basta enfocar a <code>" +
+        ing(Math.sqrt(1 / (Math.PI * 1.194e10)), "m") + "</code> para llegar ahí: <b>no hace falta un láser enorme, hace falta una lente buena.</b>";
+    } else if (s2.I > 1e6) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Aquí el campo ya se mide en cientos de kilovoltios por metro.</b> Es la región donde empiezan los daños ópticos en recubrimientos y donde las hojas de datos dan umbrales en J/cm². El número de vatios engaña: lo que rompe el material es el campo.";
+    } else if (Math.abs(Math.log10(s2.I / 1000)) < 0.1) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>El sol en la superficie lleva unos 868 V/m y 2.9 µT.</b> Compáralo con el campo magnético terrestre, que son 50 µT: la parte magnética de la luz solar es unas veinte veces más débil que el campo en el que vives. <b>Y aun así es media onda.</b>";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>La irradiancia va con el cuadrado del campo.</b> Por eso para duplicar <code>E₀</code> hacen falta cuatro veces más vatios, y por eso una diferencia enorme en vatios se traduce en una diferencia modesta en voltios por metro. La fila de comprobación recalcula <code>I</code> desde <code>E₀</code> por otro camino: debe dar lo mismo.";
+    }
+    draw2(E);
+  }
+
+  function draw2(E) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var mL = 58, mR = 24, mT = 30, mB = 46;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var i0 = -3, i1 = 11, e0 = 0, e1 = 8;          // decadas de I y de E
+    var X = function (I) { return mL + (Math.log10(I) - i0) / (i1 - i0) * pw; };
+    var Y = function (E) { return mT + ph - (Math.log10(E) - e0) / (e1 - e0) * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    var j;
+    for (j = i0; j <= i1; j += 2) {
+      ctx.beginPath(); ctx.moveTo(X(Math.pow(10, j)), mT); ctx.lineTo(X(Math.pow(10, j)), mT + ph); ctx.stroke();
+      lab(ctx, pot10(j), X(Math.pow(10, j)), mT + ph + 13, C.dim, "center", 10);
+    }
+    for (j = e0; j <= e1; j += 2) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(Math.pow(10, j))); ctx.lineTo(mL + pw, Y(Math.pow(10, j))); ctx.stroke();
+      lab(ctx, pot10(j), mL - 7, Y(Math.pow(10, j)), C.dim, "right", 10);
+    }
+    lab(ctx, "irradiancia  [W/m²]", mL + pw, mT + ph + 30, C.dim, "right", 10);
+    lab(ctx, "campo eléctrico  E₀  [V/m]", mL - 48, mT - 14, C.dim, "left", 10);
+
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var i = 0; i <= 200; i++) {
+      var I = Math.pow(10, i0 + (i1 - i0) * i / 200);
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, X(I), Y(Math.sqrt(2 * I / (C0 * E0C))));
+    }
+    ctx.stroke();
+
+    // la linea de ruptura
+    ctx.strokeStyle = C.no; ctx.lineWidth = 1.3; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(mL, Y(ERUP)); ctx.lineTo(mL + pw, Y(ERUP)); ctx.stroke();
+    ctx.setLineDash([]);
+    labBg(ctx, "ruptura del aire · 3 MV/m", mL + 6, Y(ERUP) - 10, C.no, "left", 10);
+
+    SIT.forEach(function (p) {
+      var Ep = Math.sqrt(2 * p.I / (C0 * E0C));
+      if (p.I < Math.pow(10, i0) || p.I > Math.pow(10, i1)) return;
+      ctx.fillStyle = "rgba(134,149,170,.85)";
+      ctx.beginPath(); ctx.arc(X(p.I), Y(Ep), 3, 0, 6.2832); ctx.fill();
+      lab(ctx, p.n, X(p.I), Y(Ep) + 14, C.dim, "center", 9.5);
+    });
+
+    ctx.strokeStyle = "rgba(95,168,216,.55)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(s2.I), mT); ctx.lineTo(X(s2.I), mT + ph); ctx.stroke();
+    ctx.fillStyle = C.cy;
+    ctx.beginPath(); ctx.arc(X(s2.I), Y(E), 4.6, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.4; ctx.stroke();
+    labBg(ctx, ing(E, "V/m"), X(s2.I) + (s2.I > 1e6 ? -10 : 10), Y(E) - 13,
+          C.cy, s2.I > 1e6 ? "right" : "left", 10);
+  }
+
+  // ================================================================
+  // pestañas y bucle
+  // ================================================================
+  var cur = 0;
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "los dos campos se sostienen el uno al otro" },
+    { p: "p1", t: "tab1", u: update1, hint: "elige un material y mira su permitividad" },
+    { p: "p2", t: "tab2", u: update2, hint: "recorre catorce décadas de irradiancia" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-lam", "s0-E"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  $("s1-er").addEventListener("input", update1);
+  $("s2-I").addEventListener("input", update2);
+  MATS.forEach(function (m) {
+    $(m.id).addEventListener("click", function () { $("s1-er").value = m.er; update1(); });
+  });
+  SIT.forEach(function (p) {
+    $(p.id).addEventListener("click", function () { $("s2-I").value = Math.log10(p.I); update2(); });
+  });
+  $("s0-play").addEventListener("click", function () {
+    corriendo = !corriendo;
+    $("s0-play").textContent = corriendo ? "Pausa" : "Reanudar";
+    $("s0-play").setAttribute("aria-pressed", corriendo ? "true" : "false");
+    update0();
+  });
+
+  resize();
+  show(0);
+  window.addEventListener("load", resize);
+
+  (function bucle(ms) {
+    requestAnimationFrame(bucle);
+    if (!ultimo) ultimo = ms || 0;
+    var dt = Math.min(((ms || 0) - ultimo) / 1000, 0.05);
+    ultimo = ms || 0;
+    if (corriendo && cur === 0) t += dt;
+    resize();
+    if (cur === 0) draw0(ctx2d(), cv.width / dpr, cv.height / dpr);
+  })();
+})();
+</script>
+
+</body></html>

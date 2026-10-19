@@ -1,0 +1,976 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Pupilas</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Banco de pupilas</h1>
+    <p class="lede">En un sistema con varias aberturas, una sola decide cuánta luz entra y otra decide hasta dónde llega el campo. Saber cuál es cuál no se ve en la fórmula de la lente: hay que trazar.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> Quién manda</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Pupilas de entrada y salida</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Viñeteo</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">cierra el diafragma y mira qué rayo deja de pasar</div>
+    </div>
+
+    <!-- ============ 01 QUIEN MANDA ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Tres aberturas en fila. Sólo una decide el brillo: <b>la que corta primero</b> al abrir el haz.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-a">Semiabertura del diafragma &nbsp;a<sub>D</sub></label>
+          <output id="s0-a-v">4.0 mm</output>
+        </div>
+        <input type="range" id="s0-a" min="1" max="12" step="0.1" value="4">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Qué se dibuja">
+        <button id="s0-all" aria-pressed="true">Todos los rayos</button>
+        <button id="s0-lim" aria-pressed="false">Sólo el que pasa</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Altura máxima que admite cada abertura</div>
+        <div class="row pair">
+          <div class="k">Borde de L₁ &nbsp;<em>semi 16 mm</em></div>
+          <div class="v dim" id="s0-l1">16.0 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Diafragma &nbsp;<em>en z = 60</em></div>
+          <div class="v dim" id="s0-di">8.0 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Borde de L₂ &nbsp;<em>semi 18 mm</em></div>
+          <div class="v dim" id="s0-l2">18.0 mm</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Diafragma de apertura</div>
+          <div class="v acc" id="s0-win">el diafragma</div>
+        </div>
+        <div class="row">
+          <div class="k">Rayo marginal admitido</div>
+          <div class="v acc" id="s0-ym">8.0 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Número f del sistema</div>
+          <div class="v cy" id="s0-fn">f/1.5</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> rayo que pasa</span>
+        <span><i style="background:var(--no)"></i> rayo bloqueado</span>
+        <span><i style="background:var(--cy)"></i> lentes</span>
+        <span><i style="background:var(--ok)"></i> abertura que manda</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 PUPILAS ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">El diafragma está enterrado entre las lentes. <b>La pupila es su imagen</b>: lo que el sistema parece tener, visto desde fuera.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-a">Semiabertura del diafragma &nbsp;a<sub>D</sub></label>
+          <output id="s1-a-v">4.0 mm</output>
+        </div>
+        <input type="range" id="s1-a" min="1" max="8" step="0.1" value="4">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-t">Ángulo de campo &nbsp;θ</label>
+          <output id="s1-t-v">3.0°</output>
+        </div>
+        <input type="range" id="s1-t" min="0" max="7" step="0.1" value="3">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Rayos">
+        <button id="s1-mar" aria-pressed="true">Rayo marginal</button>
+        <button id="s1-chi" aria-pressed="true">Rayo principal</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Pupila de entrada · imagen del diafragma por L₁</div>
+        <div class="row pair">
+          <div class="k">Posición</div>
+          <div class="v vi" id="s1-epz">z = −120.0 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Semidiámetro &nbsp;<em>× 2.00</em></div>
+          <div class="v vi" id="s1-epa">8.0 mm</div>
+        </div>
+
+        <div class="sect">Pupila de salida · imagen del diafragma por L₂</div>
+        <div class="row pair">
+          <div class="k">Posición</div>
+          <div class="v vi" id="s1-xpz">z = +140.0 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Semidiámetro &nbsp;<em>× 3.00</em></div>
+          <div class="v vi" id="s1-xpa">12.0 mm</div>
+        </div>
+
+        <div class="sect">Lo que hace cada rayo</div>
+        <div class="row pair">
+          <div class="k">El marginal toca &nbsp;<em>el borde de las tres</em></div>
+          <div class="v acc" id="s1-chk1">sí</div>
+        </div>
+        <div class="row">
+          <div class="k">El principal pasa por &nbsp;<em>el centro de las tres</em></div>
+          <div class="v ok" id="s1-chk2">sí</div>
+        </div>
+        <div class="row">
+          <div class="k">Altura de la imagen</div>
+          <div class="v cy" id="s1-him">−1.26 mm</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> rayo marginal</span>
+        <span><i style="background:var(--ok)"></i> rayo principal</span>
+        <span><i style="background:var(--vi)"></i> pupilas</span>
+        <span><i style="background:var(--cy)"></i> lentes y diafragma</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 VIÑETEO ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Fuera del eje, el haz ya no ve un círculo: <b>lo recortan las monturas</b>, y la esquina de la imagen se apaga.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-a">Semiabertura del diafragma &nbsp;a<sub>D</sub></label>
+          <output id="s2-a-v">4.0 mm</output>
+        </div>
+        <input type="range" id="s2-a" min="1" max="8" step="0.1" value="4">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-t">Ángulo de campo &nbsp;θ</label>
+          <output id="s2-t-v">6.0°</output>
+        </div>
+        <input type="range" id="s2-t" min="0" max="14" step="0.1" value="6">
+      </div>
+
+      <div class="readout">
+        <div class="sect">En este ángulo de campo</div>
+        <div class="row pair">
+          <div class="k">Área de pupila que sobrevive</div>
+          <div class="v acc" id="s2-vig">71.4 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Caída por ley del coseno &nbsp;<em>cos⁴θ</em></div>
+          <div class="v cy" id="s2-cos">97.8 %</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Iluminación relativa</div>
+          <div class="v acc" id="s2-tot">69.8 %</div>
+        </div>
+
+        <div class="sect">Dónde empieza y dónde acaba</div>
+        <div class="row pair">
+          <div class="k">El viñeteo comienza en</div>
+          <div class="v ok" id="s2-on">3.8°</div>
+        </div>
+        <div class="row">
+          <div class="k">Corte total en</div>
+          <div class="v no" id="s2-off">11.3°</div>
+        </div>
+        <div class="row">
+          <div class="k">Quién recorta</div>
+          <div class="v dim" id="s2-who">el borde de L₁</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i class="dot" style="background:var(--acc)"></i> luz que pasa</span>
+        <span><i style="background:var(--cy)"></i> diafragma</span>
+        <span><i style="background:var(--no)"></i> montura de L₁</span>
+        <span><i style="background:var(--vi)"></i> montura de L₂</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    El sistema es el mismo en los tres montajes: <code>L₁ f = 40 mm</code> en <code>z = 0</code> con semidiámetro 16, diafragma en <code>z = 60</code>, y <code>L₂ f = 15 mm</code> en <code>z = 80</code> con semidiámetro 18; objeto en el infinito e imagen en <code>z = 104</code>. Las pupilas son la imagen del diafragma por las lentes que lo preceden y lo siguen. Para que las dos salgan reales hace falta que la separación supere <code>f₁ + f₂</code>, y entonces la distancia focal combinada resulta negativa aunque la imagen sea real: es propiedad de esta configuración, no un error de cuentas. En el montaje 03 el área de pupila se integra numéricamente sobre la intersección de las tres aberturas proyectadas al plano del diafragma. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    draw();
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  function sgn(x, d) { return (x >= 0 ? "+" : "−") + fmt(Math.abs(x), d); }
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+
+  // ================================================================
+  // el sistema, uno solo para los tres montajes
+  // ================================================================
+  var F1 = 40, Z1 = 0, SM1 = 16;      // L1 y su semidiametro
+  var ZD = 60;                        // diafragma
+  var F2 = 15, Z2 = 80, SM2 = 18;     // L2 y su semidiametro
+  var ZIM = 104;                      // plano imagen de un objeto en el infinito
+  var ZEP = -120, MEP = 2;            // pupila de entrada: posicion y aumento
+  var ZXP = 140, MXP = 3;             // pupila de salida
+
+  // rayo paralelo de altura y: altura en cualquier z
+  function hPar(y, z) {
+    if (z <= Z2) return y * (1 - z / F1);
+    return -y + (z - Z2) * (y / 24);
+  }
+  // rayo principal de pendiente t: pasa por el centro de la pupila de entrada
+  function hChief(t, z) {
+    if (z <= Z1) return (z - ZEP) * t;
+    if (z <= Z2) return 120 * t - 2 * t * z;
+    return -40 * t + (z - Z2) * (2 * t / 3);
+  }
+  // altura maxima que deja pasar cada abertura
+  function limits(aD) { return { l1: SM1, di: 2 * aD, l2: SM2 }; }
+  function yMax(aD) { var L = limits(aD); return Math.min(L.l1, L.di, L.l2); }
+  function stopName(aD) {
+    var L = limits(aD), m = yMax(aD);
+    if (L.di <= L.l1 && L.di <= L.l2) return "el diafragma";
+    return (L.l1 <= L.l2) ? "el borde de L₁" : "el borde de L₂";
+  }
+
+  // ================================================================
+  // dibujo comun: el corte del sistema
+  // ================================================================
+  function axes(ctx, w, h, z0, z1, yHalf, mT, mB) {
+    var mL = 14, mR = 14;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var X = function (z) { return mL + (z - z0) * pw / (z1 - z0); };
+    var Y = function (y) { return mT + ph / 2 - y * (ph / 2) / yHalf; };
+    ctx.strokeStyle = "rgba(134,149,170,.3)"; ctx.lineWidth = 1;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(X(z0), Y(0)); ctx.lineTo(X(z1), Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+    return { X: X, Y: Y, mT: mT, ph: ph };
+  }
+
+  function lensGlyph(ctx, g, z, semi, col) {
+    var cx = g.X(z), top = g.Y(semi), bot = g.Y(-semi), a = 7;
+    ctx.strokeStyle = col || C.cy; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx, bot); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - a, top + a); ctx.lineTo(cx, top); ctx.lineTo(cx + a, top + a);
+    ctx.moveTo(cx - a, bot - a); ctx.lineTo(cx, bot); ctx.lineTo(cx + a, bot - a);
+    ctx.stroke();
+  }
+
+  // hojas del diafragma: dos barras desde el borde del cuadro hasta la abertura
+  function stopGlyph(ctx, g, z, semi, col, outer) {
+    var cx = g.X(z);
+    ctx.strokeStyle = col || C.cy; ctx.lineWidth = 3.4; ctx.lineCap = "butt";
+    ctx.beginPath();
+    ctx.moveTo(cx, g.Y(outer)); ctx.lineTo(cx, g.Y(semi));
+    ctx.moveTo(cx, g.Y(-outer)); ctx.lineTo(cx, g.Y(-semi));
+    ctx.stroke();
+  }
+
+  function pupilGlyph(ctx, g, z, semi, col, outer) {
+    var cx = g.X(z);
+    ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(cx, g.Y(outer)); ctx.lineTo(cx, g.Y(semi));
+    ctx.moveTo(cx, g.Y(-outer)); ctx.lineTo(cx, g.Y(-semi));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, g.Y(semi)); ctx.lineTo(cx + 5, g.Y(semi));
+    ctx.moveTo(cx - 5, g.Y(-semi)); ctx.lineTo(cx + 5, g.Y(-semi));
+    ctx.stroke();
+  }
+
+  // ================================================================
+  // 01  quien manda
+  // ================================================================
+  var s0 = { aD: 4, soloLim: false };
+
+  function update0() {
+    s0.aD = +$("s0-a").value;
+    $("s0-a-v").textContent = fmt(s0.aD, 1) + " mm";
+    $("s0-all").setAttribute("aria-pressed", s0.soloLim ? "false" : "true");
+    $("s0-lim").setAttribute("aria-pressed", s0.soloLim ? "true" : "false");
+
+    var L = limits(s0.aD), ym = yMax(s0.aD), nom = stopName(s0.aD);
+    var mark = function (el, v, win) {
+      $(el).textContent = fmt(v, 1) + " mm";
+      $(el).className = "v " + (win ? "ok" : "dim");
+    };
+    mark("s0-l1", L.l1, nom === "el borde de L₁");
+    mark("s0-di", L.di, nom === "el diafragma");
+    mark("s0-l2", L.l2, nom === "el borde de L₂");
+    $("s0-win").textContent = nom;
+    $("s0-ym").textContent = fmt(ym, 1) + " mm";
+    $("s0-fn").textContent = "f/" + fmt(24 / (2 * ym), 2);
+
+    var nt = $("s0-note");
+    if (Math.abs(s0.aD - 8) < 0.15) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Justo en el empate.</b> A <code>a<sub>D</sub> = 8 mm</code> el diafragma y la montura de L₁ cortan a la misma altura. Un pelo en cualquier dirección y el mando cambia de dueño sin que nada se mueva de sitio.";
+    } else if (nom === "el diafragma") {
+      nt.className = "note";
+      nt.innerHTML = "<b>El diafragma manda, aunque no sea la abertura más chica.</b> Mide <code>" +
+        fmt(s0.aD, 1) + " mm</code> frente a los 16 de L₁, pero está donde el haz ya viene convergiendo: ahí el rayo pasa a media altura, así que corta a <code>" +
+        fmt(L.di, 1) + " mm</code> de altura de entrada. <b>No gana el agujero más pequeño, gana el que corta primero.</b>";
+    } else {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Abriste tanto el diafragma que dejó de mandar.</b> Ahora limita " + nom +
+        ", que es una abertura que nadie puso ahí a propósito: es el vidrio que termina. Seguir abriendo el diafragma ya no entra más luz.";
+    }
+
+    draw0();
+  }
+
+  function draw0() {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var g = axes(ctx, w, h, -30, 118, 21, 24, 44);
+    var L = limits(s0.aD), nom = stopName(s0.aD);
+
+    var hot = function (q) { return nom === q ? C.ok : C.cy; };
+    lensGlyph(ctx, g, Z1, SM1, hot("el borde de L₁"));
+    lensGlyph(ctx, g, Z2, SM2, hot("el borde de L₂"));
+    stopGlyph(ctx, g, ZD, s0.aD, hot("el diafragma"), 21);
+
+    var ys = [], i;
+    for (i = 1; i <= 17; i++) ys.push(i);
+    var ym = yMax(s0.aD);
+
+    for (i = 0; i < ys.length; i++) {
+      var y = ys[i], pasa = y <= ym + 1e-9;
+      if (s0.soloLim && !pasa) continue;
+      // hasta donde llega: z de la abertura que lo bloquea
+      var zEnd = 118;
+      if (!pasa) {
+        if (y > L.l1) zEnd = Z1;
+        else if (0.5 * y > s0.aD) zEnd = ZD;
+        else zEnd = Z2;
+      }
+      for (var sy = -1; sy <= 1; sy += 2) {
+        ctx.strokeStyle = pasa ? C.acc : "rgba(212,98,74,.75)";
+        ctx.lineWidth = pasa ? 1.2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(g.X(-30), g.Y(sy * y));
+        var zz = [Z1, ZD, Z2, zEnd].filter(function (v) { return v <= zEnd; });
+        zz.push(zEnd);
+        for (var k = 0; k < zz.length; k++) ctx.lineTo(g.X(zz[k]), g.Y(sy * hPar(y, zz[k])));
+        ctx.stroke();
+        if (!pasa) {
+          ctx.fillStyle = C.no;
+          ctx.beginPath(); ctx.arc(g.X(zEnd), g.Y(sy * hPar(y, zEnd)), 2.4, 0, 6.2832); ctx.fill();
+        }
+      }
+    }
+
+    lab(ctx, "L₁", g.X(Z1), g.Y(0) + g.ph / 2 + 12, hot("el borde de L₁"), "center", 11);
+    lab(ctx, "diafragma", g.X(ZD), g.Y(0) + g.ph / 2 + 12, hot("el diafragma"), "center", 11);
+    lab(ctx, "L₂", g.X(Z2), g.Y(0) + g.ph / 2 + 12, hot("el borde de L₂"), "center", 11);
+    labBg(ctx, "pasa hasta y = " + fmt(ym, 1) + " mm", g.X(-30) + 4, g.Y(ym) - 11, C.acc, "left", 10);
+  }
+
+  // ================================================================
+  // 02  pupilas de entrada y de salida
+  // ================================================================
+  var s1 = { aD: 4, th: 3, mar: true, chi: true };
+
+  function update1() {
+    s1.aD = +$("s1-a").value;
+    s1.th = +$("s1-t").value;
+    $("s1-a-v").textContent = fmt(s1.aD, 1) + " mm";
+    $("s1-t-v").textContent = fmt(s1.th, 1) + "°";
+    $("s1-mar").setAttribute("aria-pressed", s1.mar ? "true" : "false");
+    $("s1-chi").setAttribute("aria-pressed", s1.chi ? "true" : "false");
+
+    $("s1-epz").textContent = "z = " + sgn(ZEP, 1) + " mm";
+    $("s1-epa").textContent = fmt(MEP * s1.aD, 1) + " mm";
+    $("s1-xpz").textContent = "z = " + sgn(ZXP, 1) + " mm";
+    $("s1-xpa").textContent = fmt(MXP * s1.aD, 1) + " mm";
+
+    // comprobaciones numericas, no afirmaciones de adorno
+    var ym = MEP * s1.aD;
+    var e1 = Math.abs(Math.abs(hPar(ym, ZD)) - s1.aD);
+    var e2 = Math.abs(Math.abs(hPar(ym, ZXP)) - MXP * s1.aD);
+    $("s1-chk1").textContent = (e1 < 1e-6 && e2 < 1e-6) ? "sí, a 10⁻⁶ mm" : "no";
+    var t = Math.tan(s1.th * Math.PI / 180);
+    var c1 = Math.abs(hChief(t, ZD)), c2 = Math.abs(hChief(t, ZXP));
+    $("s1-chk2").textContent = (c1 < 1e-9 && c2 < 1e-9) ? "sí, a 10⁻⁹ mm" : "no";
+    $("s1-him").textContent = fmt(hChief(t, ZIM), 2) + " mm";
+
+    var nt = $("s1-note");
+    nt.className = "note";
+    if (s1.th < 0.05) {
+      nt.innerHTML = "<b>En el eje el rayo principal se confunde con el eje mismo.</b> Sube el ángulo de campo para separarlo: es el rayo que, viniendo del borde del objeto, atraviesa el centro de las tres aberturas.";
+    } else {
+      nt.innerHTML = "<b>Las tres aberturas son la misma, vista desde tres sitios.</b> El diafragma es el agujero físico; la pupila de entrada es lo que ve el objeto a través de L₁, y la de salida lo que ve la imagen a través de L₂. Por eso el marginal roza el borde de las tres y el principal pasa por el centro de las tres: no son tres condiciones, es una sola.";
+    }
+
+    draw1();
+  }
+
+  function draw1() {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var g = axes(ctx, w, h, -148, 168, 26, 28, 52);
+    var t = Math.tan(s1.th * Math.PI / 180);
+
+    pupilGlyph(ctx, g, ZEP, MEP * s1.aD, C.vi, 26);
+    pupilGlyph(ctx, g, ZXP, MXP * s1.aD, C.vi, 26);
+    lensGlyph(ctx, g, Z1, SM1, C.cy);
+    lensGlyph(ctx, g, Z2, SM2, C.cy);
+    stopGlyph(ctx, g, ZD, s1.aD, C.cy, 26);
+
+    // plano imagen
+    ctx.strokeStyle = "rgba(134,149,170,.5)"; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+    ctx.beginPath(); ctx.moveTo(g.X(ZIM), g.Y(22)); ctx.lineTo(g.X(ZIM), g.Y(-22)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    var zs = [-148, Z1, ZD, Z2, ZIM, ZXP, 168];
+    var k;
+
+    if (s1.mar) {
+      var ym = MEP * s1.aD;
+      for (var sy = -1; sy <= 1; sy += 2) {
+        ctx.strokeStyle = C.acc; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (k = 0; k < zs.length; k++) {
+          var yy = (zs[k] <= Z1) ? sy * ym : sy * hPar(ym, zs[k]);
+          (k ? ctx.lineTo : ctx.moveTo).call(ctx, g.X(zs[k]), g.Y(yy));
+        }
+        ctx.stroke();
+      }
+    }
+
+    if (s1.chi && t > 1e-9) {
+      ctx.strokeStyle = C.ok; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (k = 0; k < zs.length; k++) {
+        (k ? ctx.lineTo : ctx.moveTo).call(ctx, g.X(zs[k]), g.Y(hChief(t, zs[k])));
+      }
+      ctx.stroke();
+      // los tres cruces por el centro
+      [ZEP, ZD, ZXP].forEach(function (z) {
+        ctx.fillStyle = C.ok;
+        ctx.beginPath(); ctx.arc(g.X(z), g.Y(0), 3, 0, 6.2832); ctx.fill();
+        ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.1; ctx.stroke();
+      });
+    }
+
+    // dos renglones, para que no se encimen los elementos centrales
+    var yb = g.mT + g.ph + 13;
+    lab(ctx, "PE", g.X(ZEP), yb, C.vi, "center", 11);
+    lab(ctx, "L₁", g.X(Z1), yb, C.cy, "center", 11);
+    lab(ctx, "L₂", g.X(Z2), yb, C.cy, "center", 11);
+    lab(ctx, "PS", g.X(ZXP), yb, C.vi, "center", 11);
+    lab(ctx, "diafragma", g.X(ZD), yb + 14, C.cy, "center", 10);
+    lab(ctx, "imagen", g.X(ZIM), yb + 14, C.dim, "center", 10);
+    lab(ctx, "pupila de entrada", g.X(ZEP), g.mT + 10, C.vi, "center", 10);
+    lab(ctx, "pupila de salida", g.X(ZXP), g.mT + 10, C.vi, "center", 10);
+  }
+
+  // ================================================================
+  // 03  vineteo
+  // ================================================================
+  var s2 = { aD: 4, th: 6 };
+  var RD1 = SM1 / 2, RD2 = SM2 / 2;      // monturas proyectadas al plano del diafragma
+
+  // area de la interseccion de los tres discos, por integracion en malla
+  function areaPupil(aD, t, N) {
+    var c1 = 60 * t, c2 = 20 * t;
+    var xlo = Math.max(-aD, c1 - RD1, c2 - RD2);
+    var xhi = Math.min(aD, c1 + RD1, c2 + RD2);
+    if (xhi <= xlo) return 0;
+    var r = Math.min(aD, RD1, RD2);
+    var dx = (xhi - xlo) / N, dy = 2 * r / N, A = 0;
+    for (var i = 0; i < N; i++) {
+      var x = xlo + (i + 0.5) * dx;
+      for (var j = 0; j < N; j++) {
+        var y = -r + (j + 0.5) * dy;
+        if (x * x + y * y > aD * aD) continue;
+        var ax = x - c1; if (ax * ax + y * y > RD1 * RD1) continue;
+        var bx = x - c2; if (bx * bx + y * y > RD2 * RD2) continue;
+        A += dx * dy;
+      }
+    }
+    return A;
+  }
+
+  function onsetT(aD) {
+    if (aD <= RD1) return Math.min((RD1 - aD) / 60, (RD2 - aD) / 20);
+    return Math.min((aD - RD1) / 60, (RD2 - RD1) / 40);
+  }
+  function cutoffT(aD) {
+    return Math.min((aD + RD1) / 60, (aD + RD2) / 20, (RD1 + RD2) / 40);
+  }
+  function relIll(aD, t, N) {
+    var A0 = areaPupil(aD, 0, N);
+    if (A0 <= 0) return 0;
+    return areaPupil(aD, t, N) / A0;
+  }
+
+  function update2() {
+    s2.aD = +$("s2-a").value;
+    s2.th = +$("s2-t").value;
+    $("s2-a-v").textContent = fmt(s2.aD, 1) + " mm";
+    $("s2-t-v").textContent = fmt(s2.th, 1) + "°";
+
+    var t = Math.tan(s2.th * Math.PI / 180);
+    var v = relIll(s2.aD, t, 150);
+    var c4 = Math.pow(Math.cos(s2.th * Math.PI / 180), 4);
+    $("s2-vig").textContent = fmt(v * 100, 1) + " %";
+    $("s2-cos").textContent = fmt(c4 * 100, 1) + " %";
+    $("s2-tot").textContent = fmt(v * c4 * 100, 1) + " %";
+
+    var on = Math.atan(onsetT(s2.aD)) * 180 / Math.PI;
+    var off = Math.atan(cutoffT(s2.aD)) * 180 / Math.PI;
+    $("s2-on").textContent = fmt(on, 1) + "°";
+    $("s2-off").textContent = fmt(off, 1) + "°";
+
+    // cual montura recorta de verdad en este angulo
+    var c1 = 60 * t, c2 = 20 * t, R0 = Math.min(s2.aD, RD1, RD2);
+    var cs = (R0 === s2.aD) ? 0 : (R0 === RD1 ? c1 : c2);
+    var ex1 = Math.abs(cs - c1) + R0 - RD1, ex2 = Math.abs(cs - c2) + R0 - RD2;
+    var exD = (R0 === s2.aD) ? -1 : Math.abs(cs) + R0 - s2.aD;
+    var quien = "nadie todavía";
+    var mx = Math.max(ex1, ex2, exD);
+    if (mx > 1e-9) quien = (mx === ex1) ? "el borde de L₁" : (mx === ex2 ? "el borde de L₂" : "el diafragma");
+    $("s2-who").textContent = quien;
+
+    var nt = $("s2-note");
+    if (v > 0.999) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Dentro de este ángulo la pupila sigue entera.</b> La única caída es la del coseno, que es geometría pura y le pasa hasta al sistema perfecto. Sigue abriendo el campo hasta pasar de <code>" +
+        fmt(on, 1) + "°</code>.";
+    } else if (v < 0.002) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Aquí ya no llega nada.</b> Las aberturas proyectadas dejaron de solaparse: ningún rayo de este punto del objeto encuentra camino hasta la imagen. Éste es el borde real del campo, y lo fija la montura, no el diafragma.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>La pupila dejó de ser un círculo.</b> Lo que pasa es la intersección de las tres aberturas, y por eso la esquina de la imagen se ve más oscura que el centro. Nota que el viñeteo no corta de golpe: <b>se desvanece</b> entre <code>" +
+        fmt(on, 1) + "°</code> y <code>" + fmt(off, 1) + "°</code>, y ésa es la diferencia entre viñeteo y un diafragma de campo de verdad, que sí daría un borde nítido.";
+    }
+
+    draw2(v, c4, on, off);
+  }
+
+  function draw2(v, c4, on, off) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var t = Math.tan(s2.th * Math.PI / 180);
+
+    // ---------- izquierda: la pupila vista desde el punto de campo ----------
+    var side = Math.min(w * 0.44, h - 64);
+    var ox = 16, oy = (h - side) / 2 + 4;
+    var R = s2.aD + 9;                             // el recuadro se ajusta al diafragma
+    var P = function (x, y) { return [ox + side / 2 + x / R * side / 2, oy + side / 2 - y / R * side / 2]; };
+    var rad = function (mm) { return mm / R * side / 2; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+    ctx.strokeRect(ox, oy, side, side);
+
+    // area comun, por barrido de columnas
+    var c1 = 60 * t, c2 = 20 * t;
+    ctx.fillStyle = "rgba(242,196,84,.5)";
+    var NB = 260;
+    for (var i = 0; i < NB; i++) {
+      var x = -R + (i + 0.5) * 2 * R / NB;
+      var lim = Math.min(
+        Math.sqrt(Math.max(0, s2.aD * s2.aD - x * x)),
+        Math.sqrt(Math.max(0, RD1 * RD1 - (x - c1) * (x - c1))),
+        Math.sqrt(Math.max(0, RD2 * RD2 - (x - c2) * (x - c2))));
+      if (lim <= 0) continue;
+      var a = P(x, lim), b = P(x, -lim);
+      ctx.fillRect(a[0] - 1, a[1], 2.2, b[1] - a[1]);
+    }
+
+    function circ(cx, r, col, dash) {
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.setLineDash(dash || []);
+      var p = P(cx, 0);
+      ctx.beginPath(); ctx.arc(p[0], p[1], rad(r), 0, 6.2832); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    circ(0, s2.aD, C.cy);
+    circ(c1, RD1, C.no, [4, 4]);
+    circ(c2, RD2, C.vi, [4, 4]);
+
+    lab(ctx, "la pupila a θ = " + fmt(s2.th, 1) + "°", ox, oy - 11, C.acc, "left", 10.5);
+    lab(ctx, "plano del diafragma · recuadro " + fmt(2 * R, 0) + " mm", ox, oy + side + 13, C.dim, "left", 10);
+
+    // ---------- derecha: iluminacion relativa ----------
+    var mL = ox + side + 50, mR = 18, mT = 30, mB = 46;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var th1 = 15;
+    var GX = function (d) { return mL + d / th1 * pw; };
+    var GY = function (u) { return mT + ph - u * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    var j;
+    for (j = 0; j <= 5; j++) {
+      ctx.beginPath(); ctx.moveTo(mL, GY(j / 5)); ctx.lineTo(mL + pw, GY(j / 5)); ctx.stroke();
+      lab(ctx, (j * 20) + "", mL - 7, GY(j / 5), C.dim, "right", 10);
+    }
+    for (j = 0; j <= 3; j++) {
+      var dd = j * 5;
+      ctx.beginPath(); ctx.moveTo(GX(dd), mT); ctx.lineTo(GX(dd), mT + ph); ctx.stroke();
+      lab(ctx, dd + "°", GX(dd), mT + ph + 14, C.dim, "center", 10);
+    }
+    lab(ctx, "iluminación relativa  [%]", mL - 24, mT - 13, C.dim, "left", 10);
+    lab(ctx, "ángulo de campo  θ", mL + pw, mT + ph + 30, C.dim, "right", 10);
+
+    // curvas
+    var NS = 64, k, d, tt, u;
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    for (k = 0; k <= NS; k++) {
+      d = k / NS * th1; u = Math.pow(Math.cos(d * Math.PI / 180), 4);
+      (k ? ctx.lineTo : ctx.moveTo).call(ctx, GX(d), GY(u));
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (k = 0; k <= NS; k++) {
+      d = k / NS * th1; tt = Math.tan(d * Math.PI / 180);
+      u = relIll(s2.aD, tt, 46) * Math.pow(Math.cos(d * Math.PI / 180), 4);
+      (k ? ctx.lineTo : ctx.moveTo).call(ctx, GX(d), GY(u));
+    }
+    ctx.stroke();
+
+    // marcas de inicio y de corte
+    [[on, C.ok, "empieza"], [off, C.no, "corte"]].forEach(function (m) {
+      if (m[0] > th1) return;
+      ctx.strokeStyle = m[1]; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(GX(m[0]), mT); ctx.lineTo(GX(m[0]), mT + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      lab(ctx, m[2], GX(m[0]) + 4, mT + 8, m[1], "left", 10);
+    });
+
+    // punto actual
+    if (s2.th <= th1) {
+      ctx.fillStyle = C.acc;
+      var pp = [GX(s2.th), GY(v * c4)];
+      ctx.beginPath(); ctx.arc(pp[0], pp[1], 4.2, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.4; ctx.stroke();
+      labBg(ctx, fmt(v * c4 * 100, 0) + " %", pp[0] + (s2.th > th1 * .7 ? -9 : 9), pp[1] - 13,
+            C.acc, s2.th > th1 * .7 ? "right" : "left", 10);
+    }
+    lab(ctx, "sólo cos⁴θ", GX(th1) - 4, GY(Math.pow(Math.cos(th1 * Math.PI / 180), 4)) - 11, C.cy, "right", 10);
+  }
+
+  // ================================================================
+  // pestañas
+  // ================================================================
+  var cur = 0;
+  function draw() { if (cur === 0) update0(); else if (cur === 1) update1(); else update2(); }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "cierra el diafragma y mira qué rayo deja de pasar" },
+    { p: "p1", t: "tab1", u: update1, hint: "sigue el rayo principal por el centro de las tres" },
+    { p: "p2", t: "tab2", u: update2, hint: "abre el campo hasta que la pupila se recorte" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  $("s0-a").addEventListener("input", update0);
+  ["s1-a", "s1-t"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-a", "s2-t"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  $("s0-all").addEventListener("click", function () { s0.soloLim = false; update0(); });
+  $("s0-lim").addEventListener("click", function () { s0.soloLim = true; update0(); });
+  $("s1-mar").addEventListener("click", function () { s1.mar = !s1.mar; update1(); });
+  $("s1-chi").addEventListener("click", function () { s1.chi = !s1.chi; update1(); });
+
+  resize();
+  show(0);
+  window.addEventListener("load", resize);
+  // la fuente web puede llegar despues del primer trazo: se redibuja al cargarla
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+
+</body></html>

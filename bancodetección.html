@@ -1,0 +1,1216 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Detección</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+/* en mayusculas, "µW" se convierte en "MW": seis ordenes de magnitud de error */
+.sect .lit { text-transform: none; }
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o los cuatro paneles salen apilados */
+.panel[hidden] { display: none; }
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica · Fotones</p>
+    <h1>Banco de detección</h1>
+    <p class="lede">Todo el curso calculó dónde cae la luz y cuánta hay. Aquí aparece la última pregunta, la que decide si un instrumento sirve: <b>¿se distingue del ruido?</b> Y el ruido que acaba mandando no lo pone el circuito: lo trae la luz.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> La corriente que da la luz</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> ¿Estaba encendida?</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Quién manda el ruido</button>
+    <button class="tab" role="tab" id="tab3" aria-controls="p3" aria-selected="false"><span class="n">04</span> La imagen contada</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">pasa el corte y mira qué deja de responder</div>
+    </div>
+
+    <!-- ============ 01 RESPONSIVIDAD ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Un fotodiodo no mide vatios: <b>cuenta electrones</b>. Cada fotón absorbido libera uno, así que la corriente sube con λ aunque la potencia no cambie.</p>
+
+      <div class="toggle" role="group" aria-label="Material">
+        <button id="d-si" aria-pressed="true">Silicio</button>
+        <button id="d-ga" >InGaAs</button>
+        <button id="d-ge">Germanio</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s0-lam-v">850 nm</output>
+        </div>
+        <input type="range" id="s0-lam" min="200" max="2100" step="5" value="850">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-eta">Eficiencia cuántica &nbsp;η</label>
+          <output id="s0-eta-v">0.80</output>
+        </div>
+        <input type="range" id="s0-eta" min="0.05" max="1" step="0.01" value="0.8">
+      </div>
+
+      <div class="form">
+        <span class="lb">Responsividad</span>
+        <span class="z">R =</span> η·q·λ / h·c <span class="z">=</span> η · λ[µm] / <span class="t">1.2398</span> <span class="z">A/W</span>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Este detector</div>
+        <div class="row pair">
+          <div class="k">Corte &nbsp;<em>λc = hc/Eg</em></div>
+          <div class="v cy" id="s0-corte">1107 nm</div>
+        </div>
+        <div class="row">
+          <div class="k">Límite ideal &nbsp;<em>η = 1</em></div>
+          <div class="v dim" id="s0-rmax">0.686 A/W</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Responsividad &nbsp;<em>R</em></div>
+          <div class="v acc" id="s0-R">0.5485 A/W</div>
+        </div>
+
+        <div class="sect">Con 1 <span class="lit">µW</span> incidente</div>
+        <div class="row pair">
+          <div class="k">Fotones por segundo</div>
+          <div class="v dim" id="s0-N">4.28 × 10¹²</div>
+        </div>
+        <div class="row">
+          <div class="k">Electrones por segundo &nbsp;<em>I/q</em></div>
+          <div class="v vi" id="s0-Ne">3.42 × 10¹²</div>
+        </div>
+        <div class="row">
+          <div class="k">Fotocorriente &nbsp;<em>I = R·P</em></div>
+          <div class="v ok" id="s0-I">548.5 nA</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> responsividad real</span>
+        <span><i style="background:var(--dim)"></i> límite η = 1</span>
+        <span><i style="background:var(--cy)"></i> corte del material</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 TRAZA ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">La luz se enciende y se apaga cuatro veces. <b>Baja la potencia hasta que ya no puedas decir cuándo.</b></p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-P">Potencia encendida &nbsp;P</label>
+          <output id="s1-P-v">1.00 nW</output>
+        </div>
+        <input type="range" id="s1-P" min="-14" max="-3" step="0.02" value="-9">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-B">Ancho de banda &nbsp;B</label>
+          <output id="s1-B-v">1.00 kHz</output>
+        </div>
+        <input type="range" id="s1-B" min="0" max="7" step="0.02" value="3">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Situaciones">
+        <button id="n-clara" aria-pressed="true">Se ve</button>
+        <button id="n-justo">Al límite</button>
+        <button id="n-no">Se pierde</button>
+      </div>
+
+      <div class="toggle" role="group" aria-label="Medida">
+        <button id="n-otra">Otra medida</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">La señal</div>
+        <div class="row pair">
+          <div class="k">Fotocorriente &nbsp;<em>I = R·P</em></div>
+          <div class="v acc" id="s1-I">548.5 pA</div>
+        </div>
+        <div class="row">
+          <div class="k">Potencia en escala logarítmica</div>
+          <div class="v dim" id="s1-dbm">−60.0 dBm</div>
+        </div>
+
+        <div class="sect">El ruido en esa banda</div>
+        <div class="row pair">
+          <div class="k">De disparo &nbsp;<em>√(2q·I·B)</em></div>
+          <div class="v no" id="s1-ish">0.419 pA</div>
+        </div>
+        <div class="row">
+          <div class="k">Johnson &nbsp;<em>√(4kT·B/R_L)</em></div>
+          <div class="v cy" id="s1-ith">4.070 pA</div>
+        </div>
+        <div class="row">
+          <div class="k">De la corriente oscura</div>
+          <div class="v vi" id="s1-idk">0.566 pA</div>
+        </div>
+        <div class="row">
+          <div class="k">Total &nbsp;<em>√(Σ i²)</em></div>
+          <div class="v fg" id="s1-itot">4.131 pA</div>
+        </div>
+
+        <div class="sect">El veredicto</div>
+        <div class="row hero">
+          <div class="k">Relación señal a ruido</div>
+          <div class="v ok" id="s1-snr">132.8</div>
+        </div>
+        <div class="row">
+          <div class="k">Fotones detectados en &nbsp;<em>τ = 1/2B</em></div>
+          <div class="v dim" id="s1-Nt">1.71 × 10⁶</div>
+        </div>
+        <div class="row">
+          <div class="k">Si sólo hubiera disparo</div>
+          <div class="v dim" id="s1-ideal">1 308</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> lo que mide el detector</span>
+        <span><i style="background:var(--dim)"></i> la señal verdadera</span>
+        <span><i class="dot" style="background:var(--no)"></i> margen de ruido</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 REGIMENES ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Dos ruidos crecen distinto. <b>El de Johnson no se entera de la luz; el de disparo sube con ella</b>, y por eso acaba ganando.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-P">Potencia de trabajo &nbsp;P</label>
+          <output id="s2-P-v">1.00 nW</output>
+        </div>
+        <input type="range" id="s2-P" min="-15" max="-2" step="0.02" value="-9">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-RL">Resistencia de carga &nbsp;R_L</label>
+          <output id="s2-RL-v">1.00 MΩ</output>
+        </div>
+        <input type="range" id="s2-RL" min="1.7" max="9" step="0.02" value="6">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Temperatura">
+        <button id="t-300" aria-pressed="true">300 K</button>
+        <button id="t-200">200 K</button>
+        <button id="t-77">77 K</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Dónde se cruzan</div>
+        <div class="row pair">
+          <div class="k">Disparo = Johnson &nbsp;<em>I = 2kT/qR_L</em></div>
+          <div class="v acc" id="s2-cruce">94.3 nW</div>
+        </div>
+        <div class="row">
+          <div class="k">Régimen a esta potencia</div>
+          <div class="v cy" id="s2-reg">manda Johnson</div>
+        </div>
+
+        <div class="sect">Lo que cuesta el régimen</div>
+        <div class="row hero">
+          <div class="k">Si subes la potencia ×10, la SNR sube</div>
+          <div class="v ok" id="s2-esc">×10.00</div>
+        </div>
+        <div class="row">
+          <div class="k">Ley que está siguiendo</div>
+          <div class="v dim" id="s2-ley">SNR ∝ P</div>
+        </div>
+
+        <div class="sect">Sensibilidad del montaje</div>
+        <div class="row pair">
+          <div class="k">Potencia equivalente al ruido &nbsp;<em>NEP</em></div>
+          <div class="v vi" id="s2-nep">2.37 × 10⁻¹³ W/√Hz</div>
+        </div>
+        <div class="row">
+          <div class="k">Potencia con SNR = 1 &nbsp;<em>en 1 kHz</em></div>
+          <div class="v no" id="s2-p1">7.49 pW</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> señal</span>
+        <span><i style="background:var(--no)"></i> disparo</span>
+        <span><i style="background:var(--cy)"></i> Johnson</span>
+        <span><i style="background:var(--vi)"></i> oscura</span>
+      </div>
+    </div>
+
+    <!-- ============ 04 IMAGEN ============ -->
+    <div class="panel" id="p3" role="tabpanel" aria-labelledby="tab3" hidden>
+      <p class="ask">La misma carta de resolución, contando fotones. <b>Lo primero que el ruido se lleva no es el brillo: es la resolución.</b></p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s3-N">Fotones por píxel en lo blanco</label>
+          <output id="s3-N-v">25</output>
+        </div>
+        <input type="range" id="s3-N" min="-1" max="4.3" step="0.01" value="1.398">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Niveles">
+        <button id="q-1">1</button>
+        <button id="q-25" aria-pressed="true">25</button>
+        <button id="q-400">400</button>
+        <button id="q-10000">10 000</button>
+      </div>
+
+      <div class="toggle" role="group" aria-label="Medida">
+        <button id="q-otra">Otra exposición</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">La exposición</div>
+        <div class="row pair">
+          <div class="k">Media en lo blanco &nbsp;<em>N̄</em></div>
+          <div class="v acc" id="s3-nb">25.0</div>
+        </div>
+        <div class="row">
+          <div class="k">Fotones en toda la imagen</div>
+          <div class="v dim" id="s3-tot">2.09 × 10⁵</div>
+        </div>
+
+        <div class="sect">Lo que deja el conteo</div>
+        <div class="row hero">
+          <div class="k">SNR por píxel &nbsp;<em>= √N̄</em></div>
+          <div class="v ok" id="s3-snr">5.0</div>
+        </div>
+        <div class="row">
+          <div class="k">Ruido relativo &nbsp;<em>1/√N̄</em></div>
+          <div class="v cy" id="s3-rel">20.0 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Criterio de Rose &nbsp;<em>SNR ≥ 5</em></div>
+          <div class="v ok" id="s3-rose">justo en el umbral</div>
+        </div>
+
+        <div class="sect">Lo que costaría mejorar</div>
+        <div class="row">
+          <div class="k">Para duplicar la SNR</div>
+          <div class="v no" id="s3-cost">×4 de luz, o ×4 de tiempo</div>
+        </div>
+      </div>
+
+      <p class="note" id="s3-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> pl · pares de línea en el ancho de la carta</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Constantes del SI exacto: <code>q = 1.602176634 × 10⁻¹⁹ C</code>, <code>k_B = 1.380649 × 10⁻²³ J/K</code>, <code>h = 6.62607015 × 10⁻³⁴ J·s</code>. De ellas sale <code>hc/q = 1239.84 nm·V</code>, que fija tanto el límite de responsividad <code>R = λ[µm]/1.2398</code> como los cortes de los tres materiales a partir de su banda prohibida. Los ruidos se suman en cuadratura porque son independientes, y el de disparo se calcula sobre la corriente total, señal más oscura. <b>Conviene cerrar aquí un cabo que el banco dejó abierto en geometría</b>: el montaje 04 enseña que el límite real de resolución de un instrumento rara vez es el de difracción del banco de pupilas. Antes que la mancha de Airy llega el ruido, y por eso dos sistemas con la misma MTF no rinden igual si uno recoge la mitad de luz. La sensibilidad no es una propiedad del detector solo: es del detector, su banda y su temperatura.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  }
+  window.addEventListener("resize", function () { resize(); draw(); });
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+  var HP = 6.62607015e-34, CL = 299792458, KB = 1.380649e-23, Q = 1.602176634e-19;
+  var HCQ = HP * CL / Q;              // 1.239842e-6 V·m
+  var ID = 1e-9;                       // corriente oscura tipica, 1 nA
+  var TAMB = 300;
+
+  // ---------- formato ----------
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  var SUP = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻" };
+  function sup(e) { return String(e).split("").map(function (c) { return SUP[c] || c; }).join(""); }
+  function cien(x, d) {
+    if (x === 0) return "0";
+    var ex = Math.floor(Math.log10(Math.abs(x))), m = x / Math.pow(10, ex);
+    return fmt(m, d === undefined ? 2 : d) + " × 10" + sup(ex);
+  }
+  var PREF = [[1e-15, "f"], [1e-12, "p"], [1e-9, "n"], [1e-6, "µ"], [1e-3, "m"], [1, ""], [1e3, "k"], [1e6, "M"], [1e9, "G"]];
+  function ing(x, u, d) {
+    if (!isFinite(x) || x === 0) return "0 " + u;
+    var a = Math.abs(x), k = 0;
+    for (var i = PREF.length - 1; i >= 0; i--) { if (a >= PREF[i][0] * 0.9995) { k = i; break; } }
+    return fmt(x / PREF[k][0], d === undefined ? 2 : d) + " " + PREF[k][1] + u;
+  }
+  // un numero grande se lee mejor en notacion cientifica que con diez cifras
+  function num(x, d) { return (Math.abs(x) >= 1e5) ? cien(x, 2) : fmt(x, d === undefined ? 1 : d); }
+
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+  function lamRGB(lam) {
+    var r = 0, g = 0, b = 0;
+    if (lam >= 380 && lam < 440) { r = -(lam - 440) / 60; b = 1; }
+    else if (lam < 490) { g = (lam - 440) / 50; b = 1; }
+    else if (lam < 510) { g = 1; b = -(lam - 510) / 20; }
+    else if (lam < 580) { r = (lam - 510) / 70; g = 1; }
+    else if (lam < 645) { r = 1; g = -(lam - 645) / 65; }
+    else if (lam <= 780) { r = 1; }
+    else { r = 1; g = .3; b = .3; }
+    var f = 1;
+    if (lam > 700) f = 0.42; else if (lam < 420) f = 0.3 + 0.7 * Math.max(0, lam - 380) / 40;
+    var gm = function (x) { return Math.pow(Math.max(0, Math.min(1, x * f)), 0.8); };
+    return [gm(r), gm(g), gm(b)];
+  }
+  function lamCSS(lam, a) {
+    var c = lamRGB(lam);
+    return "rgba(" + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," +
+           Math.round(c[2] * 255) + "," + (a === undefined ? 1 : a) + ")";
+  }
+
+  // ---------- azar reproducible ----------
+  // semilla fija por trazo: la misma configuracion da la misma medida,
+  // asi se pueden comparar dos ajustes sin que parpadee todo
+  var base = 20251016, semilla = base;
+  function rnd() { semilla = (semilla * 1664525 + 1013904223) >>> 0; return semilla / 4294967296; }
+  function gauss() {
+    var u = 1 - rnd(), v = rnd();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283185307179586 * v);
+  }
+  function poisson(lamb) {
+    if (lamb <= 0) return 0;
+    if (lamb < 30) {                       // Knuth
+      var L = Math.exp(-lamb), k = 0, p = 1;
+      do { k++; p *= rnd(); } while (p > L);
+      return k - 1;
+    }
+    var g = Math.round(lamb + Math.sqrt(lamb) * gauss());   // normal: exacta a <1% desde lamb=30
+    return g < 0 ? 0 : g;
+  }
+
+  // ---------- fisica comun ----------
+  function respon(lamNm, eta) { return eta * lamNm * 1e-9 / HCQ; }      // A/W
+  function iDisparo(I, B) { return Math.sqrt(2 * Q * I * B); }
+  function iJohnson(T, RL, B) { return Math.sqrt(4 * KB * T * B / RL); }
+
+  // ================================================================
+  // 01  responsividad
+  // ================================================================
+  var DET = {
+    "d-si": { n: "silicio", Eg: 1.12 },
+    "d-ga": { n: "InGaAs", Eg: 0.75 },
+    "d-ge": { n: "germanio", Eg: 0.661 }
+  };
+  var s0 = { lam: 850, eta: 0.8, d: "d-si" };
+  var LAM0 = 200, LAM1 = 2100, RMAX = 1.78;
+
+  function update0() {
+    s0.lam = +$("s0-lam").value;
+    s0.eta = +$("s0-eta").value;
+    Object.keys(DET).forEach(function (k) { $(k).setAttribute("aria-pressed", k === s0.d ? "true" : "false"); });
+    $("s0-lam-v").textContent = (s0.lam >= 1000) ? fmt(s0.lam / 1000, 3) + " µm" : fmt(s0.lam, 0) + " nm";
+    $("s0-eta-v").textContent = fmt(s0.eta, 2);
+
+    var lc = HCQ * 1e9 / DET[s0.d].Eg;
+    var vivo = s0.lam <= lc;
+    var rmax = s0.lam * 1e-9 / HCQ;
+    var R = vivo ? respon(s0.lam, s0.eta) : 0;
+    var P = 1e-6, I = R * P;
+    var Nf = P * s0.lam * 1e-9 / (HP * CL);
+
+    $("s0-corte").textContent = fmt(lc, 0) + " nm";
+    $("s0-rmax").textContent = fmt(rmax, 3) + " A/W";
+    $("s0-R").textContent = vivo ? fmt(R, 4) + " A/W" : "0 — no responde";
+    $("s0-R").className = "v " + (vivo ? "acc" : "no");
+    $("s0-N").textContent = cien(Nf, 2);
+    $("s0-Ne").textContent = vivo ? cien(I / Q, 2) : "0";
+    $("s0-Ne").className = "v " + (vivo ? "vi" : "no");
+    $("s0-I").textContent = vivo ? ing(I, "A", 1) : "sin corriente";
+    $("s0-I").className = "v " + (vivo ? "ok" : "no");
+
+    var nt;
+    if (!vivo) {
+      nt = "<b>Por debajo de la banda prohibida el fotón no alcanza.</b> No importa cuánta potencia llegue: " +
+           "con " + fmt(HCQ * 1e9 / s0.lam, 3) + " eV por fotón y un hueco de " + fmt(DET[s0.d].Eg, 3) +
+           " eV, ningún electrón cruza. Por eso el silicio es ciego en telecomunicaciones y hay que ir a InGaAs.";
+    } else {
+      nt = "A igual potencia, <b>la luz roja da más corriente que la azul</b>: trae más fotones por vatio. " +
+           "Por eso R sube con λ hasta el corte, donde cae a plomo. El límite <code>λ[µm]/1.2398</code> " +
+           "es el caso de un electrón por fotón; η dice qué fracción se logra. " +
+           "Aquí η se toma constante en toda la banda, que es una simplificación: en un detector real baja cerca del corte.";
+    }
+    $("s0-note").innerHTML = nt;
+
+    var ctx = ctx2d(), W = cv.width / dpr, H = cv.height / dpr;
+    var mL = 56, mR = 18, mT = 26, mB = 46;
+    var pw = W - mL - mR, ph = H - mT - mB;
+    var X = function (l) { return mL + (l - LAM0) / (LAM1 - LAM0) * pw; };
+    var Y = function (r) { return mT + ph - r / RMAX * ph; };
+
+    lab(ctx, "responsividad  [A/W]", mL - 4, mT - 12, C.dim, "left", 10);
+
+    ctx.strokeStyle = "rgba(34,48,68,.75)"; ctx.lineWidth = 1;
+    for (var r = 0; r <= 1.75; r += 0.25) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(r)); ctx.lineTo(mL + pw, Y(r)); ctx.stroke();
+      lab(ctx, fmt(r, 2), mL - 8, Y(r), C.dim, "right", 9.5);
+    }
+    for (var l = 400; l <= 2000; l += 400) {
+      ctx.beginPath(); ctx.moveTo(X(l), mT); ctx.lineTo(X(l), mT + ph); ctx.stroke();
+      lab(ctx, fmt(l, 0), X(l), mT + ph + 14, C.dim, "center", 9.5);
+    }
+    lab(ctx, "longitud de onda  [nm]", mL + pw, mT + ph + 31, C.dim, "right", 10);
+
+    // franja visible
+    for (var q = 0; q < pw; q++) {
+      var lq = LAM0 + (LAM1 - LAM0) * q / pw;
+      if (lq >= 380 && lq <= 760) { ctx.fillStyle = lamCSS(lq, 0.3); ctx.fillRect(mL + q, mT + ph + 2, 1.5, 6); }
+    }
+
+    // limite ideal
+    ctx.strokeStyle = "rgba(134,149,170,.6)"; ctx.lineWidth = 1.2; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(X(LAM0), Y(LAM0 * 1e-9 / HCQ)); ctx.lineTo(X(LAM1), Y(LAM1 * 1e-9 / HCQ)); ctx.stroke();
+    ctx.setLineDash([]);
+    lab(ctx, "límite  η = 1", X(LAM1) - 6, Y(LAM1 * 1e-9 / HCQ) - 11, C.dim, "right", 10);
+
+    // cortes de los otros materiales, tenues
+    Object.keys(DET).forEach(function (k) {
+      if (k === s0.d) return;
+      var lk = HCQ * 1e9 / DET[k].Eg;
+      if (lk > LAM1) return;
+      ctx.strokeStyle = "rgba(34,48,68,1)"; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+      ctx.beginPath(); ctx.moveTo(X(lk), mT); ctx.lineTo(X(lk), mT + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      // abajo: arriba chocarian con el rotulo de la recta ideal
+      lab(ctx, DET[k].n, X(lk) - 4, mT + ph - 12, "rgba(134,149,170,.5)", "right", 9);
+    });
+
+    // responsividad real
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(X(LAM0), Y(respon(LAM0, s0.eta)));
+    var lfin = Math.min(lc, LAM1);
+    ctx.lineTo(X(lfin), Y(respon(lfin, s0.eta)));
+    if (lc <= LAM1) { ctx.lineTo(X(lc), Y(0)); ctx.lineTo(X(LAM1), Y(0)); }
+    ctx.stroke();
+
+    // corte activo
+    if (lc <= LAM1) {
+      ctx.strokeStyle = "rgba(95,168,216,.75)"; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(X(lc), mT); ctx.lineTo(X(lc), Y(0)); ctx.stroke();
+      ctx.setLineDash([]);
+      labBg(ctx, DET[s0.d].n + " · " + fmt(lc, 0) + " nm", X(lc) - 7, mT + 11, C.cy, "right", 10);
+    }
+
+    // marcador
+    var yv = vivo ? Y(R) : Y(0);
+    ctx.strokeStyle = "rgba(242,196,84,.4)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(s0.lam), mT); ctx.lineTo(X(s0.lam), mT + ph); ctx.stroke();
+    ctx.fillStyle = vivo ? C.acc : C.no;
+    ctx.beginPath(); ctx.arc(X(s0.lam), yv, 4.8, 0, 6.2832); ctx.fill();
+    labBg(ctx, vivo ? fmt(R, 3) + " A/W" : "no responde",
+          X(s0.lam) + (s0.lam > (LAM0 + LAM1) / 2 ? -10 : 10), yv - 14, vivo ? C.acc : C.no,
+          s0.lam > (LAM0 + LAM1) / 2 ? "right" : "left", 10.5);
+  }
+
+  // ================================================================
+  // 02  la traza: ¿estaba encendida?
+  // ================================================================
+  var LAMD = 850, ETAD = 0.8, RLD = 1e6;
+  var RD = respon(LAMD, ETAD);        // 0.5485 A/W
+  var s1 = { P: 1e-9, B: 1e3 };
+  var NPTS = 320, NBLQ = 8;           // 8 bloques = 4 pulsos
+
+  function update1() {
+    s1.P = Math.pow(10, +$("s1-P").value);
+    s1.B = Math.pow(10, +$("s1-B").value);
+    $("s1-P-v").textContent = ing(s1.P, "W", 2);
+    $("s1-B-v").textContent = ing(s1.B, "Hz", 2);
+
+    var I = RD * s1.P;
+    var ish = iDisparo(I + ID, s1.B);
+    var ishS = iDisparo(I, s1.B);
+    var idk = iDisparo(ID, s1.B);
+    var ith = iJohnson(TAMB, RLD, s1.B);
+    var itot = Math.sqrt(ish * ish + ith * ith);
+    var snr = I / itot;
+    var tau = 1 / (2 * s1.B);
+    var Nt = ETAD * s1.P * tau * LAMD * 1e-9 / (HP * CL);
+
+    $("s1-I").textContent = ing(I, "A", 2);
+    $("s1-dbm").textContent = fmt(10 * Math.log10(s1.P / 1e-3), 1) + " dBm";
+    $("s1-ish").textContent = ing(ishS, "A", 3);
+    $("s1-ith").textContent = ing(ith, "A", 3);
+    $("s1-idk").textContent = ing(idk, "A", 3);
+    $("s1-itot").textContent = ing(itot, "A", 3);
+    $("s1-snr").textContent = num(snr, snr < 100 ? 2 : 1);
+    $("s1-snr").className = "v " + (snr >= 5 ? "ok" : (snr >= 1 ? "acc" : "no"));
+    $("s1-Nt").textContent = cien(Nt, 2);
+    $("s1-ideal").textContent = num(Math.sqrt(Nt), 1);
+
+    hint.textContent = snr >= 5 ? "baja la potencia hasta que ya no se vean los pulsos"
+                                : "sube el tiempo de medida: baja B";
+
+    var nt;
+    if (snr < 1) {
+      nt = "<b>Los pulsos siguen ahí, pero la medida ya no los sostiene.</b> La luz no desapareció: " +
+           "desapareció la certeza. Con SNR = " + fmt(snr, 2) + " cualquier lectura es compatible con " +
+           "encendido y con apagado.";
+    } else if (snr < 5) {
+      nt = "Zona de duda. Se intuyen, pero <b>una medida suelta todavía puede engañar</b>. " +
+           "La convención habitual pide SNR ≥ 5 antes de dar por detectada una señal.";
+    } else if (ith > ish) {
+      nt = "Se ven con holgura, y <b>el ruido que manda es el de la resistencia, no el de la luz</b>. " +
+           "Eso tiene remedio: enfriar, subir R_L o estrechar la banda. El montaje 03 dice cuánto se gana.";
+    } else {
+      nt = "<b>Aquí el ruido ya lo pone la propia luz.</b> Con disparo dominante la SNR vale exactamente " +
+           "<code>√N</code> con N los fotones detectados en τ = 1/2B: " + num(Math.sqrt(Nt), 1) +
+           " frente a los " + num(snr, 1) + " medidos. Ninguna electrónica baja de ahí.";
+    }
+    $("s1-note").innerHTML = nt;
+
+    draw1(I, ith);
+  }
+
+  function draw1(I, ith) {
+    var ctx = ctx2d(), W = cv.width / dpr, H = cv.height / dpr;
+    var mL = 60, mR = 16, mT = 26, mB = 44;
+    var pw = W - mL - mR, ph = H - mT - mB;
+
+    // la corriente oscura se descuenta como nivel, que es lo que hace cualquier
+    // medida real; lo que no se puede descontar es el ruido que aporta
+    var sOn = Math.sqrt(2 * Q * (I + ID) * s1.B + ith * ith);
+    var sOf = Math.sqrt(2 * Q * ID * s1.B + ith * ith);
+    var yMax = I + 4.5 * sOn, yMin = -4.5 * Math.max(sOn, sOf);
+    var Y = function (v) { return mT + ph - (v - yMin) / (yMax - yMin) * ph; };
+    var X = function (k) { return mL + k / (NPTS - 1) * pw; };
+    var enc = function (k) { return Math.floor(k / (NPTS / NBLQ)) % 2 === 0; };
+
+    lab(ctx, "fotocorriente  ·  la luz se enciende y se apaga  ·  oscura descontada", mL - 4, mT - 12, C.dim, "left", 10);
+
+    // bandas de encendido
+    for (var b = 0; b < NBLQ; b += 2) {
+      ctx.fillStyle = "rgba(242,196,84,.05)";
+      ctx.fillRect(X(b * NPTS / NBLQ), mT, pw / NBLQ, ph);
+    }
+
+    // eje cero
+    ctx.strokeStyle = "rgba(34,48,68,1)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(mL, Y(0)); ctx.lineTo(mL + pw, Y(0)); ctx.stroke();
+    lab(ctx, "0", mL - 8, Y(0), C.dim, "right", 9.5);
+    lab(ctx, ing(I, "A", 1), mL - 8, Y(I), C.acc, "right", 9.5);
+
+    // margen de ruido alrededor del nivel encendido
+    ctx.fillStyle = "rgba(212,98,74,.16)";
+    ctx.fillRect(mL, Y(I + sOn), pw, Y(I - sOn) - Y(I + sOn));
+
+    // señal verdadera
+    ctx.strokeStyle = "rgba(134,149,170,.85)"; ctx.lineWidth = 1.3; ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    for (var k = 0; k < NPTS; k++) {
+      var v = enc(k) ? I : 0;
+      if (k === 0) ctx.moveTo(X(k), Y(v)); else { ctx.lineTo(X(k), Y(v)); }
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // la medida
+    semilla = base;
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    for (var j = 0; j < NPTS; j++) {
+      var on = enc(j);
+      var med = (on ? I : 0) + (on ? sOn : sOf) * gauss();
+      var yy = Math.max(mT - 4, Math.min(mT + ph + 4, Y(med)));
+      if (j === 0) ctx.moveTo(X(j), yy); else ctx.lineTo(X(j), yy);
+    }
+    ctx.stroke();
+
+    lab(ctx, "τ = " + ing(1 / (2 * s1.B), "s", 2) + " por muestra", mL + pw, mT + ph + 16, C.dim, "right", 10);
+    lab(ctx, "tiempo", mL, mT + ph + 16, C.dim, "left", 10);
+  }
+
+  // ================================================================
+  // 03  quien manda el ruido
+  // ================================================================
+  var s2 = { P: 1e-9, RL: 1e6, T: 300 };
+  var B2 = 1e3;                       // banda fija en este montaje
+  var PA = 1e-15, PB = 1e-2;          // rango del eje
+  var IA = 1e-16, IB = 1e-2;
+
+  function update2() {
+    s2.P = Math.pow(10, +$("s2-P").value);
+    s2.RL = Math.pow(10, +$("s2-RL").value);
+    [["t-300", 300], ["t-200", 200], ["t-77", 77]].forEach(function (p) {
+      $(p[0]).setAttribute("aria-pressed", s2.T === p[1] ? "true" : "false");
+    });
+    $("s2-P-v").textContent = ing(s2.P, "W", 2);
+    $("s2-RL-v").textContent = ing(s2.RL, "Ω", 2);
+
+    var ith = iJohnson(s2.T, s2.RL, B2);
+    var Icr = 2 * KB * s2.T / (Q * s2.RL);      // disparo = Johnson
+    var Pcr = Icr / RD;
+    var I = RD * s2.P;
+    var ish = iDisparo(I + ID, B2);
+    var itot = Math.sqrt(ish * ish + ith * ith);
+    var snr = I / itot;
+
+    // exponente local d(ln SNR)/d(ln P): un salto grande se saldria del regimen
+    // y daria un numero que no concuerda con la ley que se anuncia
+    var sn = function (p) {
+      var i = RD * p;
+      return i / Math.sqrt(2 * Q * (i + ID) * B2 + ith * ith);
+    };
+    var h = 0.01;
+    var k = (Math.log(sn(s2.P * Math.exp(h))) - Math.log(sn(s2.P * Math.exp(-h)))) / (2 * h);
+    var esc = Math.pow(10, k);
+
+    // NEP y potencia con SNR = 1 (raiz de la cuadratica en I)
+    var i0 = Math.sqrt(2 * Q * ID * B2 + ith * ith);
+    var nep = i0 / (RD * Math.sqrt(B2));
+    var a = 1, bq = -2 * Q * B2, cq = -(i0 * i0);
+    var I1 = (-bq + Math.sqrt(bq * bq - 4 * a * cq)) / (2 * a);
+
+    $("s2-cruce").textContent = ing(Pcr, "W", 1);
+    var manda = ish > ith;
+    $("s2-reg").textContent = manda ? "manda el disparo" : "manda Johnson";
+    $("s2-reg").className = "v " + (manda ? "no" : "cy");
+    $("s2-esc").textContent = "×" + fmt(esc, 2);
+    $("s2-ley").textContent = (k > 0.95) ? "SNR ∝ P" : (k < 0.55 ? "SNR ∝ √P" : "SNR ∝ P^" + fmt(k, 2));
+    $("s2-nep").textContent = cien(nep, 2) + " W/√Hz";
+    $("s2-p1").textContent = ing(I1 / RD, "W", 2);
+
+    var nt;
+    if (manda) {
+      nt = "<b>Ya estás en el límite cuántico.</b> Enfriar, cambiar la resistencia o comprar mejor " +
+           "electrónica no mejora nada: el ruido lo trae la luz. Para duplicar la SNR hace falta " +
+           "<b>cuadruplicar la potencia</b> — o el tiempo de integración, que es lo mismo.";
+    } else {
+      nt = "Aquí el detector todavía estorba, así que <b>cada vatio extra se paga entero</b>: " +
+           "×10 de potencia dan ×" + fmt(esc, 1) + " de SNR. Mientras dure este régimen, enfriar y " +
+           "estrechar la banda sí sirven. El cruce está en " + ing(Pcr, "W", 1) + ".";
+    }
+    $("s2-note").innerHTML = nt;
+    hint.textContent = manda ? "ya no hay nada que ganar en la electrónica"
+                             : "sube la potencia hasta pasar el cruce";
+
+    draw2(ith, Pcr);
+  }
+
+  function draw2(ith, Pcr) {
+    var ctx = ctx2d(), W = cv.width / dpr, H = cv.height / dpr;
+    var mL = 58, mR = 16, mT = 26, mB = 46;
+    var pw = W - mL - mR, ph = H - mT - mB;
+    var lg = Math.log10;
+    var X = function (p) { return mL + (lg(p) - lg(PA)) / (lg(PB) - lg(PA)) * pw; };
+    var Y = function (i) { return mT + ph - (lg(i) - lg(IA)) / (lg(IB) - lg(IA)) * ph; };
+
+    lab(ctx, "corriente  ·  escala logarítmica  ·  B = 1 kHz", mL - 4, mT - 12, C.dim, "left", 10);
+
+    ctx.strokeStyle = "rgba(34,48,68,.6)"; ctx.lineWidth = 1;
+    for (var e = -15; e <= -2; e += 1) {
+      ctx.beginPath(); ctx.moveTo(X(Math.pow(10, e)), mT); ctx.lineTo(X(Math.pow(10, e)), mT + ph); ctx.stroke();
+    }
+    for (var f = -15; f <= -3; f += 2) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(Math.pow(10, f))); ctx.lineTo(mL + pw, Y(Math.pow(10, f))); ctx.stroke();
+      lab(ctx, ing(Math.pow(10, f), "A", 0), mL - 8, Y(Math.pow(10, f)), C.dim, "right", 9.5);
+    }
+    [[1e-15, "fW"], [1e-12, "pW"], [1e-9, "nW"], [1e-6, "µW"], [1e-3, "mW"]].forEach(function (p) {
+      lab(ctx, p[1], X(p[0]), mT + ph + 14, C.dim, "center", 9.5);
+    });
+    lab(ctx, "potencia incidente", mL + pw, mT + ph + 31, C.dim, "right", 10);
+
+    var trazo = function (fn, col, lw, dash) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw;
+      ctx.setLineDash(dash || []);
+      ctx.beginPath();
+      for (var k = 0; k <= 220; k++) {
+        var p = Math.pow(10, lg(PA) + (lg(PB) - lg(PA)) * k / 220);
+        var y = Y(Math.max(fn(p), IA));
+        if (k === 0) ctx.moveTo(X(p), y); else ctx.lineTo(X(p), y);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    };
+
+    var idk = iDisparo(ID, B2);
+    trazo(function () { return ith; }, C.cy, 1.6);
+    trazo(function () { return idk; }, C.vi, 1.6, [4, 3]);
+    trazo(function (p) { return iDisparo(RD * p, B2); }, C.no, 1.6);
+    trazo(function (p) { return Math.sqrt(2 * Q * (RD * p + ID) * B2 + ith * ith); }, "rgba(221,229,240,.85)", 2.2);
+    trazo(function (p) { return RD * p; }, C.acc, 2.2);
+
+    lab(ctx, "señal", X(PB) - 6, Y(RD * PB) - 12, C.acc, "right", 10);
+    labBg(ctx, "Johnson", mL + 6, Y(ith) - 10, C.cy, "left", 10);
+    labBg(ctx, "oscura", mL + 6, Y(idk) + 11, C.vi, "left", 10);
+    lab(ctx, "disparo", X(PB) - 6, Y(iDisparo(RD * PB, B2)) + 12, C.no, "right", 10);
+
+    // cruce disparo / Johnson
+    if (Pcr > PA && Pcr < PB) {
+      ctx.strokeStyle = "rgba(242,196,84,.35)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(X(Pcr), mT); ctx.lineTo(X(Pcr), mT + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      labBg(ctx, "cruce · " + ing(Pcr, "W", 1), X(Pcr) - 6, mT + 10, C.acc, "right", 10);
+    }
+
+    // punto de trabajo
+    var Iw = RD * s2.P;
+    var iw = Math.sqrt(2 * Q * (Iw + ID) * B2 + ith * ith);
+    ctx.strokeStyle = "rgba(221,229,240,.3)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(s2.P), mT); ctx.lineTo(X(s2.P), mT + ph); ctx.stroke();
+    ctx.fillStyle = C.acc;
+    ctx.beginPath(); ctx.arc(X(s2.P), Y(Iw), 4.4, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = C.fg;
+    ctx.beginPath(); ctx.arc(X(s2.P), Y(iw), 3.6, 0, 6.2832); ctx.fill();
+    var der = s2.P < Math.sqrt(PA * PB);
+    labBg(ctx, "SNR = " + num(Iw / iw, 1), X(s2.P) + (der ? 9 : -9), Y(Iw) - 14,
+          Iw / iw >= 5 ? C.ok : C.no, der ? "left" : "right", 10.5);
+  }
+
+  // ================================================================
+  // 04  la imagen contada
+  // ================================================================
+  // el deslizador va a pasos de 0.01 en el exponente: un preset se guarda aparte
+  // para que el boton de 400 diga 400 y no 399.9
+  var s3 = { N: 25 }, forzado = 25;
+  var GW = 200, GH = 150, FONDO = 0.05;
+  var off = document.createElement("canvas"); off.width = GW; off.height = GH;
+  var octx = off.getContext("2d");
+  var idat = octx.createImageData(GW, GH);
+
+  // carta de resolucion: barras verticales, escalon de grises, barras horizontales
+  var GRU = [[0.05, 0.33], [0.36, 0.64], [0.67, 0.95]];
+  // periodos en multiplos exactos del pixel (1/GW = 0.005): si no, el grupo fino
+  // se deshace por muestreo y no por ruido, que es justo lo contrario de la idea
+  var PER = [0.06, 0.04, 0.02];
+  function objetivo(u, v) {
+    var i;
+    if (v >= 0.06 && v <= 0.38) {
+      for (i = 0; i < 3; i++) {
+        if (u >= GRU[i][0] && u <= GRU[i][1]) {
+          return (((u - GRU[i][0]) / PER[i]) % 1 < 0.5) ? 1 : FONDO;
+        }
+      }
+      return FONDO;
+    }
+    if (v >= 0.43 && v <= 0.60) {
+      if (u < 0.05 || u > 0.95) return FONDO;
+      var k = Math.min(5, Math.floor((u - 0.05) / 0.9 * 6));
+      return 0.08 + 0.92 * k / 5;
+    }
+    if (v >= 0.65 && v <= 0.95) {
+      for (i = 0; i < 3; i++) {
+        if (u >= GRU[i][0] && u <= GRU[i][1]) {
+          return (((v - 0.65) / PER[i]) % 1 < 0.5) ? 1 : FONDO;
+        }
+      }
+      return FONDO;
+    }
+    return FONDO;
+  }
+
+  // media de fotones sobre toda la carta: fija el presupuesto total
+  var MEDOBJ = (function () {
+    var s = 0;
+    for (var j = 0; j < GH; j++) for (var i = 0; i < GW; i++) s += objetivo((i + 0.5) / GW, (j + 0.5) / GH);
+    return s / (GW * GH);
+  })();
+
+  function update3() {
+    s3.N = (forzado !== null) ? forzado : Math.pow(10, +$("s3-N").value);
+    $("s3-N-v").textContent = s3.N >= 1000 ? fmt(s3.N, 0) : fmt(s3.N, s3.N < 10 ? 2 : 1);
+    [["q-1", 1], ["q-25", 25], ["q-400", 400], ["q-10000", 10000]].forEach(function (p) {
+      $(p[0]).setAttribute("aria-pressed", forzado === p[1] ? "true" : "false");
+    });
+
+    var snr = Math.sqrt(s3.N);
+    var tot = s3.N * MEDOBJ * GW * GH;
+    $("s3-nb").textContent = s3.N >= 1000 ? cien(s3.N, 2) : fmt(s3.N, s3.N < 10 ? 2 : 1);
+    $("s3-tot").textContent = cien(tot, 2);
+    $("s3-snr").textContent = fmt(snr, snr < 10 ? 2 : 1);
+    $("s3-snr").className = "v " + (snr >= 5 ? "ok" : "no");
+    $("s3-rel").textContent = fmt(100 / snr, 100 / snr < 10 ? 2 : 1) + " %";
+    var rose = snr >= 5.5 ? "lo cumple" : (snr >= 4.5 ? "justo en el umbral" : "por debajo del umbral");
+    $("s3-rose").textContent = rose;
+    $("s3-rose").className = "v " + (snr >= 4.5 ? "ok" : "no");
+    $("s3-cost").textContent = "×4 de luz, o ×4 de tiempo";
+
+    var nt;
+    if (snr < 2) {
+      nt = "<b>No queda carta: queda granizo.</b> Con menos de cuatro fotones por píxel, el conteo de " +
+           "una zona clara y el de una oscura se solapan, y ninguna electrónica posterior recupera " +
+           "lo que nunca llegó.";
+    } else if (snr < 5) {
+      nt = "El escalón de grises ya se adivina y las barras gruesas también, pero <b>las finas se han ido " +
+           "primero</b>. Fíjate en el orden: lo que el ruido se lleva antes que nada es la resolución.";
+    } else if (snr < 25) {
+      nt = "Por encima de SNR ≈ 5 la carta se lee. <b>Es el criterio de Rose</b>, y explica por qué una " +
+           "cámara con el mismo objetivo rinde distinto de día que de noche: la óptica no cambió, " +
+           "cambió el número de fotones.";
+    } else {
+      nt = "Con esta exposición el ruido de Poisson ya es invisible y <b>el límite vuelve a ser óptico</b>: " +
+           "difracción, aberraciones, MTF. Hasta aquí llega el ruido, y a partir de aquí manda " +
+           "lo que el banco de pupilas calculaba.";
+    }
+    $("s3-note").innerHTML = nt;
+    hint.textContent = snr >= 5 ? "baja la exposición y mira qué grupo desaparece primero"
+                                : "sube la exposición hasta que la carta vuelva";
+
+    draw3();
+  }
+
+  function draw3() {
+    semilla = base;
+    var d = idat.data;
+    for (var j = 0; j < GH; j++) {
+      for (var i = 0; i < GW; i++) {
+        var lamb = s3.N * objetivo((i + 0.5) / GW, (j + 0.5) / GH);
+        var c = poisson(lamb);
+        var g = Math.max(0, Math.min(1, c / s3.N));
+        var w = Math.round(255 * Math.pow(g, 1 / 1.6));     // gamma, para que la sombra no se cierre
+        var o = 4 * (j * GW + i);
+        d[o] = w; d[o + 1] = w; d[o + 2] = Math.min(255, w + 6); d[o + 3] = 255;
+      }
+    }
+    octx.putImageData(idat, 0, 0);
+
+    var ctx = ctx2d(), W = cv.width / dpr, H = cv.height / dpr;
+    var mT = 26, mB = 48, mX = 14;
+    var bw = W - 2 * mX, bh = H - mT - mB;
+    var esc = Math.min(bw / GW, bh / GH);
+    var dw = GW * esc, dh = GH * esc;
+    var x0 = (W - dw) / 2, y0 = mT + (bh - dh) / 2;
+
+    lab(ctx, "carta de resolución  ·  " + (s3.N >= 1000 ? cien(s3.N, 1) : fmt(s3.N, s3.N < 10 ? 2 : 1)) +
+             " fotones por píxel en lo blanco", mX, mT - 12, C.dim, "left", 10);
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, x0, y0, dw, dh);
+    ctx.strokeStyle = "rgba(34,48,68,1)"; ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + 0.5, y0 + 0.5, dw - 1, dh - 1);
+
+    // etiquetas de los tres grupos: un periodo en u es un par de linea
+    for (var k = 0; k < 3; k++) {
+      var cxp = x0 + (GRU[k][0] + GRU[k][1]) / 2 * dw;
+      lab(ctx, fmt(1 / PER[k], 0) + " pl", cxp, y0 + dh + 14, C.acc, "center", 9.5);
+    }
+    labBg(ctx, "escalón de grises", x0 + 5, y0 + 0.515 * dh, C.cy, "left", 9.5);
+  }
+
+  // ================================================================
+  // pestañas y arranque
+  // ================================================================
+  var cur = 0;
+  function draw() {
+    if (cur === 0) update0(); else if (cur === 1) update1();
+    else if (cur === 2) update2(); else update3();
+  }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "pasa el corte y mira qué deja de responder" },
+    { p: "p1", t: "tab1", u: update1, hint: "baja la potencia hasta que ya no se vean los pulsos" },
+    { p: "p2", t: "tab2", u: update2, hint: "sube la potencia hasta pasar el cruce" },
+    { p: "p3", t: "tab3", u: update3, hint: "baja la exposición y mira qué grupo desaparece primero" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    resize();
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-lam", "s0-eta"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  Object.keys(DET).forEach(function (k) {
+    $(k).addEventListener("click", function () { s0.d = k; update0(); });
+  });
+
+  ["s1-P", "s1-B"].forEach(function (id) {
+    $(id).addEventListener("input", function () {
+      // mover un deslizador deja de ser el preajuste que estaba marcado
+      ["n-clara", "n-justo", "n-no"].forEach(function (q) { $(q).setAttribute("aria-pressed", "false"); });
+      update1();
+    });
+  });
+  [["n-clara", -8, 3], ["n-justo", -11.1, 3], ["n-no", -12.4, 3]].forEach(function (p) {
+    $(p[0]).addEventListener("click", function () {
+      $("s1-P").value = p[1]; $("s1-B").value = p[2];
+      ["n-clara", "n-justo", "n-no"].forEach(function (q) { $(q).setAttribute("aria-pressed", q === p[0] ? "true" : "false"); });
+      update1();
+    });
+  });
+  // una medida nueva es otra realizacion del mismo ruido, no otra configuracion
+  $("n-otra").addEventListener("click", function () { base = (base * 69069 + 12345) >>> 0; update1(); });
+
+  ["s2-P", "s2-RL"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  [["t-300", 300], ["t-200", 200], ["t-77", 77]].forEach(function (p) {
+    $(p[0]).addEventListener("click", function () { s2.T = p[1]; update2(); });
+  });
+
+  $("s3-N").addEventListener("input", function () { forzado = null; update3(); });
+  [["q-1", 1], ["q-25", 25], ["q-400", 400], ["q-10000", 10000]].forEach(function (p) {
+    $(p[0]).addEventListener("click", function () {
+      forzado = p[1]; $("s3-N").value = Math.log10(p[1]); update3();
+    });
+  });
+  $("q-otra").addEventListener("click", function () { base = (base * 69069 + 12345) >>> 0; update3(); });
+
+  resize();
+  show(0);
+  window.addEventListener("load", function () { resize(); draw(); });
+  // la fuente web puede llegar despues del primer trazo: se redibuja al cargarla
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+
+</body></html>

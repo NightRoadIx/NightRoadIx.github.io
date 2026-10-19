@@ -1,0 +1,965 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Haces Gaussianos</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+/* matriz mostrada como bloque */
+.mat {
+  font-family: var(--mono); font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 2px 12px;
+  align-items: center;
+}
+.mat .br { color: var(--cy); font-size: 22px; line-height: 1; }
+.mat .c { text-align: right; }
+.mat .lbl {
+  grid-column: 1 / -1; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.mat .A { color: var(--acc); }
+.mat .B { color: var(--cy); }
+.mat .C { color: var(--vi); }
+.mat .D { color: var(--ok); }
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Banco de haces gaussianos</h1>
+    <p class="lede">Un láser no emite un rayo. Emite un haz que tiene una cintura, diverge siempre, y no se deja describir por la óptica geométrica — aunque, con un solo número complejo, sí se deja propagar con las mismas matrices.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> Cintura y divergencia</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Enfocar un láser</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Expandir un haz</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">aprieta la cintura y mira cómo se abre el haz</div>
+    </div>
+
+    <!-- ============ 01 CINTURA ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">No existe un haz colimado: sólo hay haces que <b>tardan más o menos en abrirse</b>. Esa distancia tiene nombre.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-w">Radio de la cintura &nbsp;w₀</label>
+          <output id="s0-w-v">500 µm</output>
+        </div>
+        <input type="range" id="s0-w" min="10" max="1500" step="5" value="500">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s0-lam-v">633 nm</output>
+        </div>
+        <input type="range" id="s0-lam" min="400" max="1100" step="1" value="633">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-z">Distancia observada &nbsp;z</label>
+          <output id="s0-z-v">1241 mm</output>
+        </div>
+        <input type="range" id="s0-z" min="0" max="3" step="0.01" value="1">
+      </div>
+
+      <div class="readout">
+        <div class="sect">Lo que define el haz</div>
+        <div class="row pair">
+          <div class="k">Distancia de Rayleigh &nbsp;<em>z<sub>R</sub> = πw₀²/λ</em></div>
+          <div class="v acc" id="s0-zr">1240.8 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Divergencia &nbsp;<em>θ = λ/(πw₀) = w₀/z<sub>R</sub></em></div>
+          <div class="v cy" id="s0-th">0.403 mrad</div>
+        </div>
+        <div class="row">
+          <div class="k">Ángulo completo &nbsp;<em>2θ</em></div>
+          <div class="v dim" id="s0-th2">0.806 mrad</div>
+        </div>
+
+        <div class="sect">A la distancia observada</div>
+        <div class="row hero">
+          <div class="k">Radio del haz &nbsp;<em>w(z)</em></div>
+          <div class="v acc" id="s0-w2">707 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Cuánto ha crecido</div>
+          <div class="v cy" id="s0-crec">1.41 ×</div>
+        </div>
+        <div class="row">
+          <div class="k">Radio del frente de onda &nbsp;<em>R(z)</em></div>
+          <div class="v vi" id="s0-R">2481.5 mm</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> el haz</span>
+        <span><i style="background:var(--vi)"></i> asíntotas</span>
+        <span><i style="background:var(--ok)"></i> distancia de Rayleigh</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 ENFOCAR ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">La fórmula que todos recuerdan, <b>λf/πw₀</b>, no siempre vale. Aquí se ve cuándo sí y cuánto se equivoca cuando no.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-w">Cintura de entrada &nbsp;w₀</label>
+          <output id="s1-w-v">1000 µm</output>
+        </div>
+        <input type="range" id="s1-w" min="50" max="3000" step="10" value="1000">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-d">Distancia cintura–lente &nbsp;d₁</label>
+          <output id="s1-d-v">500 mm</output>
+        </div>
+        <input type="range" id="s1-d" min="0" max="2000" step="5" value="500">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-f">Distancia focal &nbsp;f</label>
+          <output id="s1-f-v">100 mm</output>
+        </div>
+        <input type="range" id="s1-f" min="10" max="400" step="1" value="100">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-m">Calidad del haz &nbsp;M²</label>
+          <output id="s1-m-v">1.00</output>
+        </div>
+        <input type="range" id="s1-m" min="1" max="5" step="0.05" value="1">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Posiciones de interés">
+        <button id="s1-ff">Cintura en el foco frontal</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">La cintura que resulta</div>
+        <div class="row hero">
+          <div class="k">Radio &nbsp;<em>exacto, por el parámetro q</em></div>
+          <div class="v acc" id="s1-w0">20.1 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">La fórmula sencilla &nbsp;<em>M²λf/(πw₀)</em></div>
+          <div class="v cy" id="s1-ap">20.1 µm</div>
+        </div>
+        <div class="row">
+          <div class="k">Error de la fórmula sencilla</div>
+          <div class="v ok" id="s1-err">0.0 %</div>
+        </div>
+
+        <div class="sect">Dónde y con cuánto margen</div>
+        <div class="row pair">
+          <div class="k">Posición tras la lente</div>
+          <div class="v vi" id="s1-pos">100.2 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Profundidad de foco &nbsp;<em>2z<sub>R</sub></em></div>
+          <div class="v vi" id="s1-dof">4.03 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Radio del haz en la lente</div>
+          <div class="v dim" id="s1-wl">1.005 mm</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> el haz</span>
+        <span><i style="background:var(--cy)"></i> la lente</span>
+        <span><i style="background:var(--ok)"></i> la cintura y su profundidad de foco</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 EXPANSOR ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Dos lentes separadas por <b>f₁ + f₂</b>. El haz sale más ancho y, en la misma proporción, <b>menos divergente</b>.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-w">Cintura de entrada &nbsp;w₀</label>
+          <output id="s2-w-v">500 µm</output>
+        </div>
+        <input type="range" id="s2-w" min="50" max="1500" step="10" value="500">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-f1">Primera lente &nbsp;f₁</label>
+          <output id="s2-f1-v">25 mm</output>
+        </div>
+        <input type="range" id="s2-f1" min="10" max="200" step="1" value="25">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-f2">Segunda lente &nbsp;f₂</label>
+          <output id="s2-f2-v">200 mm</output>
+        </div>
+        <input type="range" id="s2-f2" min="10" max="400" step="1" value="200">
+      </div>
+
+      <div class="mat" id="m2">
+        <div class="lbl">Matriz del conjunto, de cintura a cintura</div>
+        <div class="br">[</div><div class="c A" id="m2-a">−8.000</div><div class="c B" id="m2-b">0.000</div><div class="br">]</div>
+        <div class="br">[</div><div class="c C" id="m2-c">0.000</div><div class="c D" id="m2-d">−0.125</div><div class="br">]</div>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Lo que sale</div>
+        <div class="row hero">
+          <div class="k">Cintura de salida</div>
+          <div class="v acc" id="s2-w0">4.000 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Expansión &nbsp;<em>f₂/f₁</em></div>
+          <div class="v ok" id="s2-exp">8.00 ×</div>
+        </div>
+        <div class="row">
+          <div class="k">Divergencia &nbsp;<em>antes → después</em></div>
+          <div class="v cy" id="s2-th">0.403 → 0.050 mrad</div>
+        </div>
+        <div class="row">
+          <div class="k">Distancia de Rayleigh</div>
+          <div class="v vi" id="s2-zr">1.24 → 79.45 m</div>
+        </div>
+        <div class="row">
+          <div class="k">Longitud del montaje &nbsp;<em>2(f₁+f₂)</em></div>
+          <div class="v dim" id="s2-len">450 mm</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> el haz</span>
+        <span><i style="background:var(--cy)"></i> las lentes</span>
+        <span><i style="background:var(--ok)"></i> las dos cinturas</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Todo se propaga con el parámetro complejo <code>q = z + i·z_R</code>, que cambia con la misma matriz ABCD del banco de matrices según <code>q′ = (Aq + B)/(Cq + D)</code>: <b>las matrices que se aprendieron para rayos valen tal cual para un haz gaussiano</b>, cambiando el número real por uno complejo. El radio sale de <code>w² = λ|q|²/(π·Im q)</code>. El montaje 02 compara ese cálculo exacto con <code>λf/(πw₀)</code>, que sólo es exacta cuando la cintura de entrada está en el foco frontal de la lente; fuera de ahí puede equivocarse por mucho, y el panel dice cuánto. El factor <code>M²</code> multiplica la cintura enfocada y la divergencia, de modo que <b>la profundidad de foco también crece con M²</b>, no se reduce. El radio <code>w</code> es siempre el de 1/e² en amplitud al cuadrado, que no es lo mismo que el primer cero de Airy del banco de difracción: a f/50 y 633 nm, 20.1 µm frente a 38.6 µm. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    draw();
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+  function largo(mm) {
+    var a = Math.abs(mm);
+    if (a < 1) return fmt(mm * 1000, 2) + " µm";
+    if (a < 1000) return fmt(mm, 2) + " mm";
+    return fmt(mm / 1000, 2) + " m";
+  }
+  function lamRGB(lam) {
+    var r = 0, g = 0, b = 0;
+    if (lam >= 380 && lam < 440) { r = -(lam - 440) / 60; b = 1; }
+    else if (lam < 490) { g = (lam - 440) / 50; b = 1; }
+    else if (lam < 510) { g = 1; b = -(lam - 510) / 20; }
+    else if (lam < 580) { r = (lam - 510) / 70; g = 1; }
+    else if (lam < 645) { r = 1; g = -(lam - 645) / 65; }
+    else if (lam <= 780) { r = 1; }
+    else { r = 1; g = 0.25; b = 0.25; }          // el infrarrojo se marca en rojo apagado
+    var f = 1;
+    if (lam > 700) f = 0.42;
+    else if (lam < 420) f = 0.3 + 0.7 * (lam - 380) / 40;
+    var gm = function (x) { return Math.pow(Math.max(0, Math.min(1, x * f)), 0.8); };
+    return [gm(r), gm(g), gm(b)];
+  }
+  function lamCSS(lam, a) {
+    var c = lamRGB(lam);
+    return "rgba(" + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," +
+           Math.round(c[2] * 255) + "," + (a === undefined ? 1 : a) + ")";
+  }
+
+  // ================================================================
+  // el parametro q: todo el montaje se propaga con el
+  // ================================================================
+  // q = {r: z respecto a la cintura, i: z_R}. Con M2 se usa la longitud de onda
+  // efectiva M2*lam, que es la manera estandar de meter la calidad del haz.
+  function qCintura(w0, lamEf) { return { r: 0, i: Math.PI * w0 * w0 / lamEf }; }
+  function qTras(q, d) { return { r: q.r + d, i: q.i }; }
+  function qLente(q, f) {
+    // 1/q' = 1/q - 1/f
+    var den = q.r * q.r + q.i * q.i;
+    var ir = q.r / den - 1 / f, ii = -q.i / den;
+    var den2 = ir * ir + ii * ii;
+    return { r: ir / den2, i: -ii / den2 };
+  }
+  function wDe(q, lamEf) {
+    return Math.sqrt(lamEf * (q.r * q.r + q.i * q.i) / (Math.PI * q.i));
+  }
+  function RDe(q) {
+    return (Math.abs(q.r) < 1e-12) ? Infinity : q.r * (1 + (q.i / q.r) * (q.i / q.r));
+  }
+
+  // envolvente del haz a lo largo de una lista de tramos
+  function envolvente(q0, tramos, lamEf, n) {
+    var pts = [], q = q0, z = 0, i, k;
+    for (i = 0; i < tramos.length; i++) {
+      var t = tramos[i];
+      if (t.tipo === "d") {
+        for (k = 0; k <= n; k++) {
+          var dd = t.d * k / n;
+          pts.push([z + dd, wDe(qTras(q, dd), lamEf)]);
+        }
+        q = qTras(q, t.d); z += t.d;
+      } else {
+        q = qLente(q, t.f);
+        pts.push([z, wDe(q, lamEf)]);
+      }
+    }
+    return { pts: pts, q: q, z: z };
+  }
+
+  function dibujaHaz(ctx, pts, X, Y, col, alfa) {
+    ctx.beginPath();
+    var i;
+    for (i = 0; i < pts.length; i++) (i ? ctx.lineTo : ctx.moveTo).call(ctx, X(pts[i][0]), Y(pts[i][1]));
+    for (i = pts.length - 1; i >= 0; i--) ctx.lineTo(X(pts[i][0]), Y(-pts[i][1]));
+    ctx.closePath();
+    ctx.fillStyle = alfa; ctx.fill();
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  function lenteGlifo(ctx, X, Y, z, semi, etiqueta) {
+    var cx = X(z), top = Y(semi), bot = Y(-semi), a = 6;
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx, bot); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - a, top + a); ctx.lineTo(cx, top); ctx.lineTo(cx + a, top + a);
+    ctx.moveTo(cx - a, bot - a); ctx.lineTo(cx, bot); ctx.lineTo(cx + a, bot - a);
+    ctx.stroke();
+    if (etiqueta) lab(ctx, etiqueta, cx, top - 12, C.cy, "center", 10.5);
+  }
+
+  // ================================================================
+  // 01  cintura y divergencia
+  // ================================================================
+  var s0 = { w: 500, lam: 633, z: 1 };
+
+  function update0() {
+    s0.w = +$("s0-w").value; s0.lam = +$("s0-lam").value; s0.z = +$("s0-z").value;
+    var w0 = s0.w / 1000, lam = s0.lam * 1e-6;
+    var zR = Math.PI * w0 * w0 / lam;
+    var z = s0.z * zR;
+    var th = lam / (Math.PI * w0);
+
+    $("s0-w-v").textContent = fmt(s0.w, 0) + " µm";
+    $("s0-lam-v").textContent = fmt(s0.lam, 0) + " nm";
+    $("s0-z-v").textContent = largo(z);
+    $("s0-zr").textContent = largo(zR);
+    $("s0-th").textContent = fmt(th * 1000, 3) + " mrad";
+    $("s0-th2").textContent = fmt(2 * th * 1000, 3) + " mrad";
+
+    var wz = w0 * Math.sqrt(1 + s0.z * s0.z);
+    $("s0-w2").textContent = largo(wz);
+    $("s0-crec").textContent = fmt(wz / w0, 2) + " ×";
+    $("s0-R").textContent = (s0.z < 1e-6) ? "plano · ∞" : largo(z * (1 + 1 / (s0.z * s0.z)));
+
+    var nt = $("s0-note");
+    if (Math.abs(s0.z - 1) < 0.04) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>A una distancia de Rayleigh el haz ha crecido exactamente √2.</b> Ésa es la definición: <code>z_R</code> es hasta dónde el haz se mantiene razonablemente estrecho. Más allá se abre en línea recta, y antes casi no cambia.";
+    } else if (s0.z < 0.1) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Cerca de la cintura el frente de onda es plano</b> y el haz apenas cambia de radio. Es la única región donde un haz se parece a lo que la óptica geométrica llamaría «colimado», y dura <code>" +
+        largo(2 * Math.PI * (s0.w / 1000) * (s0.w / 1000) / (s0.lam * 1e-6)) + "</code> en total.";
+    } else if (s0.w < 60) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Cintura muy apretada: el haz se abre enseguida.</b> La divergencia va como <code>1/w₀</code>, así que no se puede tener a la vez un haz fino y poco divergente. <b>Es la misma relación inversa de la rendija y de la difracción</b>, escrita para un láser.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>El haz no es un cono: es una hipérbola.</b> Cerca de la cintura la curva se aparta de sus asíntotas, y sólo lejos las alcanza. Por eso extrapolar hacia atrás el cono lejano siempre da una cintura más pequeña de la que hay en realidad.";
+    }
+
+    draw0(w0, lam, zR, z);
+  }
+
+  function draw0(w0, lam, zR, zMarca) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var mL = 16, mR = 16, mT = 24, mB = 40;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var zMax = 3.2 * zR, wMax = w0 * Math.sqrt(1 + 3.2 * 3.2) * 1.25;
+    var X = function (z) { return mL + (z + zMax) / (2 * zMax) * pw; };
+    var Y = function (y) { return mT + ph / 2 - y / wMax * (ph / 2); };
+
+    ctx.strokeStyle = "rgba(134,149,170,.28)"; ctx.lineWidth = 1; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(X(-zMax), Y(0)); ctx.lineTo(X(zMax), Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // asintotas
+    var th = w0 / zR;
+    ctx.strokeStyle = "rgba(168,136,216,.6)"; ctx.lineWidth = 1; ctx.setLineDash([5, 4]);
+    [1, -1].forEach(function (sg) {
+      ctx.beginPath();
+      ctx.moveTo(X(-zMax), Y(sg * th * -zMax)); ctx.lineTo(X(zMax), Y(sg * th * zMax));
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // el haz
+    var pts = [];
+    for (var i = 0; i <= 300; i++) {
+      var z = -zMax + 2 * zMax * i / 300;
+      pts.push([z, w0 * Math.sqrt(1 + (z / zR) * (z / zR))]);
+    }
+    dibujaHaz(ctx, pts, X, Y, lamCSS(s0.lam, 0.95), lamCSS(s0.lam, 0.17));
+
+    // la cintura y el rango de Rayleigh
+    ctx.strokeStyle = C.ok; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+    [-zR, zR].forEach(function (z) {
+      ctx.beginPath(); ctx.moveTo(X(z), Y(wMax * 0.92)); ctx.lineTo(X(z), Y(-wMax * 0.92)); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.strokeStyle = C.ok; ctx.lineWidth = 1.4;
+    var yb = Y(-wMax * 0.78);
+    ctx.beginPath();
+    ctx.moveTo(X(-zR), yb); ctx.lineTo(X(zR), yb);
+    ctx.moveTo(X(-zR), yb - 4); ctx.lineTo(X(-zR), yb + 4);
+    ctx.moveTo(X(zR), yb - 4); ctx.lineTo(X(zR), yb + 4);
+    ctx.stroke();
+    labBg(ctx, "2z_R = " + largo(2 * zR), X(0), yb - 11, C.ok, "center", 10);
+
+    labBg(ctx, "w₀ = " + largo(w0), X(0), Y(w0) - 12, C.acc, "center", 10);
+    lab(ctx, "θ = " + fmt(th * 1000, 3) + " mrad", X(zMax) - 6, Y(th * zMax) - 14, C.vi, "right", 10);
+
+    // marca en z
+    if (zMarca > 0) {
+      var wz = w0 * Math.sqrt(1 + (zMarca / zR) * (zMarca / zR));
+      ctx.strokeStyle = "rgba(221,229,240,.5)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(X(zMarca), Y(wMax * 0.95)); ctx.lineTo(X(zMarca), Y(-wMax * 0.95)); ctx.stroke();
+      ctx.strokeStyle = C.fg; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(X(zMarca), Y(wz)); ctx.lineTo(X(zMarca), Y(-wz)); ctx.stroke();
+      labBg(ctx, "w = " + largo(wz), X(zMarca), Y(wz) - 13, C.fg, "center", 10);
+    }
+
+    labBg(ctx, "eje vertical muy exagerado · " + largo(2 * zMax) + " de recorrido", mL + 4, mT + 8, C.dim, "left", 10);
+  }
+
+  // ================================================================
+  // 02  enfocar
+  // ================================================================
+  var s1 = { w: 1000, d: 500, f: 100, m: 1 };
+
+  function update1() {
+    s1.w = +$("s1-w").value; s1.d = +$("s1-d").value;
+    s1.f = +$("s1-f").value; s1.m = +$("s1-m").value;
+    $("s1-w-v").textContent = fmt(s1.w, 0) + " µm";
+    $("s1-d-v").textContent = fmt(s1.d, 0) + " mm";
+    $("s1-f-v").textContent = fmt(s1.f, 0) + " mm";
+    $("s1-m-v").textContent = fmt(s1.m, 2);
+
+    var LAM = 633e-6, lamEf = s1.m * LAM;
+    var w0 = s1.w / 1000;
+    var q = qCintura(w0, lamEf);
+    var qL = qTras(q, s1.d);
+    var wLente = wDe(qL, lamEf);
+    var qn = qLente(qL, s1.f);
+    var d2 = -qn.r, zRn = qn.i;
+    var w0n = Math.sqrt(lamEf * zRn / Math.PI);
+    var simple = s1.m * LAM * s1.f / (Math.PI * w0);
+
+    $("s1-w0").textContent = largo(w0n);
+    $("s1-ap").textContent = largo(simple);
+    var err = Math.abs(simple / w0n - 1) * 100;
+    $("s1-err").textContent = fmt(err, 1) + " %";
+    $("s1-err").className = "v " + (err < 2 ? "ok" : err < 20 ? "acc" : "no");
+    $("s1-pos").textContent = largo(d2);
+    $("s1-dof").textContent = largo(2 * zRn);
+    $("s1-wl").textContent = largo(wLente);
+
+    var nt = $("s1-note");
+    if (Math.abs(s1.d - s1.f) < 3) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Con la cintura en el foco frontal, la fórmula sencilla es exacta.</b> La nueva cintura cae justo en el foco posterior y vale exactamente <code>M²λf/(πw₀)</code>. Ésta es la configuración que conviene montar cuando se quiere un punto predecible, y la razón por la que la fórmula se enseña así.";
+    } else if (err > 20) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Aquí la fórmula sencilla se equivoca un " + fmt(err, 0) +
+        " %.</b> Falla porque el haz que llega a la lente ya está divergiendo apreciablemente: su distancia de Rayleigh no es grande frente a <code>f</code>. En esa situación hay que propagar con <code>q</code>, no aplicar la receta.";
+    } else if (s1.m > 1.6) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Con M² = " + fmt(s1.m, 2) + " la cintura crece en ese mismo factor</b>, y la profundidad de foco también. Un haz malo no sólo enfoca peor: enfoca más «blando». Es el número que viene en la hoja de datos del láser y el que decide si un corte o una marca van a salir finos.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>La cintura enfocada no cae en el foco geométrico.</b> Está en <code>" +
+        largo(d2) + "</code> y no en <code>" + largo(s1.f) + "</code>: para un haz gaussiano, el plano de mínima mancha depende de dónde venía la cintura anterior. Acerca <code>d₁</code> a <code>f</code> y los dos se juntan.";
+    }
+
+    draw1(w0, lamEf, LAM);
+  }
+
+  function draw1(w0, lamEf, LAM) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var hSup = Math.round(h * 0.58);
+    var mL = 16, mR = 16, mT = 22;
+    var pw = w - mL - mR, ph = hSup - mT - 30;
+
+    var q0 = qCintura(w0, lamEf);
+    var qL = qTras(q0, s1.d), qn = qLente(qL, s1.f);
+    var d2 = -qn.r, zRn = qn.i;
+    var w0n = Math.sqrt(lamEf * zRn / Math.PI);
+    var zFin = s1.d + Math.max(2 * d2, s1.f * 1.6);
+
+    var env = envolvente(q0, [{ tipo: "d", d: s1.d }, { tipo: "l", f: s1.f }, { tipo: "d", d: zFin - s1.d }], lamEf, 220);
+    var wMax = 0;
+    env.pts.forEach(function (p) { if (p[1] > wMax) wMax = p[1]; });
+    wMax *= 1.18;
+
+    var X = function (z) { return mL + z / zFin * pw; };
+    var Y = function (y) { return mT + ph / 2 - y / wMax * (ph / 2); };
+
+    ctx.strokeStyle = "rgba(134,149,170,.28)"; ctx.lineWidth = 1; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(zFin), Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    dibujaHaz(ctx, env.pts, X, Y, lamCSS(633, 0.95), lamCSS(633, 0.17));
+    lenteGlifo(ctx, X, Y, s1.d, wMax * 0.78, "f = " + fmt(s1.f, 0) + " mm");
+
+    ctx.strokeStyle = C.ok; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(X(s1.d + d2), Y(wMax * 0.9)); ctx.lineTo(X(s1.d + d2), Y(-wMax * 0.9)); ctx.stroke();
+    ctx.setLineDash([]);
+    labBg(ctx, "cintura", X(s1.d + d2), Y(wMax * 0.9) - 10, C.ok, "center", 10);
+    labBg(ctx, "w₀ entrada " + largo(w0), X(0) + 6, Y(w0) - 12, C.acc, "left", 10);
+    lab(ctx, "recorrido total " + largo(zFin), mL, hSup - 10, C.dim, "left", 10);
+
+    // zoom de la region focal
+    var zT = hSup + 10, zB = h - 26, zL = 16, zR2 = w - 16;
+    var dz = Math.max(3 * zRn, 1e-3);
+    var zx0 = s1.d + d2 - dz, zx1 = s1.d + d2 + dz;
+    var yHalf = w0n * 3.2;
+    var ZX = function (z) { return zL + (z - zx0) * (zR2 - zL) / (zx1 - zx0); };
+    var ZY = function (y) { return (zT + zB) / 2 - y / yHalf * (zB - zT) / 2; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+    ctx.strokeRect(zL - .5, zT - .5, zR2 - zL + 1, zB - zT + 1);
+    ctx.strokeStyle = "rgba(134,149,170,.28)"; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(zL, ZY(0)); ctx.lineTo(zR2, ZY(0)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    var zpts = [];
+    for (var i = 0; i <= 200; i++) {
+      var zz = zx0 + (zx1 - zx0) * i / 200;
+      var dd = zz - (s1.d + d2);
+      zpts.push([zz, w0n * Math.sqrt(1 + (dd / zRn) * (dd / zRn))]);
+    }
+    dibujaHaz(ctx, zpts, ZX, ZY, lamCSS(633, 0.95), lamCSS(633, 0.2));
+
+    ctx.strokeStyle = C.ok; ctx.lineWidth = 1.4;
+    var yb = ZY(-yHalf * 0.74);
+    ctx.beginPath();
+    ctx.moveTo(ZX(s1.d + d2 - zRn), yb); ctx.lineTo(ZX(s1.d + d2 + zRn), yb);
+    ctx.moveTo(ZX(s1.d + d2 - zRn), yb - 4); ctx.lineTo(ZX(s1.d + d2 - zRn), yb + 4);
+    ctx.moveTo(ZX(s1.d + d2 + zRn), yb - 4); ctx.lineTo(ZX(s1.d + d2 + zRn), yb + 4);
+    ctx.stroke();
+    labBg(ctx, "profundidad de foco " + largo(2 * zRn), (ZX(s1.d + d2 - zRn) + ZX(s1.d + d2 + zRn)) / 2, yb - 11, C.ok, "center", 10);
+    labBg(ctx, "zoom del foco · w₀ = " + largo(w0n), zL + 6, zT + 12, C.dim, "left", 10);
+  }
+
+  // ================================================================
+  // 03  expansor
+  // ================================================================
+  var s2 = { w: 500, f1: 25, f2: 200 };
+
+  function update2() {
+    s2.w = +$("s2-w").value; s2.f1 = +$("s2-f1").value; s2.f2 = +$("s2-f2").value;
+    $("s2-w-v").textContent = fmt(s2.w, 0) + " µm";
+    $("s2-f1-v").textContent = fmt(s2.f1, 0) + " mm";
+    $("s2-f2-v").textContent = fmt(s2.f2, 0) + " mm";
+
+    var LAM = 633e-6, w0 = s2.w / 1000;
+    var zR = Math.PI * w0 * w0 / LAM;
+    var A = -s2.f2 / s2.f1, D = -s2.f1 / s2.f2;
+    $("m2-a").textContent = fmt(A, 3);
+    $("m2-b").textContent = fmt(0, 3);
+    $("m2-c").textContent = fmt(0, 3);
+    $("m2-d").textContent = fmt(D, 3);
+
+    // con la cintura en el foco frontal de L1, la matriz es diagonal y q' = (A/D) q
+    var q0 = qCintura(w0, LAM);
+    var qn = { r: (A / D) * q0.r, i: (A / D) * q0.i };
+    var w0n = Math.sqrt(LAM * qn.i / Math.PI);
+    var th0 = LAM / (Math.PI * w0), thn = LAM / (Math.PI * w0n);
+
+    $("s2-w0").textContent = largo(w0n);
+    $("s2-exp").textContent = fmt(s2.f2 / s2.f1, 2) + " ×";
+    $("s2-th").textContent = fmt(th0 * 1000, 3) + " → " + fmt(thn * 1000, 3) + " mrad";
+    $("s2-zr").textContent = largo(zR) + " → " + largo(qn.i);
+    $("s2-len").textContent = fmt(2 * (s2.f1 + s2.f2), 0) + " mm";
+
+    var nt = $("s2-note");
+    if (s2.f2 > s2.f1) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Expandir un haz es la manera de hacerlo más direccional.</b> El producto del radio por la divergencia no cambia —vale siempre <code>λ/π</code>—, así que ensanchar por " +
+        fmt(s2.f2 / s2.f1, 2) + " divide la divergencia por lo mismo. Es lo que se hace antes de mandar un láser lejos, o antes de enfocarlo muy fino.";
+    } else if (Math.abs(s2.f2 - s2.f1) < 1) {
+      nt.className = "note";
+      nt.innerHTML = "<b>Con las dos focales iguales el haz sale como entró.</b> El montaje sigue sirviendo: es un relé que traslada la cintura a 2(f₁+f₂) sin cambiarla, y es como se llevan haces de una mesa a otra sin que se abran.";
+    } else {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Al revés, el haz sale más estrecho y más divergente.</b> Un haz fino parece mejor, pero se abre " +
+        fmt(s2.f1 / s2.f2, 2) + " veces más rápido: a cierta distancia será más ancho que si no lo hubieras tocado. <b>Estrechar en la mesa es ensanchar a lo lejos.</b>";
+    }
+
+    draw2(w0, LAM);
+  }
+
+  function draw2(w0, LAM) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var mL = 16, mR = 16, mT = 30, mB = 40;
+    var pw = w - mL - mR, ph = h - mT - mB;
+
+    var tramos = [
+      { tipo: "d", d: s2.f1 }, { tipo: "l", f: s2.f1 },
+      { tipo: "d", d: s2.f1 + s2.f2 }, { tipo: "l", f: s2.f2 },
+      { tipo: "d", d: s2.f2 }
+    ];
+    var q0 = qCintura(w0, LAM);
+    var env = envolvente(q0, tramos, LAM, 90);
+    var zFin = 2 * (s2.f1 + s2.f2);
+    var wMax = 0;
+    env.pts.forEach(function (p) { if (p[1] > wMax) wMax = p[1]; });
+    wMax *= 1.2;
+
+    var X = function (z) { return mL + z / zFin * pw; };
+    var Y = function (y) { return mT + ph / 2 - y / wMax * (ph / 2); };
+
+    ctx.strokeStyle = "rgba(134,149,170,.28)"; ctx.lineWidth = 1; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(zFin), Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    dibujaHaz(ctx, env.pts, X, Y, lamCSS(633, 0.95), lamCSS(633, 0.17));
+    lenteGlifo(ctx, X, Y, s2.f1, wMax * 0.8, "f₁");
+    lenteGlifo(ctx, X, Y, 2 * s2.f1 + s2.f2, wMax * 0.8, "f₂");
+
+    var w0n = env.pts[env.pts.length - 1][1];
+    [[0, w0, "entrada"], [zFin, w0n, "salida"]].forEach(function (p) {
+      ctx.strokeStyle = C.ok; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(X(p[0]), Y(wMax * 0.92)); ctx.lineTo(X(p[0]), Y(-wMax * 0.92)); ctx.stroke();
+      ctx.setLineDash([]);
+      labBg(ctx, p[2] + " " + largo(p[1]), X(p[0]) + (p[0] === 0 ? 6 : -6), Y(wMax * 0.92) - 10,
+            C.ok, p[0] === 0 ? "left" : "right", 10);
+    });
+
+    lab(ctx, "separación f₁ + f₂ = " + fmt(s2.f1 + s2.f2, 0) + " mm", X(0), mT - 14, C.dim, "left", 10);
+    lab(ctx, "longitud total " + fmt(zFin, 0) + " mm", mL + pw, h - 14, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // pestañas
+  // ================================================================
+  var cur = 0;
+  function draw() { if (cur === 0) update0(); else if (cur === 1) update1(); else update2(); }
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "aprieta la cintura y mira cómo se abre el haz" },
+    { p: "p1", t: "tab1", u: update1, hint: "acerca d₁ a f y mira el error de la fórmula" },
+    { p: "p2", t: "tab2", u: update2, hint: "cambia las focales y mira la divergencia" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-w", "s0-lam", "s0-z"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-w", "s1-d", "s1-f", "s1-m"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-w", "s2-f1", "s2-f2"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  $("s1-ff").addEventListener("click", function () { $("s1-d").value = s1.f; update1(); });
+
+  resize();
+  show(0);
+  window.addEventListener("load", resize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+
+</body></html>

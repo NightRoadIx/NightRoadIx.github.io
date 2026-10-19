@@ -1,0 +1,1022 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Dispersión</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
+   zoom de la region focal abajo: ahi es donde se ve la caustica. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --acc:     #f2c454;   /* rayos paraxiales */
+  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
+  --vi:      #a888d8;   /* foco paraxial */
+  --ok:      #52b87c;
+  --no:      #d4624a;   /* rayos marginales */
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+
+.back {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px); font-weight: 600;
+  letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance;
+}
+
+.lede { color: var(--dim); margin: 0; max-width: 64ch; font-size: 14.5px; }
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 20px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px;
+  cursor: pointer; display: flex; align-items: baseline; gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.viewport {
+  position: relative; background: #070a10;
+  border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
+}
+#cv { display: block; width: 100%; height: 100%; }
+
+.hint {
+  position: absolute; left: 11px; bottom: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+  color: var(--acc); font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  background: transparent; margin: 2px 0; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] {
+  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+}
+.toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
+
+/* formula del gradiente, en bloque */
+.form {
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.form .t { color: var(--acc); }
+.form .z { color: var(--dim); opacity: .55; }
+.form .lb {
+  display: block; font-family: var(--sans); font-size: 11px;
+  color: var(--dim); letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 5px; white-space: normal;
+}
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.acc { color: var(--acc); }
+.v.cy  { color: var(--cy);  }
+.v.vi  { color: var(--vi);  }
+.v.ok  { color: var(--ok);  }
+.v.no  { color: var(--no);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--dim);
+  margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line);
+}
+
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--dim);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 12px; margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+.good { border-color: #2a5c3f; }
+.good b { color: var(--ok); }
+.hot { border-color: #6d3a2a; }
+.hot b { color: var(--no); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.legend i.dot { width: 7px; height: 7px; border-radius: 50%; }
+
+footer {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--dim); max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="main.html">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica</p>
+    <h1>Banco de dispersión</h1>
+    <p class="lede">El índice no es un número: es una función de la longitud de onda. De ahí salen el arcoíris, el hecho de que un pulso viaje más despacio que sus propias crestas, y el límite de cuánta información cabe en una fibra.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> El prisma</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Fase y grupo</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> El pulso que se ensancha</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint">cambia de vidrio y mira cuánto se abre el abanico</div>
+    </div>
+
+    <!-- ============ 01 PRISMA ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Cada color ve un índice distinto, así que cada uno se desvía distinto. <b>El prisma no fabrica los colores: los separa.</b></p>
+
+      <div class="toggle" role="group" aria-label="Vidrio">
+        <button id="v-bk7" aria-pressed="true">N-BK7</button>
+        <button id="v-sil">Sílice</button>
+        <button id="v-sf11">N-SF11</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-A">Ángulo del prisma &nbsp;A</label>
+          <output id="s0-A-v">60°</output>
+        </div>
+        <input type="range" id="s0-A" min="15" max="70" step="1" value="60">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-i">Ángulo de incidencia &nbsp;θ₁</label>
+          <output id="s0-i-v">49.3°</output>
+        </div>
+        <input type="range" id="s0-i" min="5" max="85" step="0.1" value="49.3">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Posición notable">
+        <button id="s0-min">Desviación mínima</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">El vidrio, en las tres líneas de referencia</div>
+        <div class="row pair">
+          <div class="k">Azul &nbsp;<em>n<sub>F</sub> · 486.1 nm</em></div>
+          <div class="v cy" id="s0-nF">1.52238</div>
+        </div>
+        <div class="row">
+          <div class="k">Amarillo &nbsp;<em>n<sub>d</sub> · 587.6 nm</em></div>
+          <div class="v acc" id="s0-nd">1.51680</div>
+        </div>
+        <div class="row">
+          <div class="k">Rojo &nbsp;<em>n<sub>C</sub> · 656.3 nm</em></div>
+          <div class="v no" id="s0-nC">1.51432</div>
+        </div>
+        <div class="row hero">
+          <div class="k">Número de Abbe &nbsp;<em>V<sub>d</sub> = (n<sub>d</sub>−1)/(n<sub>F</sub>−n<sub>C</sub>)</em></div>
+          <div class="v acc" id="s0-V">64.14</div>
+        </div>
+
+        <div class="sect">Lo que sale del prisma</div>
+        <div class="row pair">
+          <div class="k">Desviación del amarillo</div>
+          <div class="v vi" id="s0-des">38.647°</div>
+        </div>
+        <div class="row">
+          <div class="k">Apertura del abanico &nbsp;<em>azul a rojo</em></div>
+          <div class="v ok" id="s0-ab">0.709°</div>
+        </div>
+      </div>
+
+      <p class="note" id="s0-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> el haz</span>
+        <span><i style="background:var(--cy)"></i> el prisma</span>
+        <span><i style="background:var(--ok)"></i> desviación mínima</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 FASE Y GRUPO ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">Las crestas y el paquete <b>no viajan a la misma velocidad</b>. La información va con el paquete, no con las crestas.</p>
+
+      <div class="toggle" role="group" aria-label="Animación">
+        <button id="s1-play" aria-pressed="true">Pausa</button>
+      </div>
+
+      <div class="toggle" role="group" aria-label="Vidrio">
+        <button id="w-bk7" aria-pressed="true">N-BK7</button>
+        <button id="w-sil">Sílice</button>
+        <button id="w-sf11">N-SF11</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s1-lam-v">550 nm</output>
+        </div>
+        <input type="range" id="s1-lam" min="400" max="1600" step="5" value="550">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-ex">Exageración del contraste</label>
+          <output id="s1-ex-v">12 ×</output>
+        </div>
+        <input type="range" id="s1-ex" min="1" max="30" step="1" value="12">
+      </div>
+
+      <div class="readout">
+        <div class="sect">Los dos índices</div>
+        <div class="row pair">
+          <div class="k">Índice de fase &nbsp;<em>n</em></div>
+          <div class="v cy" id="s1-n">1.51852</div>
+        </div>
+        <div class="row">
+          <div class="k">Índice de grupo &nbsp;<em>n<sub>g</sub> = n − λ·dn/dλ</em></div>
+          <div class="v acc" id="s1-ng">1.54620</div>
+        </div>
+
+        <div class="sect">Las dos velocidades</div>
+        <div class="row pair">
+          <div class="k">De fase &nbsp;<em>v<sub>f</sub> = c/n</em></div>
+          <div class="v cy" id="s1-vf">197.424 Mm/s</div>
+        </div>
+        <div class="row hero">
+          <div class="k">De grupo &nbsp;<em>v<sub>g</sub> = c/n<sub>g</sub></em></div>
+          <div class="v acc" id="s1-vg">193.890 Mm/s</div>
+        </div>
+        <div class="row">
+          <div class="k">Diferencia real</div>
+          <div class="v ok" id="s1-dif">1.82 %</div>
+        </div>
+      </div>
+
+      <p class="note" id="s1-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> la envolvente, a v<sub>g</sub></span>
+        <span><i style="background:var(--cy)"></i> una cresta, a v<sub>f</sub></span>
+      </div>
+    </div>
+
+    <!-- ============ 03 PULSO ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Un pulso lleva muchas frecuencias, y cada una viaja a su velocidad. <b>Al final del trayecto ya no llegan juntas.</b></p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s2-lam-v">1550 nm</output>
+        </div>
+        <input type="range" id="s2-lam" min="600" max="1700" step="5" value="1550">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-T">Anchura del pulso &nbsp;T₀</label>
+          <output id="s2-T-v">10.0 ps</output>
+        </div>
+        <input type="range" id="s2-T" min="-1" max="2" step="0.01" value="1">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-L">Longitud de fibra &nbsp;L</label>
+          <output id="s2-L-v">80 km</output>
+        </div>
+        <input type="range" id="s2-L" min="0.1" max="200" step="0.1" value="80">
+      </div>
+
+      <div class="toggle" role="group" aria-label="Ventanas">
+        <button id="w-1310">1310 nm</button>
+        <button id="w-1550" aria-pressed="true">1550 nm</button>
+        <button id="w-cero">Cero de dispersión</button>
+      </div>
+
+      <div class="readout">
+        <div class="sect">La sílice a esta longitud de onda</div>
+        <div class="row pair">
+          <div class="k">Parámetro &nbsp;<em>β₂</em></div>
+          <div class="v cy" id="s2-b2">−27.95 ps²/km</div>
+        </div>
+        <div class="row">
+          <div class="k">Dispersión &nbsp;<em>D</em></div>
+          <div class="v vi" id="s2-D">+21.91 ps/(nm·km)</div>
+        </div>
+        <div class="row">
+          <div class="k">Longitud de dispersión &nbsp;<em>L<sub>D</sub> = T₀²/|β₂|</em></div>
+          <div class="v ok" id="s2-LD">3.578 km</div>
+        </div>
+
+        <div class="sect">Al final de la fibra</div>
+        <div class="row hero">
+          <div class="k">Anchura del pulso</div>
+          <div class="v acc" id="s2-T">223.8 ps</div>
+        </div>
+        <div class="row">
+          <div class="k">Se ha ensanchado</div>
+          <div class="v no" id="s2-fac">22.4 ×</div>
+        </div>
+        <div class="row">
+          <div class="k">Ritmo máximo antes de solaparse</div>
+          <div class="v cy" id="s2-bit">4.5 Gb/s</div>
+        </div>
+      </div>
+
+      <p class="note" id="s2-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> pulso de entrada</span>
+        <span><i style="background:var(--no)"></i> pulso de salida</span>
+        <span><i style="background:var(--ok)"></i> cero de dispersión</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    El índice sale de la ecuación de Sellmeier, <code>n² = 1 + Σ Bᵢλ²/(λ²−Cᵢ)</code>, con los coeficientes de catálogo de cada vidrio; los números de Abbe que resultan coinciden con los publicados dentro del 0.05 %. El índice de grupo es <code>n_g = n − λ·dn/dλ</code> y la dispersión de velocidad de grupo, <code>β₂ = λ³/(2πc²)·d²n/dλ²</code>, de donde <code>D = −(λ/c)·d²n/dλ²</code>. Para la sílice, el cálculo da el cero de dispersión en <b>1272.8 nm</b> y <code>D = +21.9 ps/(nm·km)</code> a 1550 nm, que son los valores conocidos. El ensanchamiento usa <code>T(L) = T₀√(1+(L/L_D)²)</code> para un pulso gaussiano sin chirp. <b>Conviene advertir que esto es dispersión del material sola</b>: una fibra monomodo real añade dispersión de guía de onda, que resta unos 4 ps/(nm·km) a 1550 y desplaza el cero hacia 1310. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cv = document.getElementById("cv");
+  var viewport = cv.parentElement;
+  var hint = document.getElementById("hint");
+  var $ = function (id) { return document.getElementById(id); };
+  var dpr = 1;
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  }
+  window.addEventListener("resize", resize);
+
+  function ctx2d() {
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+  var CLUZ = 299792458;
+
+  function fmt(x, d) {
+    if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
+    var s = Math.abs(x).toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (x < 0 ? "−" : "") + s;
+  }
+  function sgn(x, d) { return (x >= 0 ? "+" : "−") + fmt(Math.abs(x), d); }
+  function lab(ctx, txt, x, y, col, align, size) {
+    ctx.font = (size || 10.5) + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, x, y);
+  }
+  function labBg(ctx, txt, x, y, col, align, size) {
+    size = size || 10.5;
+    ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
+    var tw = ctx.measureText(txt).width, pad = 3;
+    var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
+    lab(ctx, txt, x, y, col, align, size);
+  }
+  function lamRGB(lam) {
+    var r = 0, g = 0, b = 0;
+    if (lam >= 380 && lam < 440) { r = -(lam - 440) / 60; b = 1; }
+    else if (lam < 490) { g = (lam - 440) / 50; b = 1; }
+    else if (lam < 510) { g = 1; b = -(lam - 510) / 20; }
+    else if (lam < 580) { r = (lam - 510) / 70; g = 1; }
+    else if (lam < 645) { r = 1; g = -(lam - 645) / 65; }
+    else { r = 1; }
+    var f = 1;
+    if (lam > 700) f = 0.3 + 0.7 * Math.max(0, (780 - lam)) / 80;
+    else if (lam < 420) f = 0.3 + 0.7 * (lam - 380) / 40;
+    var gm = function (x) { return Math.pow(Math.max(0, Math.min(1, x * f)), 0.8); };
+    return [gm(r), gm(g), gm(b)];
+  }
+  function lamCSS(lam, a) {
+    var c = lamRGB(lam);
+    return "rgba(" + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," +
+           Math.round(c[2] * 255) + "," + (a === undefined ? 1 : a) + ")";
+  }
+
+  // ================================================================
+  // Sellmeier con coeficientes de catalogo
+  // ================================================================
+  var VIDRIOS = {
+    bk7: { n: "N-BK7", B: [1.03961212, 0.231792344, 1.01046945], C: [0.00600069867, 0.0200179144, 103.560653] },
+    sil: { n: "sílice fundida", B: [0.6961663, 0.4079426, 0.8974794], C: [0.00467914826, 0.0135120631, 97.9340025] },
+    sf11: { n: "N-SF11", B: [1.73759695, 0.313747346, 1.89878101], C: [0.013188707, 0.0623068142, 155.23629] }
+  };
+  function nDe(g, lam) {
+    var v = VIDRIOS[g], l2 = (lam / 1000) * (lam / 1000), s = 1;
+    for (var i = 0; i < 3; i++) s += v.B[i] * l2 / (l2 - v.C[i]);
+    return Math.sqrt(Math.max(s, 1e-6));
+  }
+  function dnDe(g, lam, h) { h = h || 0.5; return (nDe(g, lam + h) - nDe(g, lam - h)) / (2 * h); }
+  function d2nDe(g, lam, h) { h = h || 1; return (nDe(g, lam + h) - 2 * nDe(g, lam) + nDe(g, lam - h)) / (h * h); }
+  function ngDe(g, lam) { return nDe(g, lam) - lam * dnDe(g, lam); }
+  // beta2 en ps^2/km y D en ps/(nm km)
+  function beta2De(g, lam) {
+    return Math.pow(lam * 1e-9, 3) / (2 * Math.PI * CLUZ * CLUZ) * d2nDe(g, lam) * 1e18 * 1e27;
+  }
+  function Dde(g, lam) { return -(lam * 1e-9) / CLUZ * d2nDe(g, lam) * 1e18 * 1e12 * 1e-9 * 1e3; }
+
+  // ================================================================
+  // 01  el prisma
+  // ================================================================
+  var s0 = { g: "bk7", A: 60, i: 49.3 };
+  var GB = { "v-bk7": "bk7", "v-sil": "sil", "v-sf11": "sf11" };
+
+  // desviacion total para incidencia th1 (grados). null si hay reflexion total dentro
+  function desviacion(g, lam, A, th1) {
+    var t1 = th1 * Math.PI / 180, Ar = A * Math.PI / 180, n = nDe(g, lam);
+    var s2 = Math.sin(t1) / n;
+    if (Math.abs(s2) > 1) return null;
+    var t2 = Math.asin(s2), t3 = Ar - t2;
+    var s4 = n * Math.sin(t3);
+    if (Math.abs(s4) > 1) return null;              // reflexion total en la cara de salida
+    var t4 = Math.asin(s4);
+    return { dev: (t1 + t4 - Ar) * 180 / Math.PI, t2: t2, t3: t3, t4: t4 };
+  }
+  function incMinima(g, lam, A) {
+    var n = nDe(g, lam), s = n * Math.sin(A * Math.PI / 360);
+    return (Math.abs(s) > 1) ? null : Math.asin(s) * 180 / Math.PI;
+  }
+
+  function update0() {
+    s0.A = +$("s0-A").value; s0.i = +$("s0-i").value;
+    Object.keys(GB).forEach(function (k) { $(k).setAttribute("aria-pressed", GB[k] === s0.g ? "true" : "false"); });
+    $("s0-A-v").textContent = fmt(s0.A, 0) + "°";
+    $("s0-i-v").textContent = fmt(s0.i, 1) + "°";
+
+    var nF = nDe(s0.g, 486.1), nd = nDe(s0.g, 587.6), nC = nDe(s0.g, 656.3);
+    $("s0-nF").textContent = fmt(nF, 5);
+    $("s0-nd").textContent = fmt(nd, 5);
+    $("s0-nC").textContent = fmt(nC, 5);
+    $("s0-V").textContent = fmt((nd - 1) / (nF - nC), 2);
+
+    var dd = desviacion(s0.g, 587.6, s0.A, s0.i);
+    var dF = desviacion(s0.g, 486.1, s0.A, s0.i);
+    var dC = desviacion(s0.g, 656.3, s0.A, s0.i);
+    $("s0-des").textContent = dd ? fmt(dd.dev, 3) + "°" : "no sale";
+    $("s0-ab").textContent = (dF && dC) ? fmt(dF.dev - dC.dev, 3) + "°" : "—";
+
+    var imin = incMinima(s0.g, 587.6, s0.A);
+    var nt = $("s0-note");
+    if (!dd) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>El haz no consigue salir.</b> Dentro del vidrio llega a la segunda cara por encima del ángulo crítico y se refleja totalmente. Baja el ángulo del prisma o cambia la incidencia: no todo prisma sirve para todo ángulo.";
+    } else if (imin !== null && Math.abs(s0.i - imin) < 0.6) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Desviación mínima: el haz atraviesa simétricamente.</b> Es la posición en que la desviación deja de depender de pequeños errores de alineación, y por eso es la que se usa para medir el índice de un vidrio con un goniómetro. La fórmula queda <code>n = sen((A+δ)/2)/sen(A/2)</code>.";
+    } else if (s0.g === "sf11") {
+      nt.className = "note";
+      nt.innerHTML = "<b>El SF11 abre el abanico cinco veces más que el BK7</b> con el mismo prisma. Su número de Abbe es 25.7 frente a 64.1: cuanto más bajo, más dispersa. Por eso los flint se usan para separar colores y los crown para formar imágenes sin separarlos.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>El abanico es estrecho: menos de un grado entre el azul y el rojo.</b> Lo que vemos como un arcoíris ancho en el laboratorio es ese grado escaso amplificado por la distancia a la pantalla. La dispersión es un efecto pequeño que se vuelve grande con brazo.";
+    }
+
+    draw0();
+  }
+
+  function draw0() {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var hSup = Math.round(h * 0.56);
+
+    // --- el prisma, de perfil ---
+    var Ar = s0.A * Math.PI / 180;
+    var lado = Math.min(hSup * 0.62, 150);
+    var cx = w * 0.34, cy = hSup * 0.60;
+    // triangulo isosceles con vertice arriba y angulo A
+    var hx = lado * Math.sin(Ar / 2), hy = lado * Math.cos(Ar / 2);
+    var P = [[cx, cy - hy * 0.55], [cx - hx, cy + hy * 0.45], [cx + hx, cy + hy * 0.45]];
+    ctx.fillStyle = "rgba(95,168,216,.11)";
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(P[0][0], P[0][1]); ctx.lineTo(P[1][0], P[1][1]); ctx.lineTo(P[2][0], P[2][1]);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    lab(ctx, "A = " + fmt(s0.A, 0) + "°", P[0][0], P[0][1] - 12, C.cy, "center", 10.5);
+    lab(ctx, VIDRIOS[s0.g].n, cx, cy + hy * 0.45 + 14, C.cy, "center", 10.5);
+
+    // Trazado vectorial: con Snell en forma vectorial no hay convenios de signo
+    // que equivocar, y el haz sale desviado hacia la base, como debe.
+    function uni(v) { var L = Math.hypot(v[0], v[1]); return [v[0] / L, v[1] / L]; }
+    function rot(v, a) {
+      var c = Math.cos(a), si = Math.sin(a);
+      return [v[0] * c - v[1] * si, v[0] * si + v[1] * c];
+    }
+    function refr(d, N, n1, n2) {
+      var ci = -(N[0] * d[0] + N[1] * d[1]);
+      if (ci < 0) { N = [-N[0], -N[1]]; ci = -(N[0] * d[0] + N[1] * d[1]); }
+      var eta = n1 / n2, k = 1 - eta * eta * (1 - ci * ci);
+      if (k < 0) return null;
+      var c2 = eta * ci - Math.sqrt(k);
+      return [eta * d[0] + c2 * N[0], eta * d[1] + c2 * N[1]];
+    }
+    var cen = [(P[0][0] + P[1][0] + P[2][0]) / 3, (P[0][1] + P[1][1] + P[2][1]) / 3];
+    function normalExt(a, b) {
+      var t = uni([b[0] - a[0], b[1] - a[1]]);
+      var nn = [-t[1], t[0]], m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      if (nn[0] * (cen[0] - m[0]) + nn[1] * (cen[1] - m[1]) > 0) nn = [-nn[0], -nn[1]];
+      return nn;
+    }
+    var N1 = normalExt(P[0], P[1]), N2 = normalExt(P[0], P[2]);
+    var E = [(P[0][0] + P[1][0]) / 2, (P[0][1] + P[1][1]) / 2];
+    var ti = s0.i * Math.PI / 180;
+    // el rayo entra girando la normal interior; se elige el giro que lo manda hacia la cara 2
+    var dA = rot([-N1[0], -N1[1]], ti), dB = rot([-N1[0], -N1[1]], -ti);
+    var dIn = dA;
+
+    function trazar(lam) {
+      var n = nDe(s0.g, lam);
+      var d2 = refr(dIn, N1, 1, n);
+      if (!d2) return null;
+      // corte con la cara 2, resuelto como interseccion de segmentos
+      var ax = P[0][0], ay = P[0][1], bx = P[2][0], by = P[2][1];
+      var den = d2[0] * (by - ay) - d2[1] * (bx - ax);
+      if (Math.abs(den) < 1e-9) return null;
+      var tt = ((ax - E[0]) * (by - ay) - (ay - E[1]) * (bx - ax)) / den;
+      if (tt <= 0) return null;
+      var S = [E[0] + d2[0] * tt, E[1] + d2[1] * tt];
+      var d3 = refr(d2, N2, n, 1);
+      return d3 ? { S: S, d3: d3, d2: d2 } : null;
+    }
+
+    // De los dos giros posibles de la normal, uno refracta hacia el vertice y acaba
+    // en reflexion total. Se prueban los dos y se queda el que sale de verdad.
+    var mid = trazar(587.6);
+    if (!mid) { dIn = dB; mid = trazar(587.6); }
+
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(E[0] - dIn[0] * 130, E[1] - dIn[1] * 130);
+    ctx.lineTo(E[0], E[1]); ctx.stroke();
+
+    if (mid) {
+      ctx.strokeStyle = "rgba(242,196,84,.65)"; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(E[0], E[1]); ctx.lineTo(mid.S[0], mid.S[1]); ctx.stroke();
+      var angMid = Math.atan2(mid.d3[1], mid.d3[0]);
+      var EXAG = 5;                                  // el abanico real no llega a 4°
+      for (var l = 400; l <= 700; l += 4) {
+        var tr = trazar(l);
+        if (!tr) continue;
+        var a = Math.atan2(tr.d3[1], tr.d3[0]);
+        var ang = angMid + (a - angMid) * EXAG;
+        var larg = 1e4, px = Math.cos(ang), py = Math.sin(ang);
+        if (px > 1e-6) larg = Math.min(larg, (w - 18 - tr.S[0]) / px);
+        if (px < -1e-6) larg = Math.min(larg, (18 - tr.S[0]) / px);
+        if (py > 1e-6) larg = Math.min(larg, (hSup - 10 - tr.S[1]) / py);
+        if (py < -1e-6) larg = Math.min(larg, (12 - tr.S[1]) / py);
+        larg = Math.max(0, larg);
+        ctx.strokeStyle = lamCSS(l, 0.85); ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(tr.S[0], tr.S[1]);
+        ctx.lineTo(tr.S[0] + px * larg, tr.S[1] + py * larg);
+        ctx.stroke();
+      }
+      labBg(ctx, "abanico ×5 para que se vea", w - 16, hSup - 12, C.dim, "right", 10);
+    } else {
+      labBg(ctx, "reflexión total: el haz no sale", w - 16, hSup - 12, C.no, "right", 10);
+    }
+
+    // --- curva n(lam) ---
+    var mL = 56, mR = 20, y0 = hSup + 30, ph = h - y0 - 42;
+    var pw = w - mL - mR, l0 = 380, l1 = 800;
+    var ns = [];
+    for (var q = l0; q <= l1; q += 2) ns.push(nDe(s0.g, q));
+    var nmin = Math.min.apply(null, ns), nmax = Math.max.apply(null, ns);
+    var pad = (nmax - nmin) * 0.18 + 1e-4;
+    nmin -= pad; nmax += pad;
+    var X = function (l) { return mL + (l - l0) / (l1 - l0) * pw; };
+    var Y = function (n) { return y0 + ph - (n - nmin) / (nmax - nmin) * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    for (var j = 400; j <= l1; j += 100) {
+      ctx.beginPath(); ctx.moveTo(X(j), y0); ctx.lineTo(X(j), y0 + ph); ctx.stroke();
+      lab(ctx, j + "", X(j), y0 + ph + 13, C.dim, "center", 10);
+    }
+    for (j = 0; j <= 3; j++) {
+      var yy = y0 + ph - j / 3 * ph, nv = nmin + (nmax - nmin) * j / 3;
+      ctx.beginPath(); ctx.moveTo(mL, yy); ctx.lineTo(mL + pw, yy); ctx.stroke();
+      lab(ctx, fmt(nv, 4), mL - 7, yy, C.dim, "right", 10);
+    }
+    lab(ctx, "índice n(λ)", mL, y0 - 13, C.dim, "left", 10);
+    lab(ctx, "longitud de onda  [nm]", mL + pw, y0 + ph + 29, C.dim, "right", 10);
+
+    ctx.lineWidth = 2.6;
+    for (var i = 0; i < 300; i++) {
+      var la = l0 + (l1 - l0) * i / 300, lb = l0 + (l1 - l0) * (i + 1) / 300;
+      ctx.strokeStyle = (la < 780) ? lamCSS(la, 0.95) : "rgba(150,60,60,.8)";
+      ctx.beginPath(); ctx.moveTo(X(la), Y(nDe(s0.g, la))); ctx.lineTo(X(lb), Y(nDe(s0.g, lb))); ctx.stroke();
+    }
+    [[486.1, "F", C.cy], [587.6, "d", C.acc], [656.3, "C", C.no]].forEach(function (m) {
+      ctx.strokeStyle = m[2]; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(X(m[0]), y0); ctx.lineTo(X(m[0]), y0 + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      lab(ctx, m[1], X(m[0]), y0 + 8, m[2], "center", 10);
+    });
+  }
+
+  // ================================================================
+  // 02  fase y grupo
+  // ================================================================
+  var s1 = { g: "bk7", lam: 550, ex: 12 };
+  var GB1 = { "w-bk7": "bk7", "w-sil": "sil", "w-sf11": "sf11" };
+  var t = 0, ultimo = 0, corriendo = true;
+
+  function update1() {
+    s1.lam = +$("s1-lam").value; s1.ex = +$("s1-ex").value;
+    Object.keys(GB1).forEach(function (k) { $(k).setAttribute("aria-pressed", GB1[k] === s1.g ? "true" : "false"); });
+    $("s1-lam-v").textContent = fmt(s1.lam, 0) + " nm";
+    $("s1-ex-v").textContent = fmt(s1.ex, 0) + " ×";
+
+    var n = nDe(s1.g, s1.lam), ng = ngDe(s1.g, s1.lam);
+    $("s1-n").textContent = fmt(n, 5);
+    $("s1-ng").textContent = fmt(ng, 5);
+    $("s1-vf").textContent = fmt(CLUZ / n / 1e6, 3) + " Mm/s";
+    $("s1-vg").textContent = fmt(CLUZ / ng / 1e6, 3) + " Mm/s";
+    $("s1-dif").textContent = fmt((ng / n - 1) * 100, 2) + " %";
+
+    var nt = $("s1-note");
+    nt.className = "note";
+    if (ng < n) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>Aquí el grupo va más rápido que la fase.</b> Ocurre donde <code>dn/dλ</code> cambia de signo, más allá del cero de dispersión. No viola nada: lo que nunca supera a <code>c</code> es la señal, y ésa no viaja ni con la fase ni con el pico de la envolvente.";
+    } else if (s1.ex === 1) {
+      nt.innerHTML = "<b>Sin exagerar, las dos velocidades son casi la misma</b> —se diferencian en un " +
+        fmt((ng / n - 1) * 100, 2) + " %— y el deslizamiento es invisible. Sube la exageración para verlo; los números del panel siguen siendo los reales.";
+    } else {
+      nt.innerHTML = "<b>Las crestas avanzan dentro de la envolvente y se escapan por delante.</b> En el visible el grupo siempre va más lento, así que la cresta nace atrás y muere delante. <b>La información viaja con la envolvente</b>, que es lo que el detector ve, y por eso la velocidad que importa es <code>v_g</code>.";
+    }
+  }
+
+  function draw1(ctx, w, h) {
+    var mL = 20, mR = 20, pw = w - mL - mR, cy = h / 2;
+    var n = nDe(s1.g, s1.lam), ng = ngDe(s1.g, s1.lam);
+    var vf = 1 / n, vg = 1 / ng;                      // en unidades de c
+    // se amplifica la diferencia manteniendo la media, para que el deslizamiento se vea
+    var med = (vf + vg) / 2, dd = (vf - vg) / 2 * s1.ex;
+    var vfD = med + dd, vgD = med - dd;
+    var esc = 150;                                     // px por unidad de tiempo
+    var amp = Math.min(h * 0.3, 96), anchoEnv = pw * 0.17;
+
+    var xg = ((vgD * esc * t) % (pw + 2 * anchoEnv)) - anchoEnv;
+    var faseDes = (vfD - vgD) * esc * t;
+    var k = 2 * Math.PI / 26;
+
+    ctx.strokeStyle = "rgba(134,149,170,.25)"; ctx.lineWidth = 1; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(mL, cy); ctx.lineTo(mL + pw, cy); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // envolvente
+    function env(x) {
+      var u = (x - (mL + xg)) / anchoEnv;
+      return Math.exp(-u * u * 2.2);
+    }
+    ctx.strokeStyle = "rgba(242,196,84,.65)"; ctx.lineWidth = 1.6;
+    [1, -1].forEach(function (sg) {
+      ctx.beginPath();
+      for (var i = 0; i <= 400; i++) {
+        var x = mL + pw * i / 400;
+        (i ? ctx.lineTo : ctx.moveTo).call(ctx, x, cy - sg * env(x) * amp);
+      }
+      ctx.stroke();
+    });
+
+    // la onda portadora dentro
+    ctx.strokeStyle = lamCSS(Math.min(s1.lam, 760), 0.95); ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (var i = 0; i <= 800; i++) {
+      var x = mL + pw * i / 800;
+      var y = env(x) * Math.cos(k * (x - mL - xg - faseDes));
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, x, cy - y * amp);
+    }
+    ctx.stroke();
+
+    // marca de una cresta concreta
+    var xc = mL + xg + faseDes;
+    while (xc > mL + pw) xc -= 2 * Math.PI / k;
+    while (xc < mL) xc += 2 * Math.PI / k;
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(xc, cy - amp * 1.22); ctx.lineTo(xc, cy + amp * 1.22); ctx.stroke();
+    labBg(ctx, "una cresta", xc, cy - amp * 1.22 - 10, C.cy, "center", 10);
+
+    // marca del pico de la envolvente
+    var xe = mL + xg;
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 1.6; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(xe, cy - amp * 1.34); ctx.lineTo(xe, cy + amp * 1.34); ctx.stroke();
+    ctx.setLineDash([]);
+    labBg(ctx, "la envolvente", xe, cy + amp * 1.34 + 10, C.acc, "center", 10);
+
+    lab(ctx, "contraste exagerado ×" + fmt(s1.ex, 0) + " · la diferencia real es del " +
+        fmt((ng / n - 1) * 100, 2) + " %", mL, 18, C.dim, "left", 10);
+    lab(ctx, VIDRIOS[s1.g].n + " · " + fmt(s1.lam, 0) + " nm", mL + pw, 18, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // 03  el pulso
+  // ================================================================
+  var s2 = { lam: 1550, T: 10, L: 80 };
+
+  function update2() {
+    s2.lam = +$("s2-lam").value;
+    s2.T = Math.pow(10, +$("s2-T").value);
+    s2.L = +$("s2-L").value;
+    $("s2-lam-v").textContent = fmt(s2.lam, 0) + " nm";
+    $("s2-T-v").textContent = fmt(s2.T, s2.T < 1 ? 2 : 1) + " ps";
+    $("s2-L-v").textContent = fmt(s2.L, s2.L < 10 ? 1 : 0) + " km";
+    $("w-1310").setAttribute("aria-pressed", s2.lam === 1310 ? "true" : "false");
+    $("w-1550").setAttribute("aria-pressed", s2.lam === 1550 ? "true" : "false");
+    $("w-cero").setAttribute("aria-pressed", Math.abs(s2.lam - 1275) < 4 ? "true" : "false");
+
+    var b2 = beta2De("sil", s2.lam), D = Dde("sil", s2.lam);
+    var LD = s2.T * s2.T / Math.abs(b2);
+    var T = s2.T * Math.sqrt(1 + (s2.L / LD) * (s2.L / LD));
+    $("s2-b2").textContent = sgn(b2, 2) + " ps²/km";
+    $("s2-D").textContent = sgn(D, 2) + " ps/(nm·km)";
+    $("s2-LD").textContent = (LD > 1000) ? fmt(LD / 1000, 2) + " × 10³ km" : fmt(LD, 3) + " km";
+    $("s2-T").textContent = (T > 1000) ? fmt(T / 1000, 2) + " ns" : fmt(T, 1) + " ps";
+    $("s2-fac").textContent = fmt(T / s2.T, 1) + " ×";
+    $("s2-bit").textContent = fmt(1 / (4 * T * 1e-12) / 1e9, 2) + " Gb/s";
+
+    var nt = $("s2-note");
+    if (Math.abs(D) < 1) {
+      nt.className = "note good";
+      nt.innerHTML = "<b>Aquí la sílice casi no dispersa:</b> el cero cae en <code>1272.8 nm</code>, donde <code>d²n/dλ²</code> cambia de signo. Un pulso puede recorrer kilómetros sin ensancharse apreciablemente, y por eso la primera ventana de telecomunicaciones se puso en 1310 nm, no por la atenuación sino por esto.";
+    } else if (T / s2.T > 10) {
+      nt.className = "note hot";
+      nt.innerHTML = "<b>El pulso sale " + fmt(T / s2.T, 0) +
+        " veces más ancho de lo que entró.</b> Ya no cabe en su ranura: se solapa con el siguiente bit y el receptor deja de distinguirlos. Éste es el límite que obliga a compensar la dispersión, no la pérdida de potencia.";
+    } else if (s2.lam > 1500) {
+      nt.className = "note";
+      nt.innerHTML = "<b>A 1550 nm la fibra atenúa menos, pero dispersa más.</b> Es el compromiso de la tercera ventana: se gana alcance en potencia y se paga en ensanchamiento, que luego hay que compensar con fibra de dispersión desplazada o con rejillas.";
+    } else {
+      nt.className = "note";
+      nt.innerHTML = "<b>El ensanchamiento va con el cuadrado de la anchura inicial, en contra.</b> <code>L_D = T₀²/|β₂|</code>: un pulso más corto se ensancha antes, porque lleva más ancho espectral. Es la misma relación inversa de los batidos del banco de oscilaciones.";
+    }
+
+    draw2(b2, LD, T);
+  }
+
+  function draw2(b2, LD, T) {
+    var ctx = ctx2d();
+    var w = cv.width / dpr, h = cv.height / dpr;
+    var hSup = Math.round(h * 0.52);
+
+    // --- curva D(lam) ---
+    var mL = 58, mR = 20, y0 = 28, ph = hSup - y0 - 34;
+    var pw = w - mL - mR, l0 = 600, l1 = 1700;
+    var X = function (l) { return mL + (l - l0) / (l1 - l0) * pw; };
+    var Dmin = -320, Dmax = 60;
+    var Y = function (D) { return y0 + ph - (D - Dmin) / (Dmax - Dmin) * ph; };
+
+    ctx.strokeStyle = "rgba(34,48,68,.8)"; ctx.lineWidth = 1;
+    var j;
+    for (j = 600; j <= l1; j += 200) {
+      ctx.beginPath(); ctx.moveTo(X(j), y0); ctx.lineTo(X(j), y0 + ph); ctx.stroke();
+      lab(ctx, j + "", X(j), y0 + ph + 13, C.dim, "center", 10);
+    }
+    for (j = -300; j <= 0; j += 100) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(j)); ctx.lineTo(mL + pw, Y(j)); ctx.stroke();
+      lab(ctx, j + "", mL - 7, Y(j), C.dim, "right", 10);
+    }
+    lab(ctx, "D  [ps/(nm·km)]", mL - 46, y0 - 13, C.dim, "left", 10);
+    lab(ctx, "longitud de onda  [nm]", mL + pw, y0 + ph + 29, C.dim, "right", 10);
+
+    ctx.strokeStyle = "rgba(134,149,170,.45)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(mL, Y(0)); ctx.lineTo(mL + pw, Y(0)); ctx.stroke();
+
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var i = 0; i <= 300; i++) {
+      var l = l0 + (l1 - l0) * i / 300;
+      var Dv = Math.max(Dmin, Math.min(Dmax, Dde("sil", l)));
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, X(l), Y(Dv));
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = C.ok; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(X(1272.8), y0); ctx.lineTo(X(1272.8), y0 + ph); ctx.stroke();
+    ctx.setLineDash([]);
+    labBg(ctx, "cero · 1272.8 nm", X(1272.8) + 6, y0 + 12, C.ok, "left", 10);
+
+    var Dact = Dde("sil", s2.lam);
+    ctx.strokeStyle = "rgba(95,168,216,.5)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(s2.lam), y0); ctx.lineTo(X(s2.lam), y0 + ph); ctx.stroke();
+    if (Dact > Dmin && Dact < Dmax) {
+      ctx.fillStyle = C.cy;
+      ctx.beginPath(); ctx.arc(X(s2.lam), Y(Dact), 4.4, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.4; ctx.stroke();
+      labBg(ctx, sgn(Dact, 1), X(s2.lam) + 9, Y(Dact) - 12, C.cy, "left", 10);
+    }
+
+    // --- los dos pulsos ---
+    var by = hSup + 24, bh = h - by - 26, cy2 = by + bh / 2;
+    var tMax = Math.max(T * 1.6, s2.T * 4);
+    var PX = function (ps) { return mL + pw / 2 + ps / tMax * pw / 2; };
+    ctx.strokeStyle = "rgba(34,48,68,.9)"; ctx.lineWidth = 1;
+    ctx.strokeRect(mL - .5, by - .5, pw + 1, bh + 1);
+    ctx.strokeStyle = "rgba(134,149,170,.25)"; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(mL, cy2); ctx.lineTo(mL + pw, cy2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    function pulso(anch, col, lw, rellena) {
+      ctx.beginPath();
+      for (var i = 0; i <= 260; i++) {
+        var ps = -tMax + 2 * tMax * i / 260;
+        var u = ps / anch, v = Math.exp(-u * u);
+        (i ? ctx.lineTo : ctx.moveTo).call(ctx, PX(ps), cy2 + bh * 0.42 - v * bh * 0.82);
+      }
+      ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke();
+      if (rellena) {
+        ctx.lineTo(PX(tMax), cy2 + bh * 0.42); ctx.lineTo(PX(-tMax), cy2 + bh * 0.42);
+        ctx.closePath(); ctx.fillStyle = rellena; ctx.fill();
+      }
+    }
+    pulso(T, C.no, 2.2, "rgba(212,98,74,.16)");
+    pulso(s2.T, C.acc, 2, "rgba(242,196,84,.2)");
+
+    labBg(ctx, "entra " + fmt(s2.T, s2.T < 1 ? 2 : 1) + " ps", mL + 8, by + 13, C.acc, "left", 10);
+    labBg(ctx, "sale " + ((T > 1000) ? fmt(T / 1000, 2) + " ns" : fmt(T, 1) + " ps"),
+          mL + pw - 8, by + 13, C.no, "right", 10);
+    lab(ctx, "tras " + fmt(s2.L, s2.L < 10 ? 1 : 0) + " km de sílice", mL + pw / 2, h - 12, C.dim, "center", 10);
+  }
+
+  // ================================================================
+  // pestañas y bucle
+  // ================================================================
+  var cur = 0;
+
+  var views = [
+    { p: "p0", t: "tab0", u: update0, hint: "cambia de vidrio y mira cuánto se abre el abanico" },
+    { p: "p1", t: "tab1", u: update1, hint: "sigue una cresta dentro de la envolvente" },
+    { p: "p2", t: "tab2", u: update2, hint: "compara 1310 con 1550" }
+  ];
+  function show(i) {
+    cur = i;
+    views.forEach(function (v, k) {
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+    hint.textContent = views[i].hint;
+    views[i].u();
+  }
+  views.forEach(function (v, i) { $(v.t).addEventListener("click", function () { show(i); }); });
+
+  ["s0-A", "s0-i"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-lam", "s1-ex"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-lam", "s2-T", "s2-L"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  Object.keys(GB).forEach(function (k) { $(k).addEventListener("click", function () { s0.g = GB[k]; update0(); }); });
+  Object.keys(GB1).forEach(function (k) { $(k).addEventListener("click", function () { s1.g = GB1[k]; update1(); }); });
+  $("s0-min").addEventListener("click", function () {
+    var im = incMinima(s0.g, 587.6, s0.A);
+    if (im !== null) { $("s0-i").value = im.toFixed(1); update0(); }
+  });
+  $("w-1310").addEventListener("click", function () { $("s2-lam").value = 1310; update2(); });
+  $("w-1550").addEventListener("click", function () { $("s2-lam").value = 1550; update2(); });
+  $("w-cero").addEventListener("click", function () { $("s2-lam").value = 1275; update2(); });
+  $("s1-play").addEventListener("click", function () {
+    corriendo = !corriendo;
+    $("s1-play").textContent = corriendo ? "Pausa" : "Reanudar";
+    $("s1-play").setAttribute("aria-pressed", corriendo ? "true" : "false");
+    update1();
+  });
+
+  resize();
+  show(0);
+  window.addEventListener("load", resize);
+
+  (function bucle(ms) {
+    requestAnimationFrame(bucle);
+    if (!ultimo) ultimo = ms || 0;
+    var dt = Math.min(((ms || 0) - ultimo) / 1000, 0.05);
+    ultimo = ms || 0;
+    if (corriendo && cur === 1) t += dt;
+    resize();
+    if (cur === 1) draw1(ctx2d(), cv.width / dpr, cv.height / dpr);
+  })();
+})();
+</script>
+
+</body></html>
