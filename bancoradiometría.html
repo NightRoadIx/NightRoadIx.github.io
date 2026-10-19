@@ -1,0 +1,1544 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Radiometría</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+/* Layout: visor a la izquierda, panel de instrumento a la derecha; apila en una columna bajo 880px.
+   Tema único oscuro, deliberado: la escena es luz emitida y sólo se lee sobre fondo oscuro,
+   igual que el visor de haz de un banco óptico. */
+:root {
+  color-scheme: dark;
+
+  --bg:      #0a0e15;
+  --panel:   #111722;
+  --panel-2: #161e2b;
+  --line:    #223044;
+  --fg:      #dde5f0;
+  --dim:     #8695aa;
+  --rad:     #e08a3c;   /* radiométrico */
+  --fot:     #52b87c;   /* fotométrico  */
+  --acc:     #f2c454;   /* la luz        */
+  --cy:      #5fa8d8;   /* geometría     */
+  --vi:      #a888d8;   /* el puente V(λ)*/
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-inline: 16px;
+  padding-block: 20px 36px;
+}
+
+/* ---------- encabezado ---------- */
+.back {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .06em;
+  color: var(--dim);
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+.back:hover { color: var(--acc); }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: 0 0 6px;
+}
+
+h1 {
+  font-size: clamp(22px, 4.4vw, 31px);
+  font-weight: 600;
+  letter-spacing: -.015em;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+
+.lede {
+  color: var(--dim);
+  margin: 0;
+  max-width: 64ch;
+  font-size: 14.5px;
+}
+
+/* ---------- pestañas ---------- */
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 20px 0 14px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.tab {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 6px 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] {
+  color: var(--bg);
+  background: var(--acc);
+  border-color: var(--acc);
+  font-weight: 600;
+}
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+/* ---------- cuerpo ---------- */
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 880px) {
+  .stage { grid-template-columns: minmax(0, 1fr); }
+}
+
+.viewport {
+  position: relative;
+  background: #070a10;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  min-width: 0;
+}
+#gl, #spec { display: block; width: 100%; height: 100%; }
+#spec { background: #070a10; }
+
+.hint {
+  position: absolute;
+  left: 11px;
+  bottom: 9px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .05em;
+  color: var(--dim);
+  pointer-events: none;
+  opacity: .8;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 16px 18px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* display:flex gana al [hidden] de la hoja del navegador: hay que decirlo aparte
+   o todos los paneles salen apilados */
+.panel[hidden] { display: none; }
+
+
+.ask {
+  font-size: 14px;
+  margin: 0;
+  padding-left: 11px;
+  border-left: 3px solid var(--acc);
+}
+.ask b { color: var(--acc); font-weight: 600; }
+
+/* ---------- controles ---------- */
+.ctrl { display: flex; flex-direction: column; gap: 4px; }
+
+.ctrl-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--acc);
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  margin: 2px 0;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--acc); border: none; margin-top: -6.5px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--acc); border: none;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+/* barra de longitud de onda, compartida */
+.lam {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--vi);
+  border-radius: 7px;
+  padding: 9px 12px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lam .ctrl-top output { color: var(--vi); }
+.lam .k2 {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+.lam .k2 b { color: var(--vi); font-weight: 500; }
+
+/* ---------- lecturas ---------- */
+.readout {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 5px 0;
+}
+.row + .row { border-top: 1px solid rgba(34, 48, 68, .55); }
+
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em {
+  font-family: var(--mono);
+  font-style: normal;
+  color: var(--fg);
+  font-size: 12px;
+}
+.row .v {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+
+.row.pair { border-top: none; padding-top: 1px; }
+
+.v.rad { color: var(--rad); }
+.v.fot { color: var(--fot); }
+.v.cy  { color: var(--cy);  }
+.v.acc { color: var(--acc); }
+.v.vi  { color: var(--vi);  }
+.v.dim { color: var(--dim); }
+
+.sect {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: 6px 0 1px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.sect.rad { color: var(--rad); }
+.sect.fot { color: var(--fot); }
+
+.note {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--dim);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px 12px;
+  margin: 0;
+}
+.note b { color: var(--fg); font-weight: 600; }
+.note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
+
+.warn { border-color: #6d4a2a; }
+.warn b { color: var(--rad); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  font-size: 11.5px;
+  color: var(--dim);
+}
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+
+footer {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--dim);
+  max-width: 78ch;
+}
+footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="https://claude.ai/artifact/CAZTQx6ruo9Lovs63pwDwy">← Banco óptico</a>
+    <p class="eyebrow">Fundamentos de Óptica · Optomecatrónica</p>
+    <h1>Banco de radiometría</h1>
+    <p class="lede">Seis montajes para construir las magnitudes desde la geometría, en unidades radiométricas y fotométricas a la vez. Arrastra para girar la escena; mueve los controles y observa qué número cambia y cuál no.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">01</span> Esterorradián</button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Potencia e intensidad</button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> Irradiancia</button>
+    <button class="tab" role="tab" id="tab3" aria-controls="p3" aria-selected="false"><span class="n">04</span> Radiancia</button>
+    <button class="tab" role="tab" id="tab4" aria-controls="p4" aria-selected="false"><span class="n">05</span> El puente V(λ)</button>
+    <button class="tab" role="tab" id="tab5" aria-controls="p5" aria-selected="false"><span class="n">06</span> Étendue</button>
+  </nav>
+
+  <div class="stage">
+    <div class="viewport">
+      <canvas id="gl"></canvas>
+      <canvas id="spec" hidden></canvas>
+      <div class="hint" id="hint">arrastra para girar · rueda para acercar</div>
+    </div>
+
+    <!-- ============ 01 ESTERORRADIÁN ============ -->
+    <div class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+      <p class="ask">Dos esferas, un mismo cono. El área recortada cambia; <b>el ángulo sólido no</b>.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s0-theta">Semiángulo del cono &nbsp;θ</label>
+          <output id="s0-theta-v">30.0°</output>
+        </div>
+        <input type="range" id="s0-theta" min="2" max="180" step="0.5" value="30">
+      </div>
+
+      <div class="readout">
+        <div class="row hero">
+          <div class="k">Ángulo sólido &nbsp;<em>Ω = 2π(1−cos θ)</em></div>
+          <div class="v acc" id="s0-omega">0.842 sr</div>
+        </div>
+        <div class="row">
+          <div class="k">Fracción de la esfera</div>
+          <div class="v dim" id="s0-frac">6.7 %</div>
+        </div>
+        <div class="row">
+          <div class="k"><em>r₁</em> = 1.00 — área del casquete</div>
+          <div class="v cy" id="s0-a1">0.8418</div>
+        </div>
+        <div class="row">
+          <div class="k"><em>r₂</em> = 1.80 — área del casquete</div>
+          <div class="v cy" id="s0-a2">2.7274</div>
+        </div>
+        <div class="row">
+          <div class="k"><em>A₁/r₁²</em></div>
+          <div class="v acc" id="s0-q1">0.8418</div>
+        </div>
+        <div class="row">
+          <div class="k"><em>A₂/r₂²</em></div>
+          <div class="v acc" id="s0-q2">0.8418</div>
+        </div>
+      </div>
+
+      <p class="note"><b>Lo que hay que ver:</b> el casquete exterior es 3.24 veces mayor en área, pero al dividir entre <code>r²</code> los dos cocientes coinciden hasta el último decimal. El esterorradián no mide un área: mide qué porción de las direcciones posibles ocupa el cono. Por eso una fuente puntual siempre emite en 4π sr, sea una vela o una estrella.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--cy)"></i> casquete esférico</span>
+        <span><i style="background:var(--acc)"></i> borde del cono</span>
+      </div>
+    </div>
+
+    <!-- ============ 02 POTENCIA E INTENSIDAD ============ -->
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+      <p class="ask">La fuente emite <b>toda su potencia</b> dentro del cono. Ciérralo y mira qué número se dispara.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-theta">Semiángulo del haz &nbsp;θ</label>
+          <output id="s1-theta-v">30.0°</output>
+        </div>
+        <input type="range" id="s1-theta" min="2" max="90" step="0.5" value="30">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s1-pow">Potencia radiante &nbsp;Φ<sub>e</sub></label>
+          <output id="s1-pow-v">1.000 W</output>
+        </div>
+        <input type="range" id="s1-pow" min="0.05" max="5" step="0.05" value="1">
+      </div>
+
+      <div class="lam">
+        <div class="ctrl-top">
+          <label for="s1-lam">Longitud de onda de la fuente &nbsp;λ</label>
+          <output id="s1-lam-v">555 nm</output>
+        </div>
+        <input type="range" id="s1-lam" min="400" max="700" step="5" value="555">
+        <div class="k2">V(λ) = <b id="s1-vl">1.000</b> &nbsp;·&nbsp; K = 683·V(λ) = <b id="s1-kl">683.0</b> lm/W</div>
+      </div>
+
+      <div class="readout">
+        <div class="sect rad">Radiométrico</div>
+        <div class="row hero">
+          <div class="k">Intensidad radiante &nbsp;<em>I<sub>e</sub> = Φ<sub>e</sub>/Ω</em></div>
+          <div class="v rad" id="s1-Ie">1.188 W/sr</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Potencia radiante emitida (no cambia)</div>
+          <div class="v rad" id="s1-Pe">1.000 W</div>
+        </div>
+
+        <div class="sect fot">Fotométrico</div>
+        <div class="row hero">
+          <div class="k">Intensidad luminosa &nbsp;<em>I<sub>v</sub> = K·I<sub>e</sub></em></div>
+          <div class="v fot" id="s1-Iv">811 cd</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Flujo luminoso &nbsp;<em>Φ<sub>v</sub> = K·Φ<sub>e</sub></em></div>
+          <div class="v fot" id="s1-Pv">683 lm</div>
+        </div>
+
+        <div class="sect">Geometría</div>
+        <div class="row pair">
+          <div class="k">Ángulo sólido del haz</div>
+          <div class="v acc" id="s1-omega">0.842 sr</div>
+        </div>
+        <div class="row">
+          <div class="k">Respecto de emitir en todo el hemisferio</div>
+          <div class="v dim" id="s1-gain">×7.5</div>
+        </div>
+      </div>
+
+      <p class="note"><b>El compromiso de fondo:</b> la potencia es lo que la fuente produce y no depende de hacia dónde apunte. La intensidad es potencia por esterorradián, así que concentrar la misma potencia en menos direcciones la multiplica. Un faro de carretera y uno de cruce pueden llevar el mismo LED: cambia el reparto, no la potencia.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> haz</span>
+        <span><i style="background:var(--fot)"></i> fuente</span>
+      </div>
+    </div>
+
+    <!-- ============ 03 IRRADIANCIA ============ -->
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+      <p class="ask">Aleja e inclina la pantalla. La fuente no cambia; <b>lo que cambia es el reparto sobre el área</b>.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-dist">Distancia &nbsp;d</label>
+          <output id="s2-dist-v">2.00 m</output>
+        </div>
+        <input type="range" id="s2-dist" min="0.6" max="6" step="0.05" value="2">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-tilt">Inclinación de la pantalla &nbsp;θ</label>
+          <output id="s2-tilt-v">0°</output>
+        </div>
+        <input type="range" id="s2-tilt" min="0" max="80" step="1" value="0">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s2-I">Intensidad radiante &nbsp;I<sub>e</sub></label>
+          <output id="s2-I-v">1.50 W/sr</output>
+        </div>
+        <input type="range" id="s2-I" min="0.1" max="8" step="0.1" value="1.5">
+      </div>
+
+      <div class="lam">
+        <div class="ctrl-top">
+          <label for="s2-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s2-lam-v">555 nm</output>
+        </div>
+        <input type="range" id="s2-lam" min="400" max="700" step="5" value="555">
+        <div class="k2">K = 683·V(λ) = <b id="s2-kl">683.0</b> lm/W</div>
+      </div>
+
+      <div class="readout">
+        <div class="sect rad">Radiométrico</div>
+        <div class="row hero">
+          <div class="k">Irradiancia &nbsp;<em>E<sub>e</sub> = I<sub>e</sub> cos θ / d²</em></div>
+          <div class="v rad" id="s2-Ee">0.375 W/m²</div>
+        </div>
+
+        <div class="sect fot">Fotométrico</div>
+        <div class="row hero">
+          <div class="k">Iluminancia &nbsp;<em>E<sub>v</sub> = K·E<sub>e</sub></em></div>
+          <div class="v fot" id="s2-Ev">256.1 lx</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Comparación</div>
+          <div class="v dim" id="s2-ref">oficina bien iluminada</div>
+        </div>
+
+        <div class="sect">Los dos factores por separado</div>
+        <div class="row pair">
+          <div class="k">Caída por distancia &nbsp;<em>1/d²</em></div>
+          <div class="v cy" id="s2-fall">×0.250</div>
+        </div>
+        <div class="row">
+          <div class="k">Factor de inclinación &nbsp;<em>cos θ</em></div>
+          <div class="v cy" id="s2-cos">1.000</div>
+        </div>
+        <div class="row">
+          <div class="k">Mancha iluminada sobre la pantalla</div>
+          <div class="v dim" id="s2-area">2.05 m²</div>
+        </div>
+      </div>
+
+      <p class="note"><b>De dónde sale el cuadrado:</b> el cono recorta sobre la pantalla un área que crece como <code>d²</code>, mientras la potencia que contiene no cambia. La ley del inverso del cuadrado no es un postulado: es el <code>r²</code> de la definición del esterorradián, visto desde el lado que recibe.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> haz</span>
+        <span><i style="background:var(--cy)"></i> pantalla</span>
+      </div>
+    </div>
+
+    <!-- ============ 04 RADIANCIA ============ -->
+    <div class="panel" id="p3" role="tabpanel" aria-labelledby="tab3" hidden>
+      <p class="ask">Mueve el detector alrededor de la fuente. Dos cantidades caen; <b>su cociente no se mueve</b>.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s3-theta">Ángulo de observación &nbsp;θ</label>
+          <output id="s3-theta-v">0°</output>
+        </div>
+        <input type="range" id="s3-theta" min="0" max="85" step="1" value="0">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s3-L">Radiancia de la fuente &nbsp;L<sub>e</sub></label>
+          <output id="s3-L-v">10 000 W/(m²·sr)</output>
+        </div>
+        <input type="range" id="s3-L" min="1000" max="40000" step="500" value="10000">
+      </div>
+
+      <div class="lam">
+        <div class="ctrl-top">
+          <label for="s3-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s3-lam-v">555 nm</output>
+        </div>
+        <input type="range" id="s3-lam" min="400" max="700" step="5" value="555">
+        <div class="k2">K = 683·V(λ) = <b id="s3-kl">683.0</b> lm/W</div>
+      </div>
+
+      <div class="readout">
+        <div class="sect">Lo que sí cambia con el ángulo</div>
+        <div class="row pair">
+          <div class="k">Intensidad radiante &nbsp;<em>I<sub>e</sub>(θ) = I₀ cos θ</em></div>
+          <div class="v rad" id="s3-I">1.0000 W/sr</div>
+        </div>
+        <div class="row">
+          <div class="k">Área proyectada &nbsp;<em>A cos θ</em></div>
+          <div class="v cy" id="s3-ap">1.000 cm²</div>
+        </div>
+
+        <div class="sect rad">Lo que no cambia</div>
+        <div class="row hero">
+          <div class="k">Radiancia &nbsp;<em>L<sub>e</sub> = I<sub>e</sub> / (A cos θ)</em></div>
+          <div class="v rad" id="s3-L">10 000 W/(m²·sr)</div>
+        </div>
+
+        <div class="sect fot">Fotométrico</div>
+        <div class="row hero">
+          <div class="k">Luminancia &nbsp;<em>L<sub>v</sub> = K·L<sub>e</sub></em></div>
+          <div class="v fot" id="s3-Lv">6.83 Mcd/m²</div>
+        </div>
+
+        <div class="sect">Del disco completo</div>
+        <div class="row pair">
+          <div class="k">Área de la fuente</div>
+          <div class="v dim">1.000 cm²</div>
+        </div>
+        <div class="row">
+          <div class="k">Potencia al hemisferio &nbsp;<em>Φ = L·A·π</em></div>
+          <div class="v dim" id="s3-flux">3.1416 W</div>
+        </div>
+      </div>
+
+      <p class="note"><b>La ley de Lambert:</b> al mirar la fuente de canto recibes menos potencia, pero también la ves más pequeña, y las dos caídas son el mismo <code>cos θ</code>. Por eso una pantalla difusora o una hoja de papel se ven igual de brillantes desde cualquier ángulo. La radiancia es la magnitud que describe la fuente por sí sola, sin referencia a dónde esté el observador, y por eso es la que ningún sistema óptico pasivo puede aumentar.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--rad)"></i> fuente extensa</span>
+        <span><i style="background:var(--cy)"></i> silueta proyectada</span>
+        <span><i style="background:var(--fot)"></i> detector</span>
+      </div>
+    </div>
+
+    <!-- ============ 05 EL PUENTE V(λ) ============ -->
+    <div class="panel" id="p4" role="tabpanel" aria-labelledby="tab4" hidden>
+      <p class="ask">Un watt es un watt. <b>Un lumen depende del ojo</b> que lo mira.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s4-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s4-lam-v">555 nm</output>
+        </div>
+        <input type="range" id="s4-lam" min="380" max="760" step="1" value="555">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s4-pow">Potencia radiante &nbsp;Φ<sub>e</sub></label>
+          <output id="s4-pow-v">1.000 W</output>
+        </div>
+        <input type="range" id="s4-pow" min="0.05" max="5" step="0.05" value="1">
+      </div>
+
+      <div class="readout">
+        <div class="sect rad">Lo que mide el radiómetro</div>
+        <div class="row hero">
+          <div class="k">Potencia radiante &nbsp;<em>Φ<sub>e</sub></em></div>
+          <div class="v rad" id="s4-Pe">1.000 W</div>
+        </div>
+
+        <div class="sect">El factor del observador</div>
+        <div class="row pair">
+          <div class="k">Eficiencia luminosa relativa &nbsp;<em>V(λ)</em></div>
+          <div class="v vi" id="s4-vl">1.000</div>
+        </div>
+        <div class="row">
+          <div class="k">Eficacia &nbsp;<em>K = 683·V(λ)</em></div>
+          <div class="v vi" id="s4-kl">683.0 lm/W</div>
+        </div>
+
+        <div class="sect fot">Lo que mide el fotómetro</div>
+        <div class="row hero">
+          <div class="k">Flujo luminoso &nbsp;<em>Φ<sub>v</sub> = K·Φ<sub>e</sub></em></div>
+          <div class="v fot" id="s4-Pv">683.0 lm</div>
+        </div>
+        <div class="row pair">
+          <div class="k">Respecto del máximo (555 nm)</div>
+          <div class="v dim" id="s4-rel">100.0 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Color aproximado</div>
+          <div class="v dim" id="s4-col">verde</div>
+        </div>
+      </div>
+
+      <p class="note"><b>Dos advertencias:</b> el valor 683 no es una constante de la naturaleza, se eligió para que la candela nueva coincidiera con la de la vela patrón. Y V(λ) es una curva experimental promediada sobre observadores humanos, adoptada por la CIE en 1924: describe un órgano, no una ley física. La fotometría es la única rama de la física cuyas unidades dependen de la biología de una especie.</p>
+    </div>
+
+    <!-- ============ 06 ÉTENDUE ============ -->
+    <div class="panel" id="p5" role="tabpanel" aria-labelledby="tab5" hidden>
+      <p class="ask">Aprieta el haz por un lado y se abre por el otro. <b>El producto A·Ω nunca baja</b>.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s5-a1">Apertura de entrada &nbsp;A₁</label>
+          <output id="s5-a1-v">4.00 mm²</output>
+        </div>
+        <input type="range" id="s5-a1" min="1" max="12" step="0.1" value="4">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s5-t1">Semiángulo de entrada &nbsp;θ₁</label>
+          <output id="s5-t1-v">30°</output>
+        </div>
+        <input type="range" id="s5-t1" min="5" max="75" step="1" value="30">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s5-a2">Apertura de salida &nbsp;A₂</label>
+          <output id="s5-a2-v">4.00 mm²</output>
+        </div>
+        <input type="range" id="s5-a2" min="0.2" max="12" step="0.1" value="4">
+      </div>
+
+      <div class="readout">
+        <div class="row hero">
+          <div class="k">Étendue &nbsp;<em>G = A·π sen²θ</em></div>
+          <div class="v acc" id="s5-G">3.1416 mm²·sr</div>
+        </div>
+        <div class="row">
+          <div class="k">Semiángulo que exige la salida &nbsp;<em>θ₂</em></div>
+          <div class="v cy" id="s5-t2">30.0°</div>
+        </div>
+        <div class="row">
+          <div class="k">Apertura numérica necesaria &nbsp;<em>AN = sen θ₂</em></div>
+          <div class="v cy" id="s5-an">0.500</div>
+        </div>
+        <div class="row">
+          <div class="k">Área mínima posible &nbsp;<em>(θ₂ = 90°)</em></div>
+          <div class="v dim" id="s5-amin">1.00 mm²</div>
+        </div>
+      </div>
+
+      <p class="note" id="s5-note"><b>La regla:</b> ningún sistema óptico pasivo puede reducir el étendue. Si aprietas el área, el haz tiene que abrirse en ángulo para compensar, y hay un área por debajo de la cual ninguna óptica funciona porque haría falta un ángulo mayor que 90°.</p>
+
+      <div class="readout">
+        <div class="sect">El caso real: acoplar un LED a una fibra</div>
+        <div class="row pair">
+          <div class="k">LED de 1 mm² emitiendo al hemisferio</div>
+          <div class="v rad">3.14 mm²·sr</div>
+        </div>
+        <div class="row">
+          <div class="k">Fibra monomodo, 9 µm, AN 0.148</div>
+          <div class="v cy">4.39 × 10⁻⁶</div>
+        </div>
+        <div class="row">
+          <div class="k">Acoplamiento máximo imaginable</div>
+          <div class="v acc">1 parte en 716 000</div>
+        </div>
+        <div class="row">
+          <div class="k">Con fibra multimodo, 200 µm, AN 0.22</div>
+          <div class="v fot">1 parte en 658</div>
+        </div>
+      </div>
+
+      <p class="note"><b>Por eso</b> las fuentes para fibra óptica son láseres y no LED: un láser tiene étendue pequeño por naturaleza, no por la óptica que lo acompaña. Y por eso un concentrador solar tiene una temperatura máxima, y un faro con fuente extensa no puede producir un haz arbitrariamente estrecho. Es la misma restricción.</p>
+
+      <div class="legend">
+        <span><i style="background:var(--rad)"></i> entrada</span>
+        <span><i style="background:var(--cy)"></i> salida</span>
+        <span><i style="background:var(--acc)"></i> haz</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Las lecturas se calculan con <code>Ω = 2π(1−cos θ)</code>, <code>I = Φ/Ω</code>, <code>E = I cos θ/d²</code>, <code>L = I/(A cos θ)</code> y <code>G = A π sen²θ</code>, sin aproximaciones de ángulo pequeño. V(λ) es la curva fotópica CIE interpolada entre valores tabulados cada 10 nm. Los montajes 03 y 04 suponen fuente puntual y fuente lambertiana respectivamente. Fundamentos de Óptica.
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ================================================================
+  // V(lambda) — curva fotopica CIE 1924, tabulada cada 10 nm
+  // ================================================================
+  var VTAB = {
+    380: 0.00000, 390: 0.00012, 400: 0.00040, 410: 0.00120, 420: 0.00400,
+    430: 0.01160, 440: 0.02300, 450: 0.03800, 460: 0.06000, 470: 0.09100,
+    480: 0.13900, 490: 0.20800, 500: 0.32300, 510: 0.50300, 520: 0.71000,
+    530: 0.86200, 540: 0.95400, 550: 0.99500, 555: 1.00000, 560: 0.99500,
+    570: 0.95200, 580: 0.87000, 590: 0.75700, 600: 0.63100, 610: 0.50300,
+    620: 0.38100, 630: 0.26500, 640: 0.17500, 650: 0.10700, 660: 0.06100,
+    670: 0.03200, 680: 0.01700, 690: 0.00820, 700: 0.00410, 710: 0.00210,
+    720: 0.00105, 730: 0.00052, 740: 0.00025, 750: 0.00012, 760: 0.00006
+  };
+  var VKEYS = Object.keys(VTAB).map(Number).sort(function (a, b) { return a - b; });
+
+  function Vlam(lam) {
+    if (lam <= VKEYS[0]) return VTAB[VKEYS[0]];
+    if (lam >= VKEYS[VKEYS.length - 1]) return VTAB[VKEYS[VKEYS.length - 1]];
+    for (var i = 1; i < VKEYS.length; i++) {
+      if (lam <= VKEYS[i]) {
+        var a = VKEYS[i - 1], b = VKEYS[i];
+        var t = (lam - a) / (b - a);
+        return VTAB[a] + t * (VTAB[b] - VTAB[a]);
+      }
+    }
+    return 0;
+  }
+  var KM = 683;
+  function Klam(lam) { return KM * Vlam(lam); }
+
+  // color aproximado de una longitud de onda, para los rotulos y la escena
+  function lamName(lam) {
+    if (lam < 430) return "violeta";
+    if (lam < 480) return "azul";
+    if (lam < 505) return "cian";
+    if (lam < 565) return "verde";
+    if (lam < 590) return "amarillo";
+    if (lam < 625) return "naranja";
+    return "rojo";
+  }
+  // aproximacion sRGB del color espectral (Bruton)
+  function lamRGB(lam) {
+    var r = 0, g = 0, b = 0;
+    if (lam >= 380 && lam < 440) { r = -(lam - 440) / 60; b = 1; }
+    else if (lam < 490) { g = (lam - 440) / 50; b = 1; }
+    else if (lam < 510) { g = 1; b = -(lam - 510) / 20; }
+    else if (lam < 580) { r = (lam - 510) / 70; g = 1; }
+    else if (lam < 645) { r = 1; g = -(lam - 645) / 65; }
+    else if (lam <= 780) { r = 1; }
+    var f = 1;
+    if (lam > 700) f = 0.3 + 0.7 * (780 - lam) / 80;
+    else if (lam < 420) f = 0.3 + 0.7 * (lam - 380) / 40;
+    var gm = function (x) { return Math.pow(Math.max(0, Math.min(1, x * f)), 0.8); };
+    return { r: gm(r), g: gm(g), b: gm(b) };
+  }
+  function lamHex(lam) {
+    var c = lamRGB(lam);
+    return (Math.round(c.r * 255) << 16) | (Math.round(c.g * 255) << 8) | Math.round(c.b * 255);
+  }
+
+  // ================================================================
+  // escena three.js
+  // ================================================================
+  var canvas = document.getElementById("gl");
+  var spec = document.getElementById("spec");
+  var viewport = canvas.parentElement;
+  var hint = document.getElementById("hint");
+
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false });
+  renderer.setClearColor(0x070a10, 1);
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(42, 4 / 3, 0.1, 400);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.62));
+  var key = new THREE.DirectionalLight(0xffffff, 0.75);
+  key.position.set(4, 6, 5);
+  scene.add(key);
+  var fill = new THREE.DirectionalLight(0x6a90c0, 0.35);
+  fill.position.set(-5, -2, -4);
+  scene.add(fill);
+
+  var COL = { rad: 0xe08a3c, fot: 0x52b87c, acc: 0xf2c454, cy: 0x5fa8d8, dim: 0x8695aa, vi: 0xa888d8 };
+
+  // ---- camara orbital propia -------------------------------------
+  var orbit = { az: 0.62, el: 0.42, dist: 6.2, target: new THREE.Vector3(0, 0, 0) };
+
+  function place() {
+    var ce = Math.cos(orbit.el), se = Math.sin(orbit.el);
+    camera.position.set(
+      orbit.target.x + orbit.dist * ce * Math.sin(orbit.az),
+      orbit.target.y + orbit.dist * se,
+      orbit.target.z + orbit.dist * ce * Math.cos(orbit.az)
+    );
+    camera.lookAt(orbit.target);
+  }
+
+  var drag = null;
+  function ptr(e) { var t = e.touches ? e.touches[0] : e; return { x: t.clientX, y: t.clientY }; }
+  function down(e) { drag = ptr(e); }
+  function move(e) {
+    if (!drag) return;
+    var p = ptr(e);
+    orbit.az -= (p.x - drag.x) * 0.0075;
+    orbit.el += (p.y - drag.y) * 0.0075;
+    orbit.el = Math.max(-1.45, Math.min(1.45, orbit.el));
+    drag = p;
+    place();
+    if (e.cancelable) e.preventDefault();
+  }
+  function up() { drag = null; }
+
+  canvas.addEventListener("mousedown", down);
+  window.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", up);
+  canvas.addEventListener("touchstart", down, { passive: true });
+  canvas.addEventListener("touchmove", move, { passive: false });
+  canvas.addEventListener("touchend", up);
+  canvas.addEventListener("wheel", function (e) {
+    orbit.dist = Math.max(2.0, Math.min(26, orbit.dist + e.deltaY * 0.0045));
+    place();
+    e.preventDefault();
+  }, { passive: false });
+
+  function resize() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    if (spec.width !== Math.round(w * dpr) || spec.height !== Math.round(h * dpr)) {
+      spec.width = Math.round(w * dpr);
+      spec.height = Math.round(h * dpr);
+      if (!spec.hidden) drawSpec();
+    }
+  }
+  window.addEventListener("resize", resize);
+
+  // ---- utilidades -------------------------------------------------
+  function lineMat(color, opacity) {
+    return new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: opacity === undefined ? 1 : opacity });
+  }
+  function solidMat(color, opacity) {
+    return new THREE.MeshStandardMaterial({
+      color: color, transparent: true, opacity: opacity,
+      side: THREE.DoubleSide, roughness: 0.62, metalness: 0.03, depthWrite: false
+    });
+  }
+  function flatMat(color, opacity) {
+    return new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: opacity, side: THREE.DoubleSide, depthWrite: false });
+  }
+  function axes(len) {
+    var g = new THREE.Group();
+    var pts = [[[-len, 0, 0], [len, 0, 0]], [[0, -len, 0], [0, len, 0]], [[0, 0, -len], [0, 0, len]]];
+    for (var i = 0; i < 3; i++) {
+      var geo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3().fromArray(pts[i][0]), new THREE.Vector3().fromArray(pts[i][1])
+      ]);
+      g.add(new THREE.Line(geo, lineMat(COL.dim, 0.22)));
+    }
+    return g;
+  }
+  function rays(r, thetaDeg, n, color, opacity) {
+    var g = new THREE.Group();
+    var t = thetaDeg * Math.PI / 180;
+    for (var i = 0; i < n; i++) {
+      var phi = (i / n) * Math.PI * 2;
+      var p = new THREE.Vector3(r * Math.sin(t) * Math.cos(phi), r * Math.cos(t), r * Math.sin(t) * Math.sin(phi));
+      g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), p]), lineMat(color, opacity)));
+    }
+    return g;
+  }
+  function capMesh(r, thetaDeg, color, opacity) {
+    var t = Math.max(0.001, thetaDeg * Math.PI / 180);
+    return new THREE.Mesh(new THREE.SphereGeometry(r, 72, 40, 0, Math.PI * 2, 0, t), solidMat(color, opacity));
+  }
+  function capEdge(r, thetaDeg, color) {
+    var t = thetaDeg * Math.PI / 180, pts = [];
+    for (var i = 0; i <= 96; i++) {
+      var phi = (i / 96) * Math.PI * 2;
+      pts.push(new THREE.Vector3(r * Math.sin(t) * Math.cos(phi), r * Math.cos(t), r * Math.sin(t) * Math.sin(phi)));
+    }
+    return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(color, 0.95));
+  }
+  function wireSphere(r, color, opacity) {
+    return new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.SphereGeometry(r, 18, 11)), lineMat(color, opacity));
+  }
+  function ring(r, color, opacity, seg) {
+    var pts = [];
+    seg = seg || 72;
+    for (var i = 0; i <= seg; i++) {
+      var a = (i / seg) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r));
+    }
+    return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(color, opacity));
+  }
+  function clear(group) {
+    while (group.children.length) {
+      var c = group.children.pop();
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) c.material.dispose();
+    }
+  }
+
+  // ================================================================
+  // 01 — esterorradián
+  // ================================================================
+  var R1 = 1.0, R2 = 1.8;
+  var g0 = new THREE.Group(), g0s = new THREE.Group(), g0d = new THREE.Group();
+  g0.add(g0s, g0d); scene.add(g0);
+  g0s.add(wireSphere(R1, COL.dim, 0.18));
+  g0s.add(wireSphere(R2, COL.dim, 0.11));
+  g0s.add(axes(R2 * 1.25));
+  g0s.add(new THREE.Mesh(new THREE.SphereGeometry(0.045, 20, 14), new THREE.MeshBasicMaterial({ color: COL.acc })));
+
+  function build0(th) {
+    clear(g0d);
+    g0d.add(capMesh(R1, th, COL.cy, 0.5));
+    g0d.add(capMesh(R2, th, COL.cy, 0.24));
+    g0d.add(capEdge(R1, th, COL.acc));
+    g0d.add(capEdge(R2, th, COL.acc));
+    g0d.add(rays(R2, th, 24, COL.acc, 0.42));
+  }
+
+  // ================================================================
+  // 02 — potencia e intensidad
+  // ================================================================
+  var RB = 2.6;
+  var g1 = new THREE.Group(), g1s = new THREE.Group(), g1d = new THREE.Group();
+  g1.add(g1s, g1d); g1.visible = false; scene.add(g1);
+  g1s.add(axes(RB * 1.1));
+  var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.1, 24, 16), new THREE.MeshBasicMaterial({ color: COL.fot }));
+  g1s.add(bulb);
+
+  function build1(th, bright, hex) {
+    clear(g1d);
+    var t = th * Math.PI / 180;
+    var rad = RB * Math.sin(t), h = RB * Math.cos(t);
+    var cone = new THREE.Mesh(new THREE.ConeGeometry(rad, h, 64, 1, true), flatMat(hex, 0.1 + 0.42 * bright));
+    cone.position.y = h / 2; cone.rotation.x = Math.PI;
+    g1d.add(cone);
+    g1d.add(capMesh(RB, th, hex, 0.14 + 0.5 * bright));
+    g1d.add(capEdge(RB, th, hex));
+    g1d.add(rays(RB, th, 20, hex, 0.3 + 0.4 * bright));
+  }
+
+  // ================================================================
+  // 03 — irradiancia
+  // ================================================================
+  var BEAM = 22;
+  var g2 = new THREE.Group(), g2s = new THREE.Group(), g2d = new THREE.Group();
+  g2.add(g2s, g2d); g2.visible = false; scene.add(g2);
+  g2s.add(new THREE.Mesh(new THREE.SphereGeometry(0.1, 24, 16), new THREE.MeshBasicMaterial({ color: COL.fot })));
+  g2s.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(6.6, 0, 0)]),
+    lineMat(COL.dim, 0.3)
+  ));
+
+  function build2(d, tilt, bright, hex) {
+    clear(g2d);
+    var t = BEAM * Math.PI / 180;
+    var rad = d * Math.tan(t);
+
+    var cone = new THREE.Mesh(new THREE.ConeGeometry(rad, d, 56, 1, true), flatMat(hex, 0.08 + 0.4 * bright));
+    cone.position.x = d / 2; cone.rotation.z = -Math.PI / 2;
+    g2d.add(cone);
+
+    var side = Math.max(1.8, rad * 2.6);
+    var plane = new THREE.PlaneGeometry(side, side);
+    var screen = new THREE.Mesh(plane, new THREE.MeshStandardMaterial({
+      color: 0x16222f, transparent: true, opacity: 0.92,
+      side: THREE.DoubleSide, roughness: 0.9, metalness: 0
+    }));
+    screen.position.x = d;
+    screen.rotation.y = Math.PI / 2 + tilt * Math.PI / 180;
+    g2d.add(screen);
+
+    var frame = new THREE.LineSegments(new THREE.EdgesGeometry(plane.clone()), lineMat(COL.cy, 0.85));
+    frame.position.copy(screen.position); frame.rotation.copy(screen.rotation);
+    g2d.add(frame);
+
+    var ct = Math.cos(tilt * Math.PI / 180);
+    var spot = new THREE.Mesh(new THREE.CircleGeometry(rad, 56), flatMat(hex, 0.2 + 0.62 * bright));
+    spot.position.copy(screen.position); spot.rotation.copy(screen.rotation);
+    spot.scale.set(1 / Math.max(ct, 0.18), 1, 1);
+    spot.translateZ(0.012);
+    g2d.add(spot);
+  }
+
+  // ================================================================
+  // 04 — radiancia
+  // ================================================================
+  var SRC_R = 0.85;           // radio del disco emisor
+  var DET_D = 3.1;            // distancia del detector
+  var g3 = new THREE.Group(), g3s = new THREE.Group(), g3d = new THREE.Group();
+  g3.add(g3s, g3d); g3.visible = false; scene.add(g3);
+
+  // disco emisor en el plano XZ, normal +Y
+  var disc = new THREE.Mesh(new THREE.CircleGeometry(SRC_R, 64), flatMat(COL.rad, 0.78));
+  disc.rotation.x = -Math.PI / 2;
+  g3s.add(disc);
+  g3s.add(ring(SRC_R, COL.rad, 0.95));
+  // normal de la fuente
+  g3s.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, DET_D * 1.12, 0)]),
+    lineMat(COL.dim, 0.4)
+  ));
+  // arco guia por donde se mueve el detector
+  (function () {
+    var pts = [];
+    for (var i = 0; i <= 90; i++) {
+      var a = (i / 90) * (88 * Math.PI / 180);
+      pts.push(new THREE.Vector3(DET_D * Math.sin(a), DET_D * Math.cos(a), 0));
+    }
+    g3s.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(COL.dim, 0.28)));
+  })();
+
+  function build3(thDeg, hex) {
+    clear(g3d);
+    var t = thDeg * Math.PI / 180;
+    var dir = new THREE.Vector3(Math.sin(t), Math.cos(t), 0);
+    var pos = dir.clone().multiplyScalar(DET_D);
+
+    // detector
+    var det = new THREE.Mesh(new THREE.SphereGeometry(0.11, 20, 14), new THREE.MeshBasicMaterial({ color: COL.fot }));
+    det.position.copy(pos);
+    g3d.add(det);
+
+    // haz del disco al detector
+    for (var i = 0; i < 12; i++) {
+      var a = (i / 12) * Math.PI * 2;
+      var p0 = new THREE.Vector3(Math.cos(a) * SRC_R * 0.82, 0, Math.sin(a) * SRC_R * 0.82);
+      g3d.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([p0, pos]), lineMat(hex, 0.2)));
+    }
+
+    // silueta: el disco visto desde el detector, achatado por cos(theta)
+    var sil = new THREE.Mesh(new THREE.CircleGeometry(SRC_R, 64), flatMat(COL.cy, 0.42));
+    var mid = dir.clone().multiplyScalar(DET_D * 0.56);
+    sil.position.copy(mid);
+    sil.lookAt(pos);                       // plano perpendicular a la linea de vision
+    sil.scale.set(1, Math.cos(t), 1);      // area proyectada
+    g3d.add(sil);
+
+    var edge = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.CircleGeometry(SRC_R, 64)), lineMat(COL.cy, 0.9)
+    );
+    edge.position.copy(sil.position); edge.rotation.copy(sil.rotation); edge.scale.copy(sil.scale);
+    g3d.add(edge);
+
+    // lobulo de intensidad lambertiano  I(th) = I0 cos th
+    var lob = [];
+    for (var k = -90; k <= 90; k += 2) {
+      var ak = k * Math.PI / 180;
+      var rr = Math.max(0, Math.cos(ak)) * 1.55;
+      lob.push(new THREE.Vector3(Math.sin(ak) * rr, Math.cos(ak) * rr, 0));
+    }
+    g3d.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(lob), lineMat(COL.rad, 0.5)));
+    // radio hasta el lobulo en el angulo actual
+    var rl = Math.cos(t) * 1.55;
+    g3d.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), dir.clone().multiplyScalar(rl)]),
+      lineMat(COL.rad, 0.95)
+    ));
+  }
+
+  // ================================================================
+  // 06 — étendue
+  // ================================================================
+  var g5 = new THREE.Group(), g5s = new THREE.Group(), g5d = new THREE.Group();
+  g5.add(g5s, g5d); g5.visible = false; scene.add(g5);
+  g5s.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-3.6, 0, 0), new THREE.Vector3(3.6, 0, 0)]),
+    lineMat(COL.dim, 0.3)
+  ));
+
+  function aperture(x, r, color) {
+    var g = new THREE.Group();
+    var m = new THREE.Mesh(new THREE.CircleGeometry(r, 56), flatMat(color, 0.2));
+    m.rotation.y = Math.PI / 2; m.position.x = x;
+    g.add(m);
+    var pts = [];
+    for (var i = 0; i <= 64; i++) {
+      var a = (i / 64) * Math.PI * 2;
+      pts.push(new THREE.Vector3(x, Math.cos(a) * r, Math.sin(a) * r));
+    }
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(color, 0.95)));
+    return g;
+  }
+
+  function build5(r1, t1Deg, r2, t2Deg, ok) {
+    clear(g5d);
+    var X1 = -2.1, X2 = 2.1;
+    g5d.add(aperture(X1, r1, COL.rad));
+    g5d.add(aperture(X2, r2, COL.cy));
+
+    // conos de aceptacion en cada apertura
+    function cone(x, r, thDeg, sign, color) {
+      var t = thDeg * Math.PI / 180;
+      var len = 1.35;
+      var g = new THREE.Group();
+      for (var i = 0; i < 16; i++) {
+        var a = (i / 16) * Math.PI * 2;
+        var p0 = new THREE.Vector3(x, Math.cos(a) * r, Math.sin(a) * r);
+        var p1 = new THREE.Vector3(
+          x + sign * len * Math.cos(t),
+          Math.cos(a) * r + sign * 0 + Math.cos(a) * len * Math.sin(t),
+          Math.sin(a) * r + Math.sin(a) * len * Math.sin(t)
+        );
+        g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([p0, p1]), lineMat(color, 0.55)));
+      }
+      return g;
+    }
+    g5d.add(cone(X1, r1, t1Deg, -1, COL.rad));
+    if (ok) g5d.add(cone(X2, r2, t2Deg, 1, COL.cy));
+
+    // haz entre las dos aperturas
+    var tube = new THREE.Mesh(
+      new THREE.CylinderGeometry(r2, r1, X2 - X1, 48, 1, true),
+      flatMat(ok ? COL.acc : 0x8a3a3a, ok ? 0.17 : 0.1)
+    );
+    tube.rotation.z = -Math.PI / 2;
+    tube.position.x = (X1 + X2) / 2;
+    g5d.add(tube);
+  }
+
+  // ================================================================
+  // canvas 2D — el puente V(lambda)
+  // ================================================================
+  function drawSpec() {
+    var ctx = spec.getContext("2d");
+    var W = spec.width, H = spec.height;
+    var dpr = W / viewport.clientWidth;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#070a10";
+    ctx.fillRect(0, 0, W, H);
+    ctx.scale(dpr, dpr);
+
+    var w = W / dpr, h = H / dpr;
+    var mL = 50, mR = 16, mT = 30, mB = 50;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var L0 = 380, L1 = 760;
+
+    var X = function (l) { return mL + (l - L0) / (L1 - L0) * pw; };
+    var Y = function (v) { return mT + (1 - v) * ph; };
+
+    // franja espectral de fondo
+    for (var l = L0; l < L1; l += 2) {
+      var c = lamRGB(l);
+      ctx.fillStyle = "rgba(" + Math.round(c.r * 255) + "," + Math.round(c.g * 255) + "," + Math.round(c.b * 255) + ",0.13)";
+      ctx.fillRect(X(l), mT, X(l + 2) - X(l) + 1, ph);
+    }
+
+    // rejilla
+    ctx.strokeStyle = "rgba(34,48,68,0.85)";
+    ctx.lineWidth = 1;
+    ctx.font = "11px 'IBM Plex Mono', ui-monospace, monospace";
+    ctx.fillStyle = "#8695aa";
+    for (var v = 0; v <= 1.0001; v += 0.25) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(v)); ctx.lineTo(mL + pw, Y(v)); ctx.stroke();
+      ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      ctx.fillText(v.toFixed(2), mL - 7, Y(v));
+    }
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (var lx = 400; lx <= 760; lx += 60) {
+      ctx.beginPath(); ctx.moveTo(X(lx), mT); ctx.lineTo(X(lx), mT + ph);
+      ctx.strokeStyle = "rgba(34,48,68,0.45)"; ctx.stroke();
+      ctx.fillText(String(lx), X(lx), mT + ph + 7);
+    }
+    ctx.fillText("longitud de onda  λ  [nm]", mL + pw / 2, mT + ph + 21);
+
+    // curva V(lambda)
+    ctx.beginPath();
+    for (var k = L0; k <= L1; k += 1) {
+      var yv = Y(Vlam(k));
+      if (k === L0) ctx.moveTo(X(k), yv); else ctx.lineTo(X(k), yv);
+    }
+    ctx.lineTo(X(L1), Y(0)); ctx.lineTo(X(L0), Y(0)); ctx.closePath();
+    ctx.fillStyle = "rgba(168,136,216,0.10)";
+    ctx.fill();
+
+    ctx.beginPath();
+    for (var k2 = L0; k2 <= L1; k2 += 1) {
+      var yv2 = Y(Vlam(k2));
+      if (k2 === L0) ctx.moveTo(X(k2), yv2); else ctx.lineTo(X(k2), yv2);
+    }
+    ctx.strokeStyle = "#a888d8"; ctx.lineWidth = 2.2; ctx.stroke();
+
+    // marcador
+    var lam = parseFloat(document.getElementById("s4-lam").value);
+    var vv = Vlam(lam);
+    var cc = lamRGB(lam);
+    var hexc = "rgb(" + Math.round(cc.r * 255) + "," + Math.round(cc.g * 255) + "," + Math.round(cc.b * 255) + ")";
+
+    ctx.strokeStyle = hexc; ctx.lineWidth = 1.6;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(X(lam), Y(0)); ctx.lineTo(X(lam), Y(vv)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mL, Y(vv)); ctx.lineTo(X(lam), Y(vv)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.beginPath(); ctx.arc(X(lam), Y(vv), 6.5, 0, Math.PI * 2);
+    ctx.fillStyle = hexc; ctx.fill();
+    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 2; ctx.stroke();
+
+    // etiqueta
+    var lab = lam + " nm   ·   V = " + vv.toFixed(3) + "   ·   " + (683 * vv).toFixed(1) + " lm/W";
+    ctx.font = "600 12.5px 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif";
+    var tw = ctx.measureText(lab).width;
+    var lxp = Math.min(Math.max(X(lam) - tw / 2 - 8, mL), mL + pw - tw - 16);
+    var lyp = Math.max(Y(vv) - 34, mT + 4);
+    ctx.fillStyle = "rgba(17,23,34,0.93)";
+    ctx.strokeStyle = hexc; ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(lxp, lyp, tw + 16, 23, 5); }
+    else { ctx.rect(lxp, lyp, tw + 16, 23); }
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#dde5f0"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText(lab, lxp + 8, lyp + 12);
+
+    ctx.font = "11px 'IBM Plex Mono', ui-monospace, monospace";
+    ctx.fillStyle = "#8695aa";
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("V(λ)   eficiencia luminosa relativa", mL - 8, mT - 11);
+  }
+
+  // ================================================================
+  // lecturas
+  // ================================================================
+  var omega = function (deg) { return 2 * Math.PI * (1 - Math.cos(deg * Math.PI / 180)); };
+  var $ = function (id) { return document.getElementById(id); };
+
+  function fmt(x, d) {
+    return x.toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function sig(x) {
+    if (x >= 100000) return x.toExponential(2).replace("e+", " × 10^");
+    if (x >= 10000) return fmt(Math.round(x), 0);
+    if (x >= 1000) return fmt(x, 0);
+    if (x >= 100) return fmt(x, 1);
+    if (x >= 10) return fmt(x, 2);
+    if (x >= 1) return fmt(x, 3);
+    if (x >= 0.001) return fmt(x, 4);
+    return x.toExponential(2);
+  }
+
+  // ---- 01 ----
+  function update0() {
+    var th = parseFloat($("s0-theta").value);
+    var om = omega(th);
+    var a1 = om * R1 * R1, a2 = om * R2 * R2;
+    $("s0-theta-v").textContent = fmt(th, 1) + "°";
+    $("s0-omega").textContent = fmt(om, 3) + " sr";
+    $("s0-frac").textContent = fmt(100 * om / (4 * Math.PI), 1) + " %";
+    $("s0-a1").textContent = fmt(a1, 4);
+    $("s0-a2").textContent = fmt(a2, 4);
+    $("s0-q1").textContent = fmt(a1 / (R1 * R1), 4);
+    $("s0-q2").textContent = fmt(a2 / (R2 * R2), 4);
+    build0(th);
+  }
+
+  // ---- 02 ----
+  function update1() {
+    var th = parseFloat($("s1-theta").value);
+    var Pe = parseFloat($("s1-pow").value);
+    var lam = parseFloat($("s1-lam").value);
+    var om = omega(th);
+    var K = Klam(lam);
+    var Ie = Pe / om;
+    var hemi = Pe / (2 * Math.PI);
+
+    $("s1-theta-v").textContent = fmt(th, 1) + "°";
+    $("s1-pow-v").textContent = fmt(Pe, 3) + " W";
+    $("s1-lam-v").textContent = lam + " nm";
+    $("s1-vl").textContent = fmt(Vlam(lam), 3);
+    $("s1-kl").textContent = fmt(K, 1);
+
+    $("s1-Ie").textContent = sig(Ie) + " W/sr";
+    $("s1-Pe").textContent = fmt(Pe, 3) + " W";
+    $("s1-Iv").textContent = sig(K * Ie) + " cd";
+    $("s1-Pv").textContent = sig(K * Pe) + " lm";
+    $("s1-omega").textContent = fmt(om, 3) + " sr";
+    $("s1-gain").textContent = "×" + fmt(Ie / hemi, 1);
+
+    var b = Math.min(1, Math.max(0, Math.log10(Ie / 0.05) / 2.6));
+    build1(th, b, lamHex(lam));
+  }
+
+  // ---- 03 ----
+  function update2() {
+    var d = parseFloat($("s2-dist").value);
+    var tilt = parseFloat($("s2-tilt").value);
+    var Ie = parseFloat($("s2-I").value);
+    var lam = parseFloat($("s2-lam").value);
+    var K = Klam(lam);
+    var ct = Math.cos(tilt * Math.PI / 180);
+    var Ee = Ie * ct / (d * d);
+    var Ev = K * Ee;
+    var rad = d * Math.tan(BEAM * Math.PI / 180);
+    var area = Math.PI * rad * rad / Math.max(ct, 0.0001);
+
+    $("s2-dist-v").textContent = fmt(d, 2) + " m";
+    $("s2-tilt-v").textContent = fmt(tilt, 0) + "°";
+    $("s2-I-v").textContent = fmt(Ie, 2) + " W/sr";
+    $("s2-lam-v").textContent = lam + " nm";
+    $("s2-kl").textContent = fmt(K, 1);
+
+    $("s2-Ee").textContent = sig(Ee) + " W/m²";
+    $("s2-Ev").textContent = sig(Ev) + " lx";
+    $("s2-fall").textContent = "×" + fmt(1 / (d * d), 3);
+    $("s2-cos").textContent = fmt(ct, 3);
+    $("s2-area").textContent = fmt(area, 2) + " m²";
+
+    var ref;
+    if (Ev < 1) ref = "bajo la luna llena";
+    else if (Ev < 20) ref = "crepúsculo";
+    else if (Ev < 120) ref = "alumbrado público";
+    else if (Ev < 600) ref = "oficina bien iluminada";
+    else ref = "quirófano o exterior nublado";
+    $("s2-ref").textContent = ref;
+
+    var b = Math.min(1, Math.max(0, Math.log10(Ee / 0.01) / 2.4));
+    build2(d, tilt, b, lamHex(lam));
+  }
+
+  // ---- 04 ----
+  var A_SRC = 1e-4;   // m2 = 1 cm2
+  function update3() {
+    var th = parseFloat($("s3-theta").value);
+    var Le = parseFloat($("s3-L").value);
+    var lam = parseFloat($("s3-lam").value);
+    var K = Klam(lam);
+    var ct = Math.cos(th * Math.PI / 180);
+    var I0 = Le * A_SRC;
+    var I = I0 * ct;
+    var Ap = A_SRC * ct;
+
+    $("s3-theta-v").textContent = fmt(th, 0) + "°";
+    $("s3-L-v").textContent = fmt(Le, 0) + " W/(m²·sr)";
+    $("s3-lam-v").textContent = lam + " nm";
+    $("s3-kl").textContent = fmt(K, 1);
+
+    $("s3-I").textContent = fmt(I, 4) + " W/sr";
+    $("s3-ap").textContent = fmt(Ap * 1e4, 3) + " cm²";
+    $("s3-L").textContent = fmt(ct < 1e-9 ? Le : I / Ap, 0) + " W/(m²·sr)";
+    $("s3-Lv").textContent = sig(K * Le / 1e6) + " Mcd/m²";
+    $("s3-flux").textContent = fmt(Le * A_SRC * Math.PI, 4) + " W";
+
+    build3(th, lamHex(lam));
+  }
+
+  // ---- 05 ----
+  function update4() {
+    var lam = parseFloat($("s4-lam").value);
+    var Pe = parseFloat($("s4-pow").value);
+    var V = Vlam(lam), K = KM * V;
+
+    $("s4-lam-v").textContent = lam + " nm";
+    $("s4-pow-v").textContent = fmt(Pe, 3) + " W";
+    $("s4-Pe").textContent = fmt(Pe, 3) + " W";
+    $("s4-vl").textContent = fmt(V, 4);
+    $("s4-kl").textContent = fmt(K, 1) + " lm/W";
+    $("s4-Pv").textContent = sig(K * Pe) + " lm";
+    $("s4-rel").textContent = fmt(100 * V, 2) + " %";
+    $("s4-col").textContent = lamName(lam);
+
+    drawSpec();
+  }
+
+  // ---- 06 ----
+  function update5() {
+    var A1 = parseFloat($("s5-a1").value);
+    var t1 = parseFloat($("s5-t1").value);
+    var A2 = parseFloat($("s5-a2").value);
+    var s1 = Math.sin(t1 * Math.PI / 180);
+    var G = A1 * Math.PI * s1 * s1;
+    var s2sq = G / (A2 * Math.PI);
+    var ok = s2sq <= 1;
+    var s2 = Math.sqrt(Math.min(s2sq, 1));
+    var t2 = Math.asin(s2) * 180 / Math.PI;
+    var Amin = G / Math.PI;
+
+    $("s5-a1-v").textContent = fmt(A1, 2) + " mm²";
+    $("s5-t1-v").textContent = fmt(t1, 0) + "°";
+    $("s5-a2-v").textContent = fmt(A2, 2) + " mm²";
+    $("s5-G").textContent = fmt(G, 4) + " mm²·sr";
+    $("s5-t2").textContent = ok ? fmt(t2, 1) + "°" : "imposible";
+    $("s5-an").textContent = ok ? fmt(s2, 3) : "> 1";
+    $("s5-amin").textContent = fmt(Amin, 2) + " mm²";
+
+    $("s5-t2").className = "v " + (ok ? "cy" : "rad");
+    $("s5-an").className = "v " + (ok ? "cy" : "rad");
+
+    var note = $("s5-note");
+    if (ok) {
+      note.className = "note";
+      note.innerHTML = "<b>La regla:</b> ningún sistema óptico pasivo puede reducir el étendue. Si aprietas el área, el haz tiene que abrirse en ángulo para compensar, y hay un área por debajo de la cual ninguna óptica funciona porque haría falta un ángulo mayor que 90°.";
+    } else {
+      note.className = "note warn";
+      note.innerHTML = "<b>Imposible:</b> con esa apertura de salida haría falta un semiángulo mayor que 90°, que no existe. Ninguna combinación de lentes resuelve este acoplamiento: no es falta de ingenio, es conservación. El área mínima que admite este haz es " + fmt(Amin, 2) + " mm².";
+    }
+
+    // radios proporcionales a la raiz del area, para que el dibujo sea honesto
+    var r1 = 0.30 * Math.sqrt(A1), r2 = 0.30 * Math.sqrt(A2);
+    build5(r1, t1, r2, ok ? t2 : 90, ok);
+  }
+
+  // ================================================================
+  // pestañas
+  // ================================================================
+  var views = [
+    { g: g0, p: "p0", t: "tab0", u: update0, o: { az: 0.62, el: 0.42, d: 6.2, tx: 0, ty: 0 } },
+    { g: g1, p: "p1", t: "tab1", u: update1, o: { az: 0.75, el: 0.30, d: 8.2, tx: 0, ty: 0.9 } },
+    { g: g2, p: "p2", t: "tab2", u: update2, o: { az: 0.34, el: 0.26, d: 8.0, tx: 2.2, ty: 0 } },
+    { g: g3, p: "p3", t: "tab3", u: update3, o: { az: 0.10, el: 0.22, d: 8.6, tx: 0.7, ty: 1.2 } },
+    { g: null, p: "p4", t: "tab4", u: update4, o: null },
+    { g: g5, p: "p5", t: "tab5", u: update5, o: { az: 0.22, el: 0.26, d: 8.2, tx: 0, ty: 0 } }
+  ];
+
+  function show(i) {
+    views.forEach(function (v, k) {
+      if (v.g) v.g.visible = (k === i);
+      $(v.p).hidden = (k !== i);
+      $(v.t).setAttribute("aria-selected", k === i ? "true" : "false");
+    });
+
+    var isSpec = (i === 4);
+    canvas.hidden = isSpec;
+    spec.hidden = !isSpec;
+    hint.textContent = isSpec ? "mueve λ para recorrer el espectro" : "arrastra para girar · rueda para acercar";
+
+    if (!isSpec && views[i].o) {
+      var o = views[i].o;
+      orbit.az = o.az; orbit.el = o.el; orbit.dist = o.d;
+      orbit.target.set(o.tx, o.ty, 0);
+      place();
+    }
+    resize();
+    views[i].u();
+  }
+
+  views.forEach(function (v, i) {
+    $(v.t).addEventListener("click", function () { show(i); });
+  });
+
+  ["s0-theta"].forEach(function (id) { $(id).addEventListener("input", update0); });
+  ["s1-theta", "s1-pow", "s1-lam"].forEach(function (id) { $(id).addEventListener("input", update1); });
+  ["s2-dist", "s2-tilt", "s2-I", "s2-lam"].forEach(function (id) { $(id).addEventListener("input", update2); });
+  ["s3-theta", "s3-L", "s3-lam"].forEach(function (id) { $(id).addEventListener("input", update3); });
+  ["s4-lam", "s4-pow"].forEach(function (id) { $(id).addEventListener("input", update4); });
+  ["s5-a1", "s5-t1", "s5-a2"].forEach(function (id) { $(id).addEventListener("input", update5); });
+
+  // ================================================================
+  // arranque
+  // ================================================================
+  resize();
+  update0(); update1(); update2(); update3(); update4(); update5();
+  show(0);
+
+  (function loop() {
+    requestAnimationFrame(loop);
+    resize();
+    if (!canvas.hidden) renderer.render(scene, camera);
+  })();
+})();
+</script>
+
+</body></html>
