@@ -1,0 +1,218 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Propedéutico de Física</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<script>
+/* el tema se fija antes del primer pintado para que no parpadee */
+(function () {
+  var r = document.documentElement, t = null;
+  try { t = localStorage.getItem("banco-tema"); } catch (e) {}
+  if (t !== "claro" && t !== "oscuro") t = r.getAttribute("data-theme") === "light" ? "claro" : "oscuro";
+  r.setAttribute("data-tema", t);
+})();
+</script>
+
+<style>
+/* Layout: índice por áreas de la física, rejilla de temas que baja a una columna en el teléfono.
+   Mismo sistema visual que los bancos de los otros cursos. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0e15; --panel: #111722; --panel-2: #161e2b; --line: #223044; --line-rgb: 34,48,68;
+  --fg: #dde5f0; --dim: #8695aa;
+  --acc: #f2c454; --acc-rgb: 242,196,84; --cy: #5fa8d8; --vi: #a888d8; --ok: #52b87c; --or: #e0743c;
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+:root[data-tema="claro"] {
+  color-scheme: light;
+  --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eef1f6; --line: #d9dfe7; --line-rgb: 217,223,231;
+  --fg: #253243; --dim: #61728b;
+  --acc: #936904; --acc-rgb: 147,105,4; --cy: #1a76b1; --vi: #8853d7; --ok: #27804c; --or: #c14a0d;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0; }
+
+.wrap {
+  position: relative; max-width: 1060px; margin: 0 auto; padding-block: 28px 44px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header { padding-right: 46px; }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); margin: 0 0 7px; }
+h1 { font-size: clamp(27px, 6vw, 42px); font-weight: 600; letter-spacing: -.022em; margin: 0 0 12px; text-wrap: balance; }
+.lede { color: var(--dim); margin: 0; max-width: 62ch; font-size: 15px; }
+.lede b { color: var(--fg); font-weight: 500; }
+
+.meter { display: flex; align-items: baseline; gap: 10px; margin: 22px 0 0; font-family: var(--mono); font-size: 12px; color: var(--dim); }
+.meter .bar { flex: 1; height: 5px; border-radius: 3px; min-width: 0; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
+.meter .bar i { display: block; height: 100%; background: var(--acc); }
+
+section { margin-top: 38px; }
+.head { display: flex; align-items: baseline; gap: 12px; padding-bottom: 9px; margin-bottom: 15px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.head h2 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+.head .rule { width: 26px; height: 3px; border-radius: 2px; flex: none; align-self: center; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 11px; }
+.card {
+  display: block; text-decoration: none; color: inherit; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 9px; padding: 14px 15px 15px; min-width: 0; transition: border-color .15s, background .15s, transform .15s;
+}
+a.card:hover { border-color: var(--acc); background: var(--panel-2); transform: translateY(-1px); }
+a.card:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.card .top { display: flex; align-items: baseline; justify-content: space-between; gap: 9px; margin-bottom: 5px; }
+.card h3 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -.005em; min-width: 0; }
+.card p { font-size: 12.5px; color: var(--dim); margin: 0; line-height: 1.45; }
+.pill { font-family: var(--mono); font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; flex: none; white-space: nowrap; }
+.pill.listo { background: rgba(var(--acc-rgb), .14); color: var(--acc); border: 1px solid rgba(var(--acc-rgb), .3); }
+.pill.pend { background: var(--panel-2); color: var(--dim); border: 1px solid var(--line); }
+.card.todo { opacity: .55; }
+.card.todo h3 { font-weight: 500; }
+.what { font-family: var(--mono); font-size: 11px; color: var(--dim); margin: 8px 0 0 !important; padding-top: 7px; border-top: 1px solid rgba(var(--line-rgb), .6); }
+.what b { color: var(--cy); font-weight: 500; }
+
+footer { margin-top: 46px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--dim); max-width: 72ch; }
+footer p { margin: 0 0 8px; }
+
+.tema {
+  position: absolute; top: 20px; right: max(16px, env(safe-area-inset-right, 0px)); z-index: 5; width: 34px; height: 34px; padding: 0;
+  display: grid; place-items: center; background: var(--panel); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: color .14s, border-color .14s, background .14s;
+}
+.tema:hover { color: var(--acc); border-color: var(--acc); background: var(--panel-2); }
+.tema:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.tema svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: none; }
+.tema .sol { display: block; }
+:root[data-tema="claro"] .tema .sol { display: none; }
+:root[data-tema="claro"] .tema .luna { display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  a.card:hover { transform: none; }
+}
+</style>
+
+<div class="wrap">
+  <button class="tema" id="tema" type="button" aria-label="Cambiar a modo claro">
+    <svg class="sol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.3"/><path d="M12 2.6v2.4M12 19v2.4M4.3 4.3l1.7 1.7M18 18l1.7 1.7M2.6 12H5M19 12h2.4M4.3 19.7 6 18M18 6l1.7-1.7"/></svg>
+    <svg class="luna" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.8A8.6 8.6 0 0 1 9.2 3.5a7.7 7.7 0 1 0 11.3 11.3Z"/></svg>
+  </button>
+  <header>
+    <p class="eyebrow">Curso propedéutico</p>
+    <h1>Propedéutico de Física</h1>
+    <p class="lede">Un repaso por tema. En cada tema se mueve un control y <b>el resultado aparece al instante</b>, con los números al lado.</p>
+    <!--<div class="meter">
+      <span>3 de 10 temas</span>
+      <span class="bar"><i style="width:30%"></i></span>
+      <span>30 %</span>
+    </div>-->
+  </header>
+
+  <section>
+    <div class="head"><span class="rule" style="background:var(--cy)"></span><h2>El idioma de la física</h2></div>
+    <div class="grid">
+      <a class="card" href="herramientas.html">
+        <div class="top"><h3>Herramientas básicas</h3><span class="pill listo">listo</span></div>
+        <p>Conversiones con factores unitarios, prefijos y notación científica, la trampa de m² y m³, análisis dimensional, vectores, producto punto y producto cruz, y el torque de una llave.</p>
+        <p class="what">Aprendes: <b>a leer una hoja de datos y a descomponer una fuerza</b></p>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><span class="rule" style="background:var(--acc)"></span><h2>Mecánica</h2></div>
+    <div class="grid">
+      <a class="card" href="estatica.html">
+        <div class="top"><h3>Estática</h3><span class="pill listo">listo</span></div>
+        <p>Diagrama de cuerpo libre, semáforo con dos cables y su triángulo de fuerzas, plano inclinado con fricción, balancín, centro de masa de un vehículo, viga con apoyos y pluma con tirante.</p>
+        <p class="what">Aprendes: <b>qué carga soporta un soporte, un cable o una viga</b></p>
+      </a>
+      <a class="card" href="cinematica.html">
+        <div class="top"><h3>Cinemática</h3><span class="pill pend">pendiente</span></div>
+        <p>Gráficas x–t, v–t y a–t sincronizadas, distancia de frenado según el piso, caída libre, lectura de áreas y pendientes, tiro parabólico y movimiento circular.</p>
+        <p class="what">Aprendes: <b>la distancia de frenado de un vehículo</b></p>
+      </a>
+      <div class="card todo">
+        <div class="top"><h3>Dinámica</h3><span class="pill pend">pendiente</span></div>
+        <p>Leyes de Newton, fricción, plano inclinado, sistemas de poleas y dinámica del movimiento circular.</p>
+        <p class="what">Aprendes: <b>cuánta tracción pide una pendiente</b></p>
+      </div>
+      <div class="card todo">
+        <div class="top"><h3>Energía y colisiones</h3><span class="pill pend">pendiente</span></div>
+        <p>Trabajo, potencia, energía cinética y potencial, conservación, impulso y choques.</p>
+        <p class="what">Aprendes: <b>por qué una bolsa de aire reduce la fuerza del impacto</b></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><span class="rule" style="background:var(--or)"></span><h2>Calor y fluidos</h2></div>
+    <div class="grid">
+      <div class="card todo">
+        <div class="top"><h3>Termodinámica</h3><span class="pill pend">pendiente</span></div>
+        <p>Temperatura y calor, dilatación, cambios de fase, gas ideal, leyes de la termodinámica y ciclo de Carnot.</p>
+        <p class="what">Aprendes: <b>el límite de eficiencia de un motor térmico</b></p>
+      </div>
+      <div class="card todo">
+        <div class="top"><h3>Hidráulica</h3><span class="pill pend">pendiente</span></div>
+        <p>Presión, principios de Pascal y Arquímedes, continuidad y ecuación de Bernoulli.</p>
+        <p class="what">Aprendes: <b>cómo un pedal multiplica la fuerza de frenado</b></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><span class="rule" style="background:var(--vi)"></span><h2>Electromagnetismo</h2></div>
+    <div class="grid">
+      <div class="card todo">
+        <div class="top"><h3>Electricidad</h3><span class="pill pend">pendiente</span></div>
+        <p>Ley de Coulomb, campo y potencial, ley de Ohm, potencia y leyes de Kirchhoff.</p>
+        <p class="what">Aprendes: <b>a resolver la red de un tablero de control</b></p>
+      </div>
+      <div class="card todo">
+        <div class="top"><h3>Magnetismo</h3><span class="pill pend">pendiente</span></div>
+        <p>Campo magnético, fuerza de Lorentz, ley de Ampère, inducción de Faraday-Lenz y transformadores.</p>
+        <p class="what">Aprendes: <b>cómo gira un motor y cómo genera un alternador</b></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><span class="rule" style="background:var(--ok)"></span><h2>Para cerrar</h2></div>
+    <div class="grid">
+      <div class="card todo">
+        <div class="top"><h3>Repaso integrador</h3><span class="pill pend">pendiente</span></div>
+        <p>Problemas que mezclan varios temas, al estilo del examen de ingreso, con sus errores frecuentes.</p>
+        <p class="what">Aprendes: <b>a elegir qué ley usar en cada problema</b></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Los temas calculan en el navegador, sin instalar nada.</p>
+    <p>Curso propedéutico de física</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var bt = document.getElementById("tema");
+  function rotulo() {
+    var claro = document.documentElement.getAttribute("data-tema") === "claro";
+    bt.setAttribute("aria-label", claro ? "Cambiar a modo oscuro" : "Cambiar a modo claro");
+  }
+  rotulo();
+  bt.addEventListener("click", function () {
+    var claro = document.documentElement.getAttribute("data-tema") === "claro";
+    var nuevo = claro ? "oscuro" : "claro";
+    document.documentElement.setAttribute("data-tema", nuevo);
+    try { localStorage.setItem("banco-tema", nuevo); } catch (e) {}
+    rotulo();
+  });
+})();
+</script>
+
+</body></html>

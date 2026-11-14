@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Herramientas básicas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+
+<script>
+/* el tema se fija antes del primer pintado para que no parpadee */
+(function () {
+  var r = document.documentElement, t = null;
+  try { t = localStorage.getItem("banco-tema"); } catch (e) {}
+  if (t !== "claro" && t !== "oscuro") t = r.getAttribute("data-theme") === "light" ? "claro" : "oscuro";
+  r.setAttribute("data-tema", t);
+})();
+</script>
+
+<style>
+/* Layout: visor a la izquierda, panel de instrumento a la derecha; una pestaña por herramienta,
+   apila bajo 880px. Mismo sistema visual que los bancos de los otros cursos. */
+:root {
+  color-scheme: dark;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #0a0e15; --panel: #111722; --panel-2: #161e2b; --line: #223044; --line-rgb: 34,48,68;
+  --fg: #dde5f0; --dim: #8695aa;
+  --acc: #f2c454; --acc-rgb: 242,196,84;
+  --cy: #5fa8d8; --cy-rgb: 95,168,216;
+  --vi: #a888d8; --vi-rgb: 168,136,216;
+  --ok: #52b87c; --ok-rgb: 82,184,124;
+  --no: #d4624a; --no-rgb: 212,98,74;
+  --or: #e0743c; --or-rgb: 224,116,60;
+  --vp: #050709;
+  --hot: #6d3a2a; --good: #2a5c3f;
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --math: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+:root[data-tema="claro"] {
+  color-scheme: light;
+  --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eef1f6; --line: #d9dfe7; --line-rgb: 217,223,231;
+  --fg: #253243; --dim: #61728b;
+  --acc: #936904; --acc-rgb: 147,105,4;
+  --cy: #1a76b1; --cy-rgb: 26,118,177;
+  --vi: #8853d7; --vi-rgb: 136,83,215;
+  --ok: #27804c; --ok-rgb: 39,128,76;
+  --no: #ce3c1d; --no-rgb: 206,60,29;
+  --or: #c14a0d; --or-rgb: 193,74,13;
+  --vp: #f7f9fc;
+  --hot: #e8bfb2; --good: #b8dcc6;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0; }
+
+.wrap {
+  position: relative; max-width: 1200px; margin: 0 auto; padding-block: 20px 36px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header { padding-right: 46px; }
+.back { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px; }
+.back:hover { color: var(--acc); }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); margin: 0 0 6px; }
+h1 { font-size: clamp(22px, 4.4vw, 31px); font-weight: 600; letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance; }
+.lede { color: var(--dim); margin: 0; max-width: 70ch; font-size: 14.5px; }
+.lede b { color: var(--fg); font-weight: 500; }
+
+/* pestañas */
+nav { display: flex; flex-wrap: wrap; gap: 5px; margin: 18px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px; cursor: pointer;
+  display: flex; align-items: baseline; gap: 7px; transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] { color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600; }
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.tab.sep { margin-left: 8px; }
+
+/* escenario */
+.stage { display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.viewport {
+  position: relative; background: var(--vp); border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0; max-width: 100%;
+}
+.viewport canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hint {
+  position: absolute; left: 11px; bottom: 9px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+@media (max-width: 700px) { .hint { display: none; } }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0; display: flex; flex-direction: column; gap: 14px;
+}
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output { font-family: var(--mono); font-size: 13.5px; font-weight: 500; color: var(--acc); font-variant-numeric: tabular-nums; }
+.pair2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+
+input[type="range"] { width: 100%; -webkit-appearance: none; appearance: none; background: transparent; margin: 2px 0; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line); }
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px; }
+input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none; }
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+select, input[type="text"], input[type="number"] {
+  font: 500 14px var(--mono); color: var(--fg); background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 9px; width: 100%; min-width: 0;
+}
+select { font-family: var(--sans); }
+select:focus-visible, input:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button, .btn {
+  flex: 1; font-family: var(--sans); font-size: 12.5px; font-weight: 500; background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer; white-space: nowrap;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] { background: rgba(var(--acc-rgb), .14); color: var(--acc); border-color: rgba(var(--acc-rgb), .42); }
+.btn:hover, .toggle button:hover { color: var(--fg); border-color: var(--dim); }
+.toggle button:focus-visible, .btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--dim); }
+.chk input { accent-color: var(--acc); }
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(var(--line-rgb), .55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v { font-family: var(--mono); font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.v.acc { color: var(--acc); } .v.cy { color: var(--cy); } .v.ok { color: var(--ok); } .v.no { color: var(--no); }
+.v.vi { color: var(--vi); } .v.or { color: var(--or); } .v.dim { color: var(--dim); }
+.sect { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+.note { font-size: 12.5px; line-height: 1.5; color: var(--dim); background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; margin: 0; }
+.note b { color: var(--fg); font-weight: 600; }
+.note.hot { border-color: var(--hot); } .note.hot b { color: var(--no); }
+.note.good { border-color: var(--good); } .note.good b { color: var(--ok); }
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+
+/* visor de conversiones */
+.htmlview { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 22px; overflow: auto; }
+.bigres { font-family: var(--mono); font-size: clamp(22px, 4.2vw, 34px); font-weight: 600; letter-spacing: -.01em; text-align: center; font-variant-numeric: tabular-nums; }
+.bigres .from { color: var(--fg); } .bigres .to { color: var(--acc); } .bigres .eqs { color: var(--dim); font-weight: 400; margin: 0 .3em; }
+.chainv { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 12px; font-family: var(--mono); font-size: 15px; }
+.chainv .op { color: var(--dim); }
+.chainv .term { display: inline-flex; gap: 6px; align-items: baseline; }
+.frac { display: inline-flex; flex-direction: column; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; }
+.frac .num, .frac .den { display: flex; gap: 6px; align-items: baseline; white-space: nowrap; }
+.frac .num { border-bottom: 1.5px solid var(--dim); padding-bottom: 4px; margin-bottom: 4px; }
+.u { color: var(--cy); }
+.u.x { color: var(--dim); text-decoration: line-through; text-decoration-color: var(--no); text-decoration-thickness: 2px; }
+.chainv .res { color: var(--acc); font-weight: 600; }
+.steps-v { margin: 0 auto; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; color: var(--dim); max-width: 52ch; }
+.steps-v b { color: var(--fg); font-weight: 500; }
+
+/* visor de análisis dimensional */
+.eqbig { font-family: var(--math); font-size: clamp(24px, 4.4vw, 38px); text-align: center; color: var(--fg); white-space: nowrap; overflow-x: auto; }
+.terms { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.term-c { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 9px 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 112px; }
+.term-c .t { font-family: var(--math); font-size: 19px; }
+.term-c .d { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.term-c.ok { border-color: rgba(var(--ok-rgb), .6); } .term-c.ok .d { color: var(--ok); }
+.term-c.no { border-color: rgba(var(--no-rgb), .6); } .term-c.no .d { color: var(--no); }
+.waiting { text-align: center; color: var(--dim); font-size: 13.5px; }
+.m { font-family: var(--math); font-size: 1.06em; white-space: nowrap; }
+
+/* pestañas a todo el ancho */
+.full { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 15px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.card .tag { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--cy); }
+.card h3 { font-size: 15.5px; font-weight: 600; margin: 0; }
+.card p.q { font-size: 14px; margin: 0; }
+details { border-top: 1px solid rgba(var(--line-rgb), .7); padding-top: 8px; }
+summary { cursor: pointer; font-size: 12.5px; font-weight: 500; color: var(--acc); list-style: none; display: inline-flex; align-items: center; gap: 7px; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "+"; font-family: var(--mono); width: 16px; height: 16px; border: 1.3px solid var(--acc); border-radius: 4px; display: inline-grid; place-items: center; font-size: 11px; line-height: 1; }
+details[open] summary::before { content: "−"; }
+summary:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; border-radius: 4px; }
+.steps { margin: 10px 0 0; padding-left: 1.2rem; display: grid; gap: 6px; font-size: 13.5px; }
+.steps li::marker { font-family: var(--mono); color: var(--dim); font-size: 12px; }
+.ans { display: inline-block; margin-left: 4px; font-family: var(--mono); font-size: 12.5px; font-weight: 500; color: var(--ok); background: rgba(var(--ok-rgb), .12); border-radius: 4px; padding: 1px 7px; }
+
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.opts button { font: 500 13.5px var(--mono); text-align: left; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 11px; cursor: pointer; }
+.opts button:hover:not(:disabled) { border-color: var(--acc); }
+.opts button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.opts button.right { border-color: var(--ok); background: rgba(var(--ok-rgb), .12); color: var(--ok); }
+.opts button.wrong { border-color: var(--no); background: rgba(var(--no-rgb), .12); color: var(--no); }
+.opts button:disabled { cursor: default; }
+.fb { margin: 0; font-size: 13px; color: var(--dim); }
+.fb b.ok { color: var(--ok); } .fb b.no { color: var(--no); }
+.scorebar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-family: var(--mono); font-size: 13px; color: var(--dim); }
+.scorebar b { color: var(--acc); font-weight: 600; }
+
+footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--dim); max-width: 80ch; }
+footer a { color: var(--dim); }
+
+.tema {
+  position: absolute; top: 20px; right: max(16px, env(safe-area-inset-right, 0px)); z-index: 5; width: 34px; height: 34px; padding: 0;
+  display: grid; place-items: center; background: var(--panel); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: color .14s, border-color .14s, background .14s;
+}
+.tema:hover { color: var(--acc); border-color: var(--acc); background: var(--panel-2); }
+.tema:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.tema svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: none; }
+.tema .sol { display: block; }
+:root[data-tema="claro"] .tema .sol { display: none; }
+:root[data-tema="claro"] .tema .luna { display: block; }
+
+@media (max-width: 560px) { .opts { grid-template-columns: minmax(0, 1fr); } .full { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button class="tema" id="tema" type="button" aria-label="Cambiar a modo claro">
+    <svg class="sol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.3"/><path d="M12 2.6v2.4M12 19v2.4M4.3 4.3l1.7 1.7M18 18l1.7 1.7M2.6 12H5M19 12h2.4M4.3 19.7 6 18M18 6l1.7-1.7"/></svg>
+    <svg class="luna" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.8A8.6 8.6 0 0 1 9.2 3.5a7.7 7.7 0 1 0 11.3 11.3Z"/></svg>
+  </button>
+  <header>
+    <a class="back" href="physical.html">← Propedéutico de Física</a>
+    <p class="eyebrow">El idioma de la física · Propedéutico</p>
+    <h1>Herramientas básicas</h1>
+    <p class="lede">Unidades, dimensiones y vectores. En 1999 la NASA perdió la sonda <i>Mars Climate Orbiter</i> porque un equipo entregó el impulso en lbf·s y otro lo leyó en N·s: <b>un número sin unidad no significa nada</b>.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Herramientas">
+    <button class="tab" role="tab" id="t-conversiones" aria-controls="p-conversiones" aria-selected="true"><span class="n">01</span> Conversiones</button>
+    <button class="tab" role="tab" id="t-prefijos" aria-controls="p-prefijos" aria-selected="false" tabindex="-1"><span class="n">02</span> Prefijos</button>
+    <button class="tab" role="tab" id="t-area-volumen" aria-controls="p-area-volumen" aria-selected="false" tabindex="-1"><span class="n">03</span> Área y volumen</button>
+    <button class="tab" role="tab" id="t-dimensiones" aria-controls="p-dimensiones" aria-selected="false" tabindex="-1"><span class="n">04</span> Análisis dimensional</button>
+    <button class="tab" role="tab" id="t-vectores" aria-controls="p-vectores" aria-selected="false" tabindex="-1"><span class="n">05</span> Vectores</button>
+    <button class="tab" role="tab" id="t-producto-cruz" aria-controls="p-producto-cruz" aria-selected="false" tabindex="-1"><span class="n">06</span> Producto cruz</button>
+    <button class="tab" role="tab" id="t-torque" aria-controls="p-torque" aria-selected="false" tabindex="-1"><span class="n">07</span> Torque</button>
+    <button class="tab sep" role="tab" id="t-ejemplos" aria-controls="p-ejemplos" aria-selected="false" tabindex="-1">Ejemplos</button>
+    <button class="tab" role="tab" id="t-autoevaluacion" aria-controls="p-autoevaluacion" aria-selected="false" tabindex="-1">Autoevaluación</button>
+  </nav>
+
+  <!-- ============ 01 CONVERSIONES ============ -->
+  <section class="stage" id="p-conversiones" role="tabpanel" aria-labelledby="t-conversiones">
+    <div class="viewport"><div class="htmlview" id="cvView"></div></div>
+    <div class="panel">
+      <p class="ask">Un neumático marca 32 psi. <b>¿Cuántos kPa son?</b> Predice antes de mirar.</p>
+      <div class="ctrl"><label for="cvQty">Magnitud</label><select id="cvQty"></select></div>
+      <div class="ctrl"><label for="cvVal">Valor</label><input id="cvVal" type="number" step="any" value="32"></div>
+      <div class="pair2">
+        <div class="ctrl"><label for="cvFrom">De</label><select id="cvFrom"></select></div>
+        <div class="ctrl"><label for="cvTo">A</label><select id="cvTo"></select></div>
+      </div>
+      <button class="btn" type="button" id="cvSwap">Intercambiar unidades</button>
+      <div class="readout">
+        <div class="row hero"><div class="k">Resultado</div><div class="v acc" id="cvRes">—</div></div>
+        <div class="row"><div class="k">Valor en el SI</div><div class="v cy" id="cvSI">—</div></div>
+      </div>
+      <p class="note"><b>Cada factor vale exactamente 1,</b> porque arriba y abajo está la misma cantidad en distinta unidad. Las unidades se cancelan como letras en álgebra: si no se cancelan, el factor está al revés.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 PREFIJOS ============ -->
+  <section class="stage" id="p-prefijos" role="tabpanel" aria-labelledby="t-prefijos" hidden>
+    <div class="viewport"><canvas id="pfCanvas" aria-label="Escala logarítmica de prefijos con el valor marcado"></canvas><div class="hint">el punto decimal se recorre de tres en tres</div></div>
+    <div class="panel">
+      <p class="ask">Un capacitor dice 0.0000047 F. <b>¿Cómo lo leerías en la etiqueta?</b></p>
+      <div class="ctrl"><label for="pfVal">Valor (acepta 4.7e-6)</label><input id="pfVal" type="text" value="0.0000047" inputmode="decimal" autocomplete="off"></div>
+      <div class="ctrl"><label for="pfUnit">Unidad</label>
+        <select id="pfUnit"><option value="F">F · capacitancia</option><option value="A">A · corriente</option><option value="W">W · potencia</option><option value="Hz">Hz · frecuencia</option><option value="Ω">Ω · resistencia</option><option value="m">m · longitud</option><option value="Pa">Pa · presión</option></select>
+      </div>
+      <div class="toggle" id="pfPresets" role="group" aria-label="Ejemplos">
+        <button type="button" data-v="0.0000047" data-u="F">Capacitor</button>
+        <button type="button" data-v="0.0052" data-u="A">Sensor</button>
+        <button type="button" data-v="2400000" data-u="W">Generador</button>
+        <button type="button" data-v="2400000000" data-u="Hz">Wi-Fi</button>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Con prefijo</div><div class="v acc" id="pfRes">—</div></div>
+        <div class="row"><div class="k">Notación científica</div><div class="v cy" id="pfSci">—</div></div>
+        <div class="row"><div class="k">Notación de ingeniería</div><div class="v" id="pfEng">—</div></div>
+        <div class="row"><div class="k">Prefijo</div><div class="v dim" id="pfName">—</div></div>
+      </div>
+      <p class="note"><b>Científica contra ingeniería:</b> la científica deja un dígito antes del punto; la de ingeniería usa exponentes múltiplos de 3, que son los que tienen prefijo. Por eso un multímetro marca 4.7 µF y no 4.7 × 10⁻⁶ F.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 ÁREA Y VOLUMEN ============ -->
+  <section class="stage" id="p-area-volumen" role="tabpanel" aria-labelledby="t-area-volumen" hidden>
+    <div class="viewport"><canvas id="dimCanvas" aria-label="Representación de la conversión de longitud, área o volumen"></canvas></div>
+    <div class="panel">
+      <p class="ask">Si 1 m = 100 cm, <b>¿cuántos cm² hay en 1 m²?</b> Mucha gente responde 100.</p>
+      <div class="toggle" role="group" aria-label="Dimensión">
+        <button type="button" data-dim="1" aria-pressed="false">Longitud</button>
+        <button type="button" data-dim="2" aria-pressed="true">Área</button>
+        <button type="button" data-dim="3" aria-pressed="false">Volumen</button>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k" id="avK">1 m² en cm²</div><div class="v acc" id="avV">10 000</div></div>
+        <div class="row"><div class="k">Factor de conversión</div><div class="v cy" id="avF">(100)²</div></div>
+        <div class="row"><div class="k">Equivalencia práctica</div><div class="v dim" id="avP">1 m² = 100 dm²</div></div>
+      </div>
+      <p class="note" id="avNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 04 ANÁLISIS DIMENSIONAL ============ -->
+  <section class="stage" id="p-dimensiones" role="tabpanel" aria-labelledby="t-dimensiones" hidden>
+    <div class="viewport"><div class="htmlview">
+      <div class="eqbig" id="dmEq"></div>
+      <div class="terms" id="dmTerms"></div>
+      <p class="waiting" id="dmWait">Decide en el panel si la ecuación es consistente.</p>
+    </div></div>
+    <div class="panel">
+      <p class="ask">Sólo se suman o igualan términos con <b>las mismas dimensiones</b>. ¿Esta ecuación pasa la prueba?</p>
+      <div class="ctrl"><label for="dmSel">Ecuación</label><select id="dmSel"></select></div>
+      <div class="toggle">
+        <button type="button" data-guess="1">Es consistente</button>
+        <button type="button" data-guess="0">Tiene un error</button>
+      </div>
+      <button class="btn" type="button" data-guess="-1">Sólo ver el análisis</button>
+      <div class="readout">
+        <div class="row hero"><div class="k">Veredicto</div><div class="v dim" id="dmV">—</div></div>
+        <div class="row"><div class="k">Tu predicción</div><div class="v dim" id="dmG">—</div></div>
+      </div>
+      <p class="note" id="dmNote"><b>Las tres dimensiones de la mecánica</b> son masa [M], longitud [L] y tiempo [T]. Los números como ½ o 2π no tienen dimensiones, así que el método no los detecta.</p>
+    </div>
+  </section>
+
+  <!-- ============ 05 VECTORES ============ -->
+  <section class="stage" id="p-vectores" role="tabpanel" aria-labelledby="t-vectores" hidden>
+    <div class="viewport"><canvas id="vecCanvas" aria-label="Plano con los vectores A y B que se pueden arrastrar"></canvas><div class="hint">arrastra la punta de A o de B</div></div>
+    <div class="panel">
+      <p class="ask">Mueve B hasta que <b>A · B valga cero</b>. ¿Qué ángulo forman?</p>
+      <div class="toggle" role="group" aria-label="Operación">
+        <button type="button" data-mode="comp" aria-pressed="false">Componentes</button>
+        <button type="button" data-mode="sum" aria-pressed="true">A + B</button>
+        <button type="button" data-mode="diff" aria-pressed="false">A − B</button>
+        <button type="button" data-mode="angle" aria-pressed="false">Ángulo</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="snap" checked> Ajustar a enteros</label>
+      <div class="readout" id="vecRead"></div>
+      <div class="toggle">
+        <button type="button" class="btn" id="vecReset">A = 3i + 4j, B = −i + 2j</button>
+        <button type="button" class="btn" id="vecPerp">B perpendicular a A</button>
+      </div>
+      <p class="note" id="vecNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 06 PRODUCTO CRUZ ============ -->
+  <section class="stage" id="p-producto-cruz" role="tabpanel" aria-labelledby="t-producto-cruz" hidden>
+    <div class="viewport" id="v3d"><canvas id="gl" aria-label="Vista 3D de A, B y su producto cruz"></canvas><div class="hint">arrastra para girar · rueda para acercar</div>
+      <p class="note" id="v3dMsg" style="position:absolute;inset:auto 12px 12px 12px" hidden>La vista 3D no pudo cargarse en este navegador. Los valores del panel siguen siendo correctos.</p></div>
+    <div class="panel">
+      <p class="ask">Los dedos van de A hacia B; <b>el pulgar apunta al resultado</b>. Cambia el orden y mira hacia dónde se va.</p>
+      <div class="toggle" role="group" aria-label="Orden del producto">
+        <button type="button" data-order="ab" aria-pressed="true">A × B</button>
+        <button type="button" data-order="ba" aria-pressed="false">B × A</button>
+      </div>
+      <div class="pair2">
+        <div class="ctrl"><div class="ctrl-top"><label for="cxAx">A<sub>x</sub></label><output id="cxAxo"></output></div><input type="range" id="cxAx" min="-5" max="5" step="1"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cxAy">A<sub>y</sub></label><output id="cxAyo"></output></div><input type="range" id="cxAy" min="-5" max="5" step="1"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cxBx">B<sub>x</sub></label><output id="cxBxo"></output></div><input type="range" id="cxBx" min="-5" max="5" step="1"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cxBy">B<sub>y</sub></label><output id="cxByo"></output></div><input type="range" id="cxBy" min="-5" max="5" step="1"></div>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k" id="cxK">A × B</div><div class="v or" id="cxV">—</div></div>
+        <div class="row"><div class="k">Área del paralelogramo &nbsp;<em>|A||B| sen θ</em></div><div class="v cy" id="cxArea">—</div></div>
+        <div class="row"><div class="k">Ángulo entre A y B</div><div class="v dim" id="cxTh">—</div></div>
+      </div>
+      <p class="note" id="cxNote"></p>
+      <div class="legend">
+        <span><i style="background:var(--cy)"></i> A</span>
+        <span><i style="background:var(--vi)"></i> B</span>
+        <span><i style="background:var(--or)"></i> producto cruz</span>
+        <span><i style="background:var(--acc)"></i> paralelogramo</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 TORQUE ============ -->
+  <section class="stage" id="p-torque" role="tabpanel" aria-labelledby="t-torque" hidden>
+    <div class="viewport"><canvas id="tqCanvas" aria-label="Llave de tuercas con la fuerza aplicada"></canvas><div class="hint">τ = r × F</div></div>
+    <div class="panel">
+      <p class="ask">Un birlo pide unos 110 N·m. <b>¿Qué cambias primero: la fuerza, el mango o el ángulo?</b></p>
+      <div class="ctrl"><div class="ctrl-top"><label for="tqF">Fuerza &nbsp;F</label><output id="tqFo"></output></div><input type="range" id="tqF" min="0" max="400" step="5" value="40"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="tqR">Largo del mango &nbsp;r</label><output id="tqRo"></output></div><input type="range" id="tqR" min="0.10" max="0.60" step="0.05" value="0.25"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="tqA">Ángulo entre mango y fuerza &nbsp;θ</label><output id="tqAo"></output></div><input type="range" id="tqA" min="0" max="180" step="5" value="90"></div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Torque &nbsp;<em>τ = r F sen θ</em></div><div class="v acc" id="tqOut">—</div></div>
+        <div class="row"><div class="k">Componente útil &nbsp;<em>F sen θ</em></div><div class="v cy" id="tqPerp">—</div></div>
+        <div class="row"><div class="k">¿Afloja un birlo de 110 N·m?</div><div class="v" id="tqOk">—</div></div>
+      </div>
+      <p class="note" id="tqNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ EJEMPLOS ============ -->
+  <section class="full" id="p-ejemplos" role="tabpanel" aria-labelledby="t-ejemplos" hidden>
+    <article class="card">
+      <span class="tag">Conversión</span>
+      <h3>Velocidad en carretera</h3>
+      <p class="q">Un auto viaja a 120 km/h. ¿Cuánto es en m/s? ¿Y 100 km/h?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Factores para que se cancelen km y h: <span class="m">120 km/h × (1000 m/1 km) × (1 h/3600 s)</span>.</li>
+          <li>120 × 1000 / 3600 = 33.3 <span class="ans">33.3 m/s</span></li>
+          <li>Atajo: de km/h a m/s se divide entre 3.6, porque 1000/3600 = 1/3.6. <span class="ans">100 km/h = 27.8 m/s</span></li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Análisis dimensional</span>
+      <h3>Unidades de la constante de un resorte</h3>
+      <p class="q">En la ley de Hooke, <span class="m"><i>F</i> = <i>kx</i></span>. ¿Qué unidades tiene <i>k</i> en unidades base del SI?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Despeja: <span class="m"><i>k</i> = <i>F</i>/<i>x</i></span>, que se mide en N/m.</li>
+          <li>Con 1 N = 1 kg·m/s²: <span class="m">(kg·m/s²)/m</span>. <span class="ans">kg/s²</span></li>
+          <li>Para practicar: en la fricción viscosa <span class="m"><i>F</i> = <i>bv</i></span>, <i>b</i> sale en N·s/m = kg/s.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Componentes</span>
+      <h3>Descomponer una fuerza</h3>
+      <p class="q">Un cable jala con 50 N a 30° sobre la horizontal. ¿Cuáles son sus componentes? ¿Y si los 30° se midieran desde la vertical?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Desde la horizontal, el lado adyacente es x: <span class="m">50 cos 30° = 43.3 N</span>, <span class="m">50 sen 30° = 25 N</span>. <span class="ans">(43.3, 25) N</span></li>
+          <li>Desde la vertical, el adyacente es y y se intercambian seno y coseno. <span class="ans">(25, 43.3) N</span></li>
+          <li>Regla útil: el coseno acompaña al lado adyacente al ángulo, no siempre a x.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Producto punto</span>
+      <h3>Ángulo entre dos vectores</h3>
+      <p class="q">Con <b>A</b> = 3<b>i</b> + 4<b>j</b> y <b>B</b> = −<b>i</b> + 2<b>j</b>, encuentra el ángulo entre ellos.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Producto punto: (3)(−1) + (4)(2) = 5.</li>
+          <li>Magnitudes: |A| = 5 y |B| = √5 = 2.236.</li>
+          <li>cos θ = 5 / (5 × 2.236) = 0.447. <span class="ans">θ = 63.4°</span></li>
+          <li>Comprobación: θ<sub>B</sub> − θ<sub>A</sub> = 116.6° − 53.1° = 63.5°, igual salvo redondeo. Ojo: la calculadora da −63.4° para θ<sub>B</sub>; B está en el segundo cuadrante.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Producto cruz · aplicación</span>
+      <h3>Aflojar un birlo</h3>
+      <p class="q">Aplicas 40 N en el extremo de una llave de 25 cm. ¿Qué torque produces perpendicular al mango? ¿Y a 60°?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Convierte: r = 25 cm = 0.25 m.</li>
+          <li>Perpendicular: <span class="m">τ = (0.25)(40)(sen 90°)</span>. <span class="ans">10 N·m</span></li>
+          <li>A 60°: <span class="m">τ = (10)(0.866)</span>. <span class="ans">8.66 N·m</span></li>
+          <li>Para 110 N·m con 40 N haría falta un mango de 2.75 m. Por eso se usa la cruceta o se empuja con el peso del cuerpo.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Reto · 3D</span>
+      <h3>Producto cruz en el espacio</h3>
+      <p class="q">Con <b>P</b> = 2<b>i</b> − <b>j</b> + 3<b>k</b> y <b>Q</b> = <b>i</b> + 4<b>j</b> − 2<b>k</b>, calcula P·Q y P × Q, y comprueba que P × Q es perpendicular a ambos.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>P·Q = (2)(1) + (−1)(4) + (3)(−2) = 2 − 4 − 6. <span class="ans">−8</span></li>
+          <li>i: (−1)(−2) − (3)(4) = −10; j: (3)(1) − (2)(−2) = 7; k: (2)(4) − (−1)(1) = 9. <span class="ans">−10i + 7j + 9k</span></li>
+          <li>Comprobación: (−10, 7, 9)·P = −20 − 7 + 27 = 0 y (−10, 7, 9)·Q = −10 + 28 − 18 = 0.</li>
+        </ol>
+      </details>
+    </article>
+  </section>
+
+  <!-- ============ AUTOEVALUACIÓN ============ -->
+  <section class="full" id="p-autoevaluacion" role="tabpanel" aria-labelledby="t-autoevaluacion" hidden>
+    <div class="scorebar"><span id="score">0 de 8 respondidas</span><button class="btn" type="button" id="quizReset" style="flex:none">Reiniciar</button></div>
+  </section>
+
+  <footer>
+    Las conversiones usan los factores del NIST (1 psi = 6894.757 Pa, 1 hp = 745.7 W, 1 lbf = 4.448222 N). Siguiente tema: <b>Estática</b>, donde estos vectores deciden si algo se queda quieto. <a href="physical.html">Volver a los temas</a>.
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+"use strict";
+var $ = function (id) { return document.getElementById(id); };
+var root = document.documentElement;
+
+/* ---------- tema ---------- */
+var V = {};
+function leerTema() {
+  var cs = getComputedStyle(root);
+  ["bg","panel","panel-2","line","fg","dim","acc","cy","vi","ok","no","or","vp"].forEach(function (k) { V[k] = cs.getPropertyValue("--" + k).trim(); });
+  ["line","acc","cy","vi","ok","no","or"].forEach(function (k) { V[k + "Rgb"] = cs.getPropertyValue("--" + k + "-rgb").trim(); });
+}
+function rgba(k, a) { return "rgba(" + V[k + "Rgb"] + "," + a + ")"; }
+leerTema();
+var bt = $("tema");
+function rotulo() { var c = root.getAttribute("data-tema") === "claro"; bt.setAttribute("aria-label", c ? "Cambiar a modo oscuro" : "Cambiar a modo claro"); }
+rotulo();
+bt.addEventListener("click", function () {
+  var nuevo = root.getAttribute("data-tema") === "claro" ? "oscuro" : "claro";
+  root.setAttribute("data-tema", nuevo);
+  try { localStorage.setItem("banco-tema", nuevo); } catch (e) {}
+});
+
+/* ---------- formato ---------- */
+var SUP = { "0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","-":"⁻",".":"·" };
+function sup(n) { return String(n).split("").map(function (c) { return SUP[c] || c; }).join(""); }
+function loc(x) { return x.toLocaleString("es-MX", { maximumFractionDigits: 10 }).replace(/,/g, " "); }
+function fmt(x, sig) {
+  sig = sig || 4; if (!isFinite(x)) return "—"; if (x === 0) return "0";
+  var a = Math.abs(x);
+  if (a >= 1e-3 && a < 1e6) return loc(Number(x.toPrecision(sig)));
+  var e = Math.floor(Math.log10(a)), m = Number((x / Math.pow(10, e)).toPrecision(sig));
+  if (Math.abs(m) >= 10) { m /= 10; e++; }
+  return loc(m) + " × 10" + sup(e);
+}
+function fd(x, d) { var v = Number(x.toFixed(d)); if (Object.is(v, -0)) v = 0; return v.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: d }); }
+function sgn(x) { return x < 0 ? "−" + fd(-x, 2) : fd(x, 2); }
+
+/* ---------- lienzos ---------- */
+function setup(cv) {
+  var dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return null;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.fillStyle = V.vp; c.fillRect(0, 0, w, h);
+  return { c: c, w: w, h: h };
+}
+function arrow(c, x1, y1, x2, y2, col, w, dash) {
+  var ang = Math.atan2(y2 - y1, x2 - x1), len = Math.hypot(x2 - x1, y2 - y1), hs = Math.min(12, len * 0.4);
+  c.save(); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = w || 2.5; c.setLineDash(dash || []);
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(ang) * hs * 0.8, y2 - Math.sin(ang) * hs * 0.8); c.stroke(); c.setLineDash([]);
+  if (len > 2) { c.beginPath(); c.moveTo(x2, y2); c.lineTo(x2 - hs * Math.cos(ang - 0.42), y2 - hs * Math.sin(ang - 0.42)); c.lineTo(x2 - hs * Math.cos(ang + 0.42), y2 - hs * Math.sin(ang + 0.42)); c.closePath(); c.fill(); }
+  c.restore();
+}
+var MONO = "'IBM Plex Mono', ui-monospace, monospace", SANS = "'IBM Plex Sans', system-ui, sans-serif";
+
+/* =========================================================
+   01 CONVERSIONES
+   ========================================================= */
+var Q = {
+  "Presión":   { si: "Pa",   u: [["Pa",1],["kPa",1000],["bar",1e5],["psi",6894.757],["atm",101325],["mmHg",133.322]] },
+  "Velocidad": { si: "m/s",  u: [["m/s",1],["km/h",1/3.6],["mi/h",0.44704],["ft/s",0.3048],["nudo",0.514444]] },
+  "Potencia":  { si: "W",    u: [["W",1],["kW",1000],["hp",745.7],["BTU/h",0.293071]] },
+  "Energía":   { si: "J",    u: [["J",1],["kJ",1000],["kWh",3.6e6],["cal",4.184],["BTU",1055.06]] },
+  "Torque":    { si: "N·m",  u: [["N·m",1],["lb·ft",1.355818],["kgf·m",9.80665]] },
+  "Caudal":    { si: "m³/s", u: [["m³/s",1],["L/s",1e-3],["L/min",1/60000],["gal/min",6.30902e-5]] },
+  "Densidad":  { si: "kg/m³",u: [["kg/m³",1],["g/cm³",1000],["lb/ft³",16.01846]] },
+  "Fuerza":    { si: "N",    u: [["N",1],["kN",1000],["lbf",4.448222],["kgf",9.80665]] }
+};
+var cvQty = $("cvQty"), cvFrom = $("cvFrom"), cvTo = $("cvTo"), cvVal = $("cvVal");
+Object.keys(Q).forEach(function (k) { var o = document.createElement("option"); o.textContent = k; cvQty.appendChild(o); });
+function cvFill(def) {
+  var q = Q[cvQty.value]; cvFrom.innerHTML = ""; cvTo.innerHTML = "";
+  q.u.forEach(function (u, i) { [cvFrom, cvTo].forEach(function (s) { var o = document.createElement("option"); o.value = i; o.textContent = u[0]; s.appendChild(o); }); });
+  cvFrom.value = def ? def[0] : 0; cvTo.value = def ? def[1] : 1;
+}
+function uu(name, x) { return '<span class="u' + (x ? " x" : "") + '">' + name + "</span>"; }
+function frac(nv, nu, dv, du, xn, xd) {
+  return '<span class="frac"><span class="num">' + nv + " " + uu(nu, xn) + '</span><span class="den">' + dv + " " + uu(du, xd) + "</span></span>";
+}
+function cvCalc() {
+  var q = Q[cvQty.value], a = q.u[+cvFrom.value], b = q.u[+cvTo.value], v = parseFloat(cvVal.value), view = $("cvView");
+  if (!isFinite(v)) { view.innerHTML = '<p class="waiting">Escribe un número en el panel.</p>'; $("cvRes").textContent = "—"; $("cvSI").textContent = "—"; return; }
+  var si = v * a[1], r = si / b[1], same = a[0] === b[0];
+  var aSI = a[0] === q.si, bSI = b[0] === q.si;
+  var h = '<div class="bigres"><span class="from">' + fmt(v) + " " + a[0] + '</span><span class="eqs">=</span><span class="to">' + fmt(r) + " " + b[0] + "</span></div>";
+  h += '<div class="chainv"><span class="term">' + fmt(v) + " " + uu(a[0], !same) + "</span>";
+  if (!same) {
+    if (!aSI) h += '<span class="op">×</span>' + frac(fmt(a[1], 7), q.si, "1", a[0], !bSI, true);
+    if (!bSI) h += '<span class="op">×</span>' + frac("1", b[0], fmt(b[1], 7), q.si, false, true);
+  }
+  h += '<span class="op">=</span><span class="res">' + fmt(r) + " " + b[0] + "</span></div>";
+  h += '<ol class="steps-v">';
+  if (same) h += "<li>Es la misma unidad: no hay nada que convertir.</li>";
+  else {
+    if (!aSI) h += "<li><b>Paso 1.</b> De " + a[0] + " al SI: " + fmt(v) + " " + a[0] + " = " + fmt(si) + " " + q.si + ".</li>";
+    if (!bSI) h += "<li><b>Paso " + (aSI ? "1" : "2") + ".</b> Del SI a " + b[0] + ": se divide entre " + fmt(b[1], 7) + ".</li>";
+    h += "<li>Las unidades tachadas se cancelan; sólo queda " + b[0] + ".</li>";
+  }
+  h += "</ol>";
+  view.innerHTML = h;
+  $("cvRes").textContent = fmt(r) + " " + b[0];
+  $("cvSI").textContent = fmt(si) + " " + q.si;
+}
+cvQty.addEventListener("change", function () { cvFill(); cvCalc(); });
+[cvFrom, cvTo].forEach(function (s) { s.addEventListener("change", cvCalc); });
+cvVal.addEventListener("input", cvCalc);
+$("cvSwap").addEventListener("click", function () { var t = cvFrom.value; cvFrom.value = cvTo.value; cvTo.value = t; cvCalc(); });
+cvFill([3, 1]); cvCalc();
+
+/* =========================================================
+   02 PREFIJOS
+   ========================================================= */
+var PF = { "-12":"p","-9":"n","-6":"µ","-3":"m","0":"","3":"k","6":"M","9":"G","12":"T" };
+var PN = { "-12":"pico","-9":"nano","-6":"micro","-3":"mili","0":"sin prefijo","3":"kilo","6":"mega","9":"giga","12":"tera" };
+function pfParse() {
+  var raw = $("pfVal").value.replace(/\s/g, "").replace(",", "."), x = Number(raw);
+  if (raw === "" || !isFinite(x) || x === 0) return null;
+  var ax = Math.abs(x), e = Math.floor(Math.log10(ax)), m = Number((ax / Math.pow(10, e)).toPrecision(6));
+  if (m >= 10) { m /= 10; e++; }
+  var e3 = Math.max(-12, Math.min(12, Math.floor(e / 3) * 3)), m3 = Number((ax / Math.pow(10, e3)).toPrecision(6));
+  return { x: x, neg: x < 0, e: e, m: m, e3: e3, m3: m3 };
+}
+function pfUpdate() {
+  var p = pfParse(), u = $("pfUnit").value, s = p && p.neg ? "−" : "";
+  if (!p) { ["pfRes","pfSci","pfEng","pfName"].forEach(function (id) { $(id).textContent = "—"; }); }
+  else {
+    $("pfRes").textContent = s + loc(p.m3) + " " + PF[String(p.e3)] + u;
+    $("pfSci").textContent = s + loc(p.m) + " × 10" + sup(p.e) + " " + u;
+    $("pfEng").textContent = s + loc(p.m3) + " × 10" + sup(p.e3) + " " + u;
+    $("pfName").textContent = PN[String(p.e3)] + (p.e3 ? " = 10" + sup(p.e3) : "");
+  }
+  drawPf();
+}
+function drawPf() {
+  var S = setup($("pfCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h, p = pfParse(), u = $("pfUnit").value;
+  var mL = 28, mR = 28, pw = W - mL - mR, ay = H * 0.34;
+  var X = function (e) { return mL + (e + 12) / 26 * pw; };
+  c.textAlign = "center";
+  for (var b = -12; b <= 12; b += 3) {
+    var on = p && p.e3 === b, x1 = X(Math.min(b + 3, 14));
+    c.fillStyle = on ? rgba("acc", .16) : (((b / 3) % 2 === 0) ? rgba("line", .3) : "rgba(0,0,0,0)");
+    c.fillRect(X(b), ay - 34, x1 - X(b), 34);
+    c.fillStyle = on ? V.acc : V.fg; c.font = "600 " + (W < 480 ? 12 : 15) + "px " + MONO; c.textBaseline = "middle";
+    c.fillText(PF[String(b)] || "—", X(b) + (x1 - X(b)) / 2, ay - 17);
+  }
+  c.strokeStyle = V.dim; c.lineWidth = 1.2; c.beginPath(); c.moveTo(mL, ay); c.lineTo(mL + pw, ay); c.stroke();
+  c.font = "10.5px " + MONO; c.textBaseline = "top";
+  for (var k = -12; k <= 14; k++) {
+    var big = k % 3 === 0; c.strokeStyle = big ? V.dim : V.line; c.beginPath(); c.moveTo(X(k), ay); c.lineTo(X(k), ay + (big ? 9 : 5)); c.stroke();
+    if (big && (W > 520 || k % 6 === 0)) { c.fillStyle = V.dim; c.fillText("10" + sup(k), X(k), ay + 12); }
+  }
+  c.fillStyle = V.dim; c.textAlign = "left"; c.fillText("escala logarítmica · cada marca es ×10", mL, ay + 30);
+  if (!p) return;
+  var lx = Math.log10(Math.abs(p.x)), px = X(Math.max(-12, Math.min(14, lx)));
+  c.strokeStyle = V.acc; c.lineWidth = 2; c.beginPath(); c.moveTo(px, ay - 44); c.lineTo(px, ay + 4); c.stroke();
+  c.fillStyle = V.acc; c.beginPath(); c.moveTo(px, ay + 2); c.lineTo(px - 6, ay - 8); c.lineTo(px + 6, ay - 8); c.closePath(); c.fill();
+  c.font = "600 13px " + MONO; c.textAlign = px > W - 90 ? "right" : (px < 90 ? "left" : "center"); c.textBaseline = "bottom";
+  c.fillText((p.neg ? "−" : "") + loc(p.m3) + " " + PF[String(p.e3)] + u, px, ay - 47);
+  // el punto decimal que se recorre
+  var sig = String(p.m).replace(".", "").replace(/0+$/, "") || "0";
+  var intLen = p.e + 1, cells, dOrig, f;
+  if (intLen <= 0) { cells = "0" + new Array(-intLen + 1).join("0") + sig; dOrig = 1; f = 1 + (-intLen); }
+  else { cells = sig; while (cells.length < intLen) cells += "0"; dOrig = intLen; f = 0; }
+  var dNew = f + 1 + (p.e - p.e3), shift = dNew - dOrig;
+  if (cells.length > 18) { c.font = "13px " + SANS; c.fillStyle = V.dim; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("Número demasiado largo para dibujar dígito por dígito.", W / 2, H * 0.72); return; }
+  var cw = Math.min(34, (W - 60) / Math.max(cells.length, 6)), x0 = W / 2 - cells.length * cw / 2, by = H * 0.74;
+  c.font = "600 " + Math.round(cw * 0.78) + "px " + MONO; c.textAlign = "center"; c.textBaseline = "middle";
+  for (var i = 0; i < cells.length; i++) {
+    var sigDigit = i >= f && i < f + sig.length;
+    c.fillStyle = rgba("line", .45); c.fillRect(x0 + i * cw + 2, by - cw * 0.62, cw - 4, cw * 1.24);
+    c.fillStyle = sigDigit ? V.fg : V.dim; c.fillText(cells[i], x0 + i * cw + cw / 2, by);
+  }
+  function dot(idx, col) { c.fillStyle = col; c.beginPath(); c.arc(x0 + idx * cw, by + cw * 0.5, 3.6, 0, Math.PI * 2); c.fill(); }
+  dot(dOrig, V.dim); dot(dNew, V.acc);
+  if (shift !== 0) {
+    var xa = x0 + dOrig * cw, xb = x0 + dNew * cw, top = by - cw * 0.62 - 10, hgt = Math.min(46, Math.abs(xb - xa) * 0.35 + 14);
+    c.strokeStyle = V.acc; c.lineWidth = 1.6; c.beginPath(); c.moveTo(xa, top); c.bezierCurveTo(xa, top - hgt, xb, top - hgt, xb, top); c.stroke();
+    c.fillStyle = V.acc; c.beginPath(); c.moveTo(xb, top + 1); c.lineTo(xb - 5, top - 8); c.lineTo(xb + 5, top - 8); c.closePath(); c.fill();
+    c.font = "12px " + MONO; c.textBaseline = "bottom";
+    c.fillText("recorre " + Math.abs(shift) + " lugar" + (Math.abs(shift) === 1 ? "" : "es") + (shift > 0 ? " a la derecha" : " a la izquierda"), (xa + xb) / 2, top - hgt * 0.75 - 4);
+  }
+  var ly = by + cw * 0.62 + 18; c.font = "12px " + MONO; c.textBaseline = "middle"; c.textAlign = "left";
+  var lx0 = W / 2 - 150;
+  c.fillStyle = V.dim; c.beginPath(); c.arc(lx0, ly, 3.6, 0, Math.PI * 2); c.fill(); c.fillText("punto original", lx0 + 10, ly);
+  c.fillStyle = V.acc; c.beginPath(); c.arc(lx0 + 160, ly, 3.6, 0, Math.PI * 2); c.fill(); c.fillText("punto con prefijo", lx0 + 170, ly);
+}
+$("pfVal").addEventListener("input", pfUpdate); $("pfUnit").addEventListener("change", pfUpdate);
+document.querySelectorAll("#pfPresets button").forEach(function (b) { b.addEventListener("click", function () { $("pfVal").value = b.dataset.v; $("pfUnit").value = b.dataset.u; pfUpdate(); }); });
+
+/* =========================================================
+   03 ÁREA Y VOLUMEN
+   ========================================================= */
+var avMode = 2;
+var AV = {
+  1: { k: "1 m en cm", v: "100", f: "100", p: "1 m = 10 dm", n: "<b>En longitud el factor es 100,</b> la conversión que todos recuerdan. El problema aparece al pasar a área o volumen." },
+  2: { k: "1 m² en cm²", v: "10 000", f: "(100)² = 10⁴", p: "1 m² = 100 dm²", n: "<b>El factor también se eleva al cuadrado:</b> (100 cm)² = 10 000 cm². Cada uno de los 100 cuadros grandes del dibujo es 1 dm² y contiene 100 cm²." },
+  3: { k: "1 m³ en cm³", v: "1 000 000", f: "(100)³ = 10⁶", p: "1 m³ = 1000 L", n: "<b>Y al cubo en volumen:</b> 1 m³ = 10⁶ cm³. Un litro es 1 dm³, así que un tinaco de 1 m³ guarda 1000 L. Sirve en hidráulica para pasar caudales de L/min a m³/s." }
+};
+function drawAv() {
+  var d = AV[avMode]; $("avK").textContent = d.k; $("avV").textContent = d.v; $("avF").textContent = d.f; $("avP").textContent = d.p; $("avNote").innerHTML = d.n;
+  var S = setup($("dimCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  c.font = "500 12px " + MONO; c.textBaseline = "middle";
+  if (avMode === 1) {
+    var x0 = 30, x1 = W - 30, y = H / 2, L = x1 - x0;
+    c.strokeStyle = V.fg; c.lineWidth = 2; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke();
+    for (var i = 0; i <= 100; i++) { var x = x0 + L * i / 100, t = i % 10 === 0 ? 16 : (i % 5 === 0 ? 10 : 5); c.strokeStyle = i % 10 === 0 ? V.fg : V.dim; c.lineWidth = i % 10 === 0 ? 1.5 : 1; c.beginPath(); c.moveTo(x, y - t); c.lineTo(x, y); c.stroke(); }
+    c.fillStyle = V.dim; c.textAlign = "center";
+    for (var k = 0; k <= 10; k++) { if (W < 460 && k % 2) continue; c.fillText(k * 10, x0 + L * k / 10, y + 18); }
+    c.fillStyle = V.acc; c.font = "600 15px " + MONO; c.fillText("1 m = 100 cm", W / 2, y - 44);
+    c.fillStyle = V.dim; c.font = "500 12px " + MONO; c.fillText("cm", x1, y + 38);
+    return;
+  }
+  if (avMode === 2) {
+    var side = Math.min(H - 56, W - 70), ox = (W - side) / 2, oy = 22, cell = side / 10;
+    c.strokeStyle = V.line; c.lineWidth = 1;
+    for (var j = 0; j <= 10; j++) { c.beginPath(); c.moveTo(ox + j * cell, oy); c.lineTo(ox + j * cell, oy + side); c.stroke(); c.beginPath(); c.moveTo(ox, oy + j * cell); c.lineTo(ox + side, oy + j * cell); c.stroke(); }
+    c.fillStyle = rgba("acc", .16); c.fillRect(ox, oy, cell, cell);
+    c.strokeStyle = rgba("acc", .7); c.lineWidth = .6;
+    for (var m = 1; m < 10; m++) { c.beginPath(); c.moveTo(ox + m * cell / 10, oy); c.lineTo(ox + m * cell / 10, oy + cell); c.stroke(); c.beginPath(); c.moveTo(ox, oy + m * cell / 10); c.lineTo(ox + cell, oy + m * cell / 10); c.stroke(); }
+    c.strokeStyle = V.fg; c.lineWidth = 2; c.strokeRect(ox, oy, side, side); c.strokeStyle = V.acc; c.strokeRect(ox, oy, cell, cell);
+    c.fillStyle = V.dim; c.textAlign = "center"; c.fillText("1 m = 100 cm", ox + side / 2, oy + side + 16);
+    c.save(); c.translate(ox - 14, oy + side / 2); c.rotate(-Math.PI / 2); c.fillText("1 m", 0, 0); c.restore();
+    c.textAlign = "left"; c.fillStyle = V.acc; c.font = "600 12px " + MONO; c.fillText("1 dm² = 100 cm²", ox + cell + 8, oy + cell / 2);
+    return;
+  }
+  var n = 10, a = Math.min((H - 40) / 2.15, (W - 50) / 1.9), ux = a * 0.866, uy = a * 0.5, cx = W / 2, cy = H / 2 + a * 0.48;
+  function P3(x, y, z) { return [cx + (x - y) * ux / n, cy + (x + y) * uy / n - z * a / n]; }
+  function face(pts, fill) { c.beginPath(); pts.forEach(function (p, i) { var q = P3(p[0], p[1], p[2]); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.closePath(); c.fillStyle = fill; c.fill(); }
+  function seg(p, q, col, w) { var A = P3(p[0], p[1], p[2]), B = P3(q[0], q[1], q[2]); c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(B[0], B[1]); c.stroke(); }
+  face([[0,0,n],[n,0,n],[n,n,n],[0,n,n]], rgba("cy", .10));
+  for (var i2 = 0; i2 <= n; i2++) {
+    seg([i2,0,n],[i2,n,n], V.line, 1); seg([0,i2,n],[n,i2,n], V.line, 1);
+    seg([i2,n,0],[i2,n,n], V.line, 1); seg([0,n,i2],[n,n,i2], V.line, 1);
+    seg([n,i2,0],[n,i2,n], V.line, 1); seg([n,0,i2],[n,n,i2], V.line, 1);
+  }
+  [[[0,n,0],[n,n,0]],[[n,0,0],[n,n,0]],[[n,0,0],[n,0,n]],[[0,n,0],[0,n,n]],[[n,n,0],[n,n,n]],[[0,0,n],[n,0,n]],[[0,0,n],[0,n,n]],[[n,0,n],[n,n,n]],[[0,n,n],[n,n,n]]].forEach(function (e) { seg(e[0], e[1], V.fg, 2); });
+  face([[n-1,n-1,n],[n,n-1,n],[n,n,n],[n-1,n,n]], V.acc);
+  var lbl = P3(n, n, n); c.fillStyle = V.acc; c.textAlign = "left"; c.font = "600 12px " + MONO; c.fillText("1 dm³ = 1 L", Math.min(lbl[0] + 10, W - 96), lbl[1] + 4);
+  var b1 = P3(n / 2, n, 0); c.fillStyle = V.dim; c.textAlign = "center"; c.font = "500 12px " + MONO; c.fillText("1 m = 10 dm", b1[0] - 30, b1[1] + 18);
+}
+document.querySelectorAll("[data-dim]").forEach(function (b) { b.addEventListener("click", function () {
+  avMode = +b.dataset.dim; document.querySelectorAll("[data-dim]").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); }); drawAv(); }); });
+
+/* =========================================================
+   04 ANÁLISIS DIMENSIONAL
+   ========================================================= */
+var D = { x:{L:1}, v:{L:1,T:-1}, a:{L:1,T:-2}, t:{T:1}, m:{M:1}, F:{M:1,L:1,T:-2}, P:{M:1,L:2,T:-3}, E:{M:1,L:2,T:-2}, c:{L:1,T:-1}, g:{L:1,T:-2}, l:{L:1}, per:{T:1}, rho:{M:1,L:-3}, p:{M:1,L:-1,T:-2}, h:{L:1}, r:{L:1} };
+var EQS = [
+  { eq: "<i>x</i> = <i>v</i>₀<i>t</i> + ½<i>at</i>²", terms: [["<i>x</i>",{x:1}],["<i>v</i>₀<i>t</i>",{v:1,t:1}],["½<i>at</i>²",{a:1,t:2}]], ok: true, note: "Los tres términos son longitudes. El ½ no tiene dimensiones, así que no afecta." },
+  { eq: "<i>v</i> = <i>v</i>₀ + <i>at</i>²", terms: [["<i>v</i>",{v:1}],["<i>v</i>₀",{v:1}],["<i>at</i>²",{a:1,t:2}]], ok: false, note: "El término <i>at</i>² es una longitud, no una velocidad. La ecuación correcta es <i>v</i> = <i>v</i>₀ + <i>at</i>." },
+  { eq: "<i>x</i> = <i>v</i>₀<i>t</i> + ½<i>at</i>", terms: [["<i>x</i>",{x:1}],["<i>v</i>₀<i>t</i>",{v:1,t:1}],["½<i>at</i>",{a:1,t:1}]], ok: false, note: "½<i>at</i> es una velocidad. Falta el cuadrado en el tiempo." },
+  { eq: "<i>v</i>² = <i>v</i>₀² + 2<i>ax</i>", terms: [["<i>v</i>²",{v:2}],["<i>v</i>₀²",{v:2}],["2<i>ax</i>",{a:1,x:1}]], ok: true, note: "Todos son velocidad al cuadrado. Es la ecuación de frenado que no necesita el tiempo." },
+  { eq: "<i>P</i> = <i>F</i> · <i>v</i>", terms: [["<i>P</i>",{P:1}],["<i>Fv</i>",{F:1,v:1}]], ok: true, note: "Potencia = fuerza × velocidad. Sirve para saber cuántos kW pide un vehículo a velocidad constante." },
+  { eq: "<i>F</i> = <i>mv</i>²", terms: [["<i>F</i>",{F:1}],["<i>mv</i>²",{m:1,v:2}]], ok: false, note: "<i>mv</i>² tiene dimensiones de energía. La fuerza centrípeta es <i>F</i> = <i>mv</i>²/<i>r</i>." },
+  { eq: "<i>E</i> = <i>mc</i>²", terms: [["<i>E</i>",{E:1}],["<i>mc</i>²",{m:1,c:2}]], ok: true, note: "Masa por velocidad al cuadrado da energía, igual que la energía cinética ½<i>mv</i>²." },
+  { eq: "<i>T</i> = 2π √(<i>L</i>/<i>g</i>)", terms: [["<i>T</i>",{per:1}],["2π√(<i>L</i>/<i>g</i>)",{l:.5,g:-.5}]], ok: true, note: "√(L ÷ L T⁻²) = √(T²) = T. El método confirma las dimensiones, pero no puede dar el 2π." },
+  { eq: "<i>p</i> = <i>p</i>₀ + ρ<i>gh</i>", terms: [["<i>p</i>",{p:1}],["<i>p</i>₀",{p:1}],["ρ<i>gh</i>",{rho:1,g:1,h:1}]], ok: true, note: "ρ<i>gh</i> es una presión: la del peso de la columna de fluido. La verás en hidráulica." },
+  { eq: "<i>p</i> + ½ρ<i>v</i>² + ρ<i>gh</i> = cte.", terms: [["<i>p</i>",{p:1}],["½ρ<i>v</i>²",{rho:1,v:2}],["ρ<i>gh</i>",{rho:1,g:1,h:1}]], ok: true, note: "Bernoulli: los tres términos son presiones, es decir, energía por unidad de volumen." }
+];
+var dmSel = $("dmSel");
+EQS.forEach(function (e, i) { var o = document.createElement("option"); o.value = i; var t = document.createElement("span"); t.innerHTML = e.eq; o.textContent = t.textContent; dmSel.appendChild(o); });
+function dims(f) { var r = { M:0, L:0, T:0 }; Object.keys(f).forEach(function (s) { var d = D[s]; Object.keys(d).forEach(function (b) { r[b] += d[b] * f[s]; }); }); return r; }
+function dstr(r) { var o = []; ["M","L","T"].forEach(function (b) { var e = Math.round(r[b] * 100) / 100; if (e === 0) return; o.push(b + (e === 1 ? "" : sup(e))); }); return o.length ? "[" + o.join(" ") + "]" : "[adimensional]"; }
+function same(a, b) { return ["M","L","T"].every(function (k) { return Math.abs(a[k] - b[k]) < 1e-9; }); }
+var dmDefault = $("dmNote").innerHTML;
+function dmShow() {
+  var e = EQS[+dmSel.value]; $("dmEq").innerHTML = e.eq; $("dmTerms").innerHTML = ""; $("dmWait").hidden = false;
+  $("dmV").textContent = "—"; $("dmV").className = "v dim"; $("dmG").textContent = "—"; $("dmG").className = "v dim";
+  $("dmNote").className = "note"; $("dmNote").innerHTML = dmDefault;
+}
+function dmReveal(guess) {
+  var e = EQS[+dmSel.value], ref = dims(e.terms[0][1]), box = $("dmTerms"); box.innerHTML = ""; $("dmWait").hidden = true;
+  e.terms.forEach(function (t) { var d = dims(t[1]), ok = same(d, ref); var el = document.createElement("div"); el.className = "term-c " + (ok ? "ok" : "no"); el.innerHTML = '<span class="t">' + t[0] + '</span><span class="d">' + dstr(d) + "</span>"; box.appendChild(el); });
+  $("dmV").textContent = e.ok ? "consistente" : "no es consistente"; $("dmV").className = "v " + (e.ok ? "ok" : "no");
+  if (guess === -1) { $("dmG").textContent = "sin predicción"; $("dmG").className = "v dim"; }
+  else { var hit = (guess === 1) === e.ok; $("dmG").textContent = hit ? "acertaste" : "fallaste"; $("dmG").className = "v " + (hit ? "ok" : "no"); }
+  $("dmNote").className = "note " + (e.ok ? "good" : "hot"); $("dmNote").innerHTML = "<b>" + (e.ok ? "Pasa la prueba." : "Aquí está el error.") + "</b> " + e.note;
+}
+dmSel.addEventListener("change", dmShow);
+document.querySelectorAll("[data-guess]").forEach(function (b) { b.addEventListener("click", function () { dmReveal(+b.dataset.guess); }); });
+dmShow();
+
+/* =========================================================
+   05 VECTORES
+   ========================================================= */
+var VEC = { A: { x: 3, y: 4 }, B: { x: -1, y: 2 }, mode: "sum" };
+var vcv = $("vecCanvas"), vW, vH, vsc, vox, voy, vdrag = null;
+function toPx(x, y) { return [vox + x * vsc, voy - y * vsc]; }
+function angD(x, y) { var d = Math.atan2(y, x) * 180 / Math.PI; if (d < 0) d += 360; return d; }
+function vs(v) { return sgn(v.x) + "i " + (v.y < 0 ? "− " : "+ ") + fd(Math.abs(v.y), 2) + "j"; }
+function drawVec() {
+  var S = setup(vcv); if (!S) return; var c = S.c; vW = S.w; vH = S.h;
+  vsc = Math.min(vW, vH) / 13; vox = vW / 2; voy = vH / 2;
+  var xr = Math.ceil(vW / 2 / vsc), yr = Math.ceil(vH / 2 / vsc);
+  c.lineWidth = 1; c.strokeStyle = rgba("line", .8);
+  for (var i = -xr; i <= xr; i++) { var p = toPx(i, 0)[0]; c.beginPath(); c.moveTo(p, 0); c.lineTo(p, vH); c.stroke(); }
+  for (var j = -yr; j <= yr; j++) { var q = toPx(0, j)[1]; c.beginPath(); c.moveTo(0, q); c.lineTo(vW, q); c.stroke(); }
+  c.strokeStyle = V.dim; c.lineWidth = 1.3; c.beginPath(); c.moveTo(0, voy); c.lineTo(vW, voy); c.moveTo(vox, 0); c.lineTo(vox, vH); c.stroke();
+  c.fillStyle = V.dim; c.font = "11px " + MONO; c.textAlign = "center"; c.textBaseline = "top";
+  for (var k = -xr; k <= xr; k++) if (k && k % 2 === 0) { var pk = toPx(k, 0); c.fillText(k, pk[0], pk[1] + 4); }
+  c.textAlign = "right"; c.textBaseline = "middle";
+  for (var m = -yr; m <= yr; m++) if (m && m % 2 === 0) { var pm = toPx(0, m); c.fillText(m, pm[0] - 5, pm[1]); }
+  c.textAlign = "left"; c.fillText("x", vW - 14, voy - 10); c.fillText("y", vox + 7, 12);
+  var A = VEC.A, B = VEC.B, O = toPx(0, 0), pA = toPx(A.x, A.y), pB = toPx(B.x, B.y);
+  if (VEC.mode === "comp") {
+    [[A, V.cy], [B, V.vi]].forEach(function (v) { var pt = toPx(v[0].x, v[0].y), px = toPx(v[0].x, 0);
+      arrow(c, O[0], O[1], px[0], px[1], v[1], 1.6, [5, 4]); arrow(c, px[0], px[1], pt[0], pt[1], v[1], 1.6, [5, 4]);
+      c.font = "11px " + MONO; c.fillStyle = v[1]; c.textAlign = "center"; c.textBaseline = v[0].y >= 0 ? "top" : "bottom";
+      if (Math.abs(v[0].x) > 0.4) c.fillText(fd(v[0].x, 1), (O[0] + px[0]) / 2, O[1] + (v[0].y >= 0 ? 4 : -4));
+      c.textAlign = v[0].x >= 0 ? "left" : "right"; c.textBaseline = "middle";
+      if (Math.abs(v[0].y) > 0.4) c.fillText(fd(v[0].y, 1), px[0] + (v[0].x >= 0 ? 5 : -5), (px[1] + pt[1]) / 2); });
+  }
+  if (VEC.mode === "sum") { var R = toPx(A.x + B.x, A.y + B.y); c.fillStyle = rgba("acc", .07); c.beginPath(); c.moveTo(O[0], O[1]); c.lineTo(pA[0], pA[1]); c.lineTo(R[0], R[1]); c.lineTo(pB[0], pB[1]); c.closePath(); c.fill();
+    arrow(c, pA[0], pA[1], R[0], R[1], rgba("vi", .7), 1.6, [6, 5]); arrow(c, pB[0], pB[1], R[0], R[1], rgba("cy", .7), 1.6, [6, 5]); arrow(c, O[0], O[1], R[0], R[1], V.acc, 3); }
+  if (VEC.mode === "diff") { var Dd = toPx(A.x - B.x, A.y - B.y); arrow(c, pB[0], pB[1], pA[0], pA[1], rgba("acc", .7), 1.6, [6, 5]); arrow(c, O[0], O[1], Dd[0], Dd[1], V.acc, 3); }
+  if (VEC.mode === "angle") {
+    var a1 = Math.atan2(A.y, A.x), a2 = Math.atan2(B.y, B.x), d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+    c.strokeStyle = V.acc; c.lineWidth = 2; c.beginPath(); c.arc(O[0], O[1], vsc * 1.1, -a1, -(a1 + d), d > 0); c.stroke();
+    var mA = Math.hypot(A.x, A.y), mB = Math.hypot(B.x, B.y);
+    if (mA && mB) { var th = Math.acos(Math.max(-1, Math.min(1, (A.x * B.x + A.y * B.y) / (mA * mB)))) * 180 / Math.PI, mid = a1 + d / 2;
+      c.fillStyle = V.acc; c.font = "600 13px " + MONO; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("θ = " + fd(th, 1) + "°", O[0] + Math.cos(mid) * vsc * 2, O[1] - Math.sin(mid) * vsc * 2);
+      var t = (A.x * B.x + A.y * B.y) / (mA * mA), pr = toPx(A.x * t, A.y * t);
+      c.strokeStyle = rgba("vi", .55); c.lineWidth = 1.2; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(pB[0], pB[1]); c.lineTo(pr[0], pr[1]); c.stroke(); c.setLineDash([]);
+      c.strokeStyle = V.ok; c.lineWidth = 4; c.globalAlpha = .55; c.beginPath(); c.moveTo(O[0], O[1]); c.lineTo(pr[0], pr[1]); c.stroke(); c.globalAlpha = 1; }
+  }
+  arrow(c, O[0], O[1], pA[0], pA[1], V.cy, 3); arrow(c, O[0], O[1], pB[0], pB[1], V.vi, 3);
+  [[pA, V.cy, "A"], [pB, V.vi, "B"]].forEach(function (t) {
+    c.fillStyle = t[1]; c.globalAlpha = .22; c.beginPath(); c.arc(t[0][0], t[0][1], 9, 0, 2 * Math.PI); c.fill(); c.globalAlpha = 1;
+    c.font = "600 14px " + SANS; c.textAlign = "left"; c.textBaseline = "bottom"; c.fillText(t[2], t[0][0] + 9, t[0][1] - 6); });
+  if (VEC.mode === "sum" || VEC.mode === "diff") { var Rv = VEC.mode === "sum" ? toPx(A.x + B.x, A.y + B.y) : toPx(A.x - B.x, A.y - B.y);
+    c.fillStyle = V.acc; c.font = "600 14px " + SANS; c.textAlign = "left"; c.textBaseline = "bottom"; c.fillText(VEC.mode === "sum" ? "A + B" : "A − B", Rv[0] + 9, Rv[1] - 6); }
+  if (VEC.mode === "angle") { c.fillStyle = V.ok; c.font = "11px " + MONO; c.textAlign = "left"; c.textBaseline = "top"; c.fillText("verde: proyección de B sobre A", 12, 12); }
+  vecRead();
+}
+function row(k, v, cls, hero) { return '<div class="row' + (hero ? " hero" : "") + '"><div class="k">' + k + '</div><div class="v ' + (cls || "") + '">' + v + "</div></div>"; }
+function vecRead() {
+  var A = VEC.A, B = VEC.B, mA = Math.hypot(A.x, A.y), mB = Math.hypot(B.x, B.y), dot = A.x * B.x + A.y * B.y, cr = A.x * B.y - A.y * B.x;
+  var th = (mA && mB) ? Math.acos(Math.max(-1, Math.min(1, dot / (mA * mB)))) * 180 / Math.PI : NaN, h = "";
+  if (VEC.mode === "sum") { var R = { x: A.x + B.x, y: A.y + B.y }; h += row("A + B", vs(R), "acc", true) + row("|A + B|", fd(Math.hypot(R.x, R.y), 2), "acc"); }
+  else if (VEC.mode === "diff") { var Dv = { x: A.x - B.x, y: A.y - B.y }; h += row("A − B", vs(Dv), "acc", true) + row("|A − B|", fd(Math.hypot(Dv.x, Dv.y), 2), "acc"); }
+  else if (VEC.mode === "angle") { h += row("Ángulo entre A y B", isFinite(th) ? fd(th, 1) + "°" : "—", "acc", true) + row("A · B &nbsp;<em>|A||B| cos θ</em>", fd(dot, 2), Math.abs(dot) < 1e-9 ? "ok" : ""); }
+  else { h += row("A", vs(A), "cy", true) + row("B", vs(B), "vi"); }
+  h += '<div class="sect">Lecturas</div>';
+  h += row("|A| y θ<sub>A</sub>", fd(mA, 2) + " · " + fd(angD(A.x, A.y), 1) + "°", "cy") + row("|B| y θ<sub>B</sub>", fd(mB, 2) + " · " + fd(angD(B.x, B.y), 1) + "°", "vi");
+  if (VEC.mode !== "angle") h += row("A · B &nbsp;<em>A<sub>x</sub>B<sub>x</sub> + A<sub>y</sub>B<sub>y</sub></em>", fd(dot, 2), Math.abs(dot) < 1e-9 ? "ok" : "");
+  h += row("A × B", sgn(cr) + " k", "or");
+  $("vecRead").innerHTML = h;
+  var n = $("vecNote");
+  if (Math.abs(dot) < 1e-9 && mA && mB) { n.className = "note good"; n.innerHTML = "<b>Perpendiculares:</b> A · B = 0. Una fuerza perpendicular al desplazamiento no hace trabajo, como la normal sobre un auto en una carretera plana."; }
+  else if ((B.x < 0 && mB) || (A.x < 0 && mA)) { n.className = "note"; var w = B.x < 0 ? B : A, nm = B.x < 0 ? "B" : "A", raw = Math.atan(w.y / w.x) * 180 / Math.PI;
+    n.innerHTML = "<b>Ojo con la calculadora:</b> tan⁻¹(" + fd(w.y, 1) + " / " + fd(w.x, 1) + ") da " + fd(raw, 1) + "°, pero " + nm + " tiene x negativa y el ángulo real es " + fd(angD(w.x, w.y), 1) + "°. Dibuja el vector antes de confiar en el resultado."; }
+  else if (dot < 0) { n.className = "note"; n.innerHTML = "<b>A · B negativo:</b> el ángulo entre los vectores pasa de 90°. En trabajo, significa que la fuerza frena el movimiento."; }
+  else { n.className = "note"; n.innerHTML = "<b>Producto punto:</b> mide cuánto de un vector apunta en la dirección del otro. En energía es el trabajo, W = F · d."; }
+}
+function vpick(e) { var r = vcv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, best = null, bd = 28;
+  ["A", "B"].forEach(function (k) { var p = toPx(VEC[k].x, VEC[k].y), d = Math.hypot(p[0] - px, p[1] - py); if (d < bd) { bd = d; best = k; } }); return best; }
+function vmove(e) { var r = vcv.getBoundingClientRect(), x = (e.clientX - r.left - vox) / vsc, y = (voy - (e.clientY - r.top)) / vsc, lim = Math.floor(Math.min(vW, vH) / 2 / vsc) - 0.5;
+  x = Math.max(-lim, Math.min(lim, x)); y = Math.max(-lim, Math.min(lim, y));
+  if ($("snap").checked) { x = Math.round(x); y = Math.round(y); } else { x = Math.round(x * 10) / 10; y = Math.round(y * 10) / 10; }
+  VEC[vdrag].x = x; VEC[vdrag].y = y; drawVec(); }
+vcv.addEventListener("pointerdown", function (e) { vdrag = vpick(e); if (vdrag) { vcv.setPointerCapture(e.pointerId); vmove(e); e.preventDefault(); } });
+vcv.addEventListener("pointermove", function (e) { if (vdrag) vmove(e); else vcv.style.cursor = vpick(e) ? "grab" : "default"; });
+["pointerup", "pointercancel"].forEach(function (t) { vcv.addEventListener(t, function () { vdrag = null; }); });
+document.querySelectorAll("[data-mode]").forEach(function (b) { b.addEventListener("click", function () { VEC.mode = b.dataset.mode;
+  document.querySelectorAll("[data-mode]").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); }); drawVec(); }); });
+$("vecReset").addEventListener("click", function () { VEC.A = { x: 3, y: 4 }; VEC.B = { x: -1, y: 2 }; drawVec(); });
+$("vecPerp").addEventListener("click", function () { VEC.B = { x: -VEC.A.y * 0.5, y: VEC.A.x * 0.5 }; if ($("snap").checked) { VEC.B.x = Math.round(VEC.B.x); VEC.B.y = Math.round(VEC.B.y); } drawVec(); });
+
+/* =========================================================
+   06 PRODUCTO CRUZ (3D)
+   ========================================================= */
+var cxOrder = "ab", gl3 = null;
+var cxIn = { Ax: $("cxAx"), Ay: $("cxAy"), Bx: $("cxBx"), By: $("cxBy") };
+function cxSync() {
+  ["A", "B"].forEach(function (k) { VEC[k].x = Math.max(-5, Math.min(5, Math.round(VEC[k].x))); VEC[k].y = Math.max(-5, Math.min(5, Math.round(VEC[k].y))); });
+  cxIn.Ax.value = VEC.A.x; cxIn.Ay.value = VEC.A.y; cxIn.Bx.value = VEC.B.x; cxIn.By.value = VEC.B.y;
+}
+function cxRead() {
+  var A = VEC.A, B = VEC.B, cz = A.x * B.y - A.y * B.x, mA = Math.hypot(A.x, A.y), mB = Math.hypot(B.x, B.y);
+  if (cxOrder === "ba") cz = -cz;
+  $("cxAxo").textContent = sgn(A.x); $("cxAyo").textContent = sgn(A.y); $("cxBxo").textContent = sgn(B.x); $("cxByo").textContent = sgn(B.y);
+  $("cxK").innerHTML = (cxOrder === "ab" ? "A × B" : "B × A") + " &nbsp;<em>" + (cxOrder === "ab" ? "(A<sub>x</sub>B<sub>y</sub> − A<sub>y</sub>B<sub>x</sub>) k" : "(B<sub>x</sub>A<sub>y</sub> − B<sub>y</sub>A<sub>x</sub>) k") + "</em>";
+  $("cxV").textContent = sgn(cz) + " k";
+  $("cxArea").textContent = fd(Math.abs(cz), 2);
+  $("cxTh").textContent = (mA && mB) ? fd(Math.acos(Math.max(-1, Math.min(1, (A.x * B.x + A.y * B.y) / (mA * mB)))) * 180 / Math.PI, 1) + "°" : "—";
+  var n = $("cxNote");
+  if (Math.abs(cz) < 1e-9) { n.className = "note hot"; n.innerHTML = "<b>Paralelos o nulos:</b> el paralelogramo se aplana y el producto cruz vale cero. Una fuerza a lo largo del mango de una llave no produce torque."; }
+  else { n.className = "note"; n.innerHTML = "<b>Apunta hacia " + (cz > 0 ? "+z" : "−z") + ",</b> fuera del plano de A y B, y su magnitud es el área del paralelogramo. Se usa para el torque, τ = r × F, y para la fuerza sobre un cable con corriente dentro de un motor, F = I L × B."; }
+}
+function cxInput() { VEC.A = { x: +cxIn.Ax.value, y: +cxIn.Ay.value }; VEC.B = { x: +cxIn.Bx.value, y: +cxIn.By.value }; cxRead(); if (gl3) gl3.update(); }
+Object.keys(cxIn).forEach(function (k) { cxIn[k].addEventListener("input", cxInput); });
+document.querySelectorAll("[data-order]").forEach(function (b) { b.addEventListener("click", function () { cxOrder = b.dataset.order;
+  document.querySelectorAll("[data-order]").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); }); cxRead(); if (gl3) gl3.update(); }); });
+
+function initGL() {
+  if (gl3 !== null) return;
+  if (typeof THREE === "undefined") { $("v3dMsg").hidden = false; gl3 = false; return; }
+  var glc = $("gl"), renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: true }); } catch (e) { $("v3dMsg").hidden = false; gl3 = false; return; }
+  var scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(40, 4 / 3, 0.1, 200);
+  cam.up.set(0, 0, 1);
+  var orbit = { az: -0.95, el: 0.5, dist: 19 };
+  function place() { var ce = Math.cos(orbit.el); cam.position.set(orbit.dist * ce * Math.cos(orbit.az), orbit.dist * ce * Math.sin(orbit.az), orbit.dist * Math.sin(orbit.el)); cam.lookAt(0, 0, 0); }
+  var drag = null;
+  function pt(e) { var t = e.touches ? e.touches[0] : e; return { x: t.clientX, y: t.clientY }; }
+  function mv(e) { if (!drag) return; var p = pt(e); orbit.az -= (p.x - drag.x) * 0.008; orbit.el += (p.y - drag.y) * 0.008; orbit.el = Math.max(-1.45, Math.min(1.45, orbit.el)); drag = p; place(); render(); if (e.cancelable) e.preventDefault(); }
+  glc.addEventListener("mousedown", function (e) { drag = pt(e); });
+  window.addEventListener("mousemove", mv); window.addEventListener("mouseup", function () { drag = null; });
+  glc.addEventListener("touchstart", function (e) { drag = pt(e); }, { passive: true });
+  glc.addEventListener("touchmove", mv, { passive: false }); glc.addEventListener("touchend", function () { drag = null; });
+  glc.addEventListener("wheel", function (e) { orbit.dist = Math.max(9, Math.min(40, orbit.dist + e.deltaY * 0.01)); place(); render(); e.preventDefault(); }, { passive: false });
+
+  var gp = [];
+  for (var i = -6; i <= 6; i++) { gp.push(i, -6, 0, i, 6, 0, -6, i, 0, 6, i, 0); }
+  var gridGeo = new THREE.BufferGeometry(); gridGeo.setAttribute("position", new THREE.Float32BufferAttribute(gp, 3));
+  var gridMat = new THREE.LineBasicMaterial(); scene.add(new THREE.LineSegments(gridGeo, gridMat));
+  var axGeo = new THREE.BufferGeometry(); axGeo.setAttribute("position", new THREE.Float32BufferAttribute([-6.6,0,0, 6.6,0,0, 0,-6.6,0, 0,6.6,0, 0,0,-7, 0,0,7], 3));
+  var axMat = new THREE.LineBasicMaterial(); scene.add(new THREE.LineSegments(axGeo, axMat));
+  function label(t) { var cv = document.createElement("canvas"); cv.width = 96; cv.height = 64; var tex = new THREE.CanvasTexture(cv); var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false })); sp.scale.set(1.2, 0.8, 1); sp.userData = { cv: cv, t: t, tex: tex }; scene.add(sp); return sp; }
+  function paint(sp, col) { var c = sp.userData.cv.getContext("2d"); c.clearRect(0, 0, 96, 64); c.fillStyle = col; c.font = "600 38px 'IBM Plex Sans', sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(sp.userData.t, 48, 34); sp.userData.tex.needsUpdate = true; }
+  var lx = label("x"), ly = label("y"), lz = label("z"); lx.position.set(7.3, 0, 0); ly.position.set(0, 7.3, 0); lz.position.set(0, 0, 7.6);
+  var lA = label("A"), lB = label("B"), lC = label("×");
+  function mkArrow() { var a = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 1); scene.add(a); return a; }
+  var arA = mkArrow(), arB = mkArrow(), arC = mkArrow();
+  var pgGeo = new THREE.BufferGeometry(); pgGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(18), 3));
+  var pgMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: .22, side: THREE.DoubleSide, depthWrite: false }); scene.add(new THREE.Mesh(pgGeo, pgMat));
+  var edGeo = new THREE.BufferGeometry(); edGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(9), 3));
+  var edMat = new THREE.LineDashedMaterial({ dashSize: .25, gapSize: .18 }); var edges = new THREE.Line(edGeo, edMat); scene.add(edges);
+  function setArrow(ar, v, col) { var L = v.length(); if (L < 1e-6) { ar.visible = false; return; } ar.visible = true; ar.setDirection(v.clone().normalize()); var hl = Math.min(0.7, L * 0.35); ar.setLength(L, hl, hl * 0.55); ar.setColor(new THREE.Color(col)); }
+  function colors() {
+    renderer.setClearColor(new THREE.Color(V.vp), 1);
+    gridMat.color = new THREE.Color(V.line); axMat.color = new THREE.Color(V.dim);
+    [lx, ly, lz].forEach(function (s) { paint(s, V.dim); }); paint(lA, V.cy); paint(lB, V.vi); paint(lC, V.or);
+    pgMat.color = new THREE.Color(V.acc); edMat.color = new THREE.Color(V.acc);
+  }
+  function update() {
+    var A = new THREE.Vector3(VEC.A.x, VEC.A.y, 0), B = new THREE.Vector3(VEC.B.x, VEC.B.y, 0);
+    var C = cxOrder === "ab" ? new THREE.Vector3().crossVectors(A, B) : new THREE.Vector3().crossVectors(B, A);
+    var cl = C.length(), s = cl > 6.5 ? 6.5 / cl : 1, Cs = C.clone().multiplyScalar(s);
+    setArrow(arA, A, V.cy); setArrow(arB, B, V.vi); setArrow(arC, Cs, V.or);
+    lA.position.copy(A.clone().multiplyScalar(1.13)); lB.position.copy(B.clone().multiplyScalar(1.13));
+    lC.position.set(Cs.x + 0.6, Cs.y, Cs.z + (Cs.z >= 0 ? 0.4 : -0.4));
+    lA.visible = A.length() > 0; lB.visible = B.length() > 0; lC.visible = cl > 1e-6;
+    var S = A.clone().add(B), p = pgGeo.attributes.position.array, pts = [0,0,0, A.x,A.y,0, S.x,S.y,0, 0,0,0, S.x,S.y,0, B.x,B.y,0];
+    for (var i = 0; i < 18; i++) p[i] = pts[i]; pgGeo.attributes.position.needsUpdate = true; pgGeo.computeBoundingSphere();
+    var e = edGeo.attributes.position.array, ep = [A.x,A.y,0, S.x,S.y,0, B.x,B.y,0];
+    for (var j = 0; j < 9; j++) e[j] = ep[j]; edGeo.attributes.position.needsUpdate = true; edGeo.computeBoundingSphere(); edges.computeLineDistances();
+    render();
+  }
+  function resize() { var w = glc.clientWidth, h = glc.clientHeight; if (!w || !h) return; renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); render(); }
+  function render() { renderer.render(scene, cam); }
+  gl3 = { update: update, resize: resize, retheme: function () { colors(); update(); } };
+  place(); colors(); resize(); update();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { colors(); render(); });
+}
+function drawCross() { cxSync(); cxRead(); initGL(); if (gl3) { gl3.resize(); gl3.retheme(); } }
+
+/* =========================================================
+   07 TORQUE
+   ========================================================= */
+function drawTq() {
+  var f = +$("tqF").value, r = +$("tqR").value, th = +$("tqA").value, rad = th * Math.PI / 180, tau = r * f * Math.sin(rad), perp = f * Math.sin(rad);
+  $("tqFo").textContent = f + " N"; $("tqRo").textContent = fd(r, 2) + " m"; $("tqAo").textContent = th + "°";
+  $("tqOut").textContent = fd(Math.abs(tau), 2) + " N·m"; $("tqPerp").textContent = fd(perp, 1) + " N";
+  var ok = Math.abs(tau) >= 110; $("tqOk").textContent = ok ? "sí" : "no, faltan " + fd(110 - Math.abs(tau), 1) + " N·m"; $("tqOk").className = "v " + (ok ? "ok" : "no");
+  var n = $("tqNote");
+  if (th === 0 || th === 180) { n.className = "note hot"; n.innerHTML = "<b>Empujar a lo largo del mango no hace nada:</b> sen 0° = sen 180° = 0. Toda la fuerza se va contra el eje de la tuerca."; }
+  else if (f === 0) { n.className = "note"; n.innerHTML = "<b>Sin fuerza no hay torque,</b> por largo que sea el mango."; }
+  else if (ok) { n.className = "note good"; n.innerHTML = "<b>Afloja.</b> Con " + f + " N a este ángulo bastaría un mango de " + fd(110 / (f * Math.sin(rad)), 2) + " m. Por eso la cruceta es larga y se empuja perpendicular."; }
+  else { n.className = "note"; n.innerHTML = "<b>Sólo cuenta la componente perpendicular al mango,</b> F sen θ. Alargar el mango al doble duplica el torque sin hacer más fuerza: es la idea de la palanca."; }
+  var S = setup($("tqCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var bx = Math.max(56, W * 0.14), by = H * 0.62, Lpx = (W * 0.62) * (r / 0.6), ex = bx + Lpx, ey = by;
+  c.fillStyle = V.line; c.beginPath(); if (c.roundRect) c.roundRect(bx, by - 9, Lpx, 18, 9); else c.rect(bx, by - 9, Lpx, 18); c.fill();
+  c.strokeStyle = V.fg; c.lineWidth = 2; c.fillStyle = V.panel; c.beginPath();
+  for (var i = 0; i < 6; i++) { var a = Math.PI / 6 + i * Math.PI / 3, x = bx + 24 * Math.cos(a), y = by + 24 * Math.sin(a); if (i) c.lineTo(x, y); else c.moveTo(x, y); }
+  c.closePath(); c.fill(); c.stroke(); c.beginPath(); c.arc(bx, by, 8, 0, 2 * Math.PI); c.stroke();
+  arrow(c, bx, by + 38, ex, by + 38, V.cy, 1.5); c.fillStyle = V.cy; c.font = "500 12px " + MONO; c.textAlign = "center"; c.textBaseline = "top"; c.fillText("r = " + fd(r, 2) + " m", (bx + ex) / 2, by + 44);
+  var fl = 30 + (f / 400) * Math.min(H * 0.48, W * 0.3), fx = ex + fl * Math.cos(rad), fy = ey - fl * Math.sin(rad);
+  if (f > 0) {
+    if (Math.sin(rad) > 0.05) arrow(c, ex, ey, ex, fy, V.acc, 1.6, [5, 4]);
+    arrow(c, ex, ey, fx, fy, V.fg, 3);
+    c.fillStyle = V.fg; c.textAlign = "left"; c.textBaseline = "bottom"; c.font = "600 13px " + SANS; c.fillText("F = " + f + " N", Math.min(fx + 6, W - 74), Math.max(fy - 2, 18));
+    c.fillStyle = V.acc; c.font = "500 12px " + MONO; c.textAlign = "right"; c.textBaseline = "middle"; if (Math.sin(rad) > 0.2) c.fillText("F sen θ", ex - 8, (ey + fy) / 2);
+    c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.arc(ex, ey, 20, 0, -rad, true); c.stroke();
+    c.fillStyle = V.dim; c.textAlign = "left"; c.font = "11px " + MONO; if (th > 10) c.fillText("θ", ex + 26 * Math.cos(rad / 2), ey - 26 * Math.sin(rad / 2));
+  }
+  if (Math.sin(rad) > 0.01 && f > 0) {
+    c.strokeStyle = V.or; c.lineWidth = 2; c.beginPath(); c.arc(bx, by, 40, Math.PI * 0.15, -Math.PI * 1.1, true); c.stroke();
+    var ang = -Math.PI * 1.1, axx = bx + 40 * Math.cos(ang), ayy = by + 40 * Math.sin(ang);
+    c.fillStyle = V.or; c.beginPath(); c.moveTo(axx, ayy); c.lineTo(axx - 2, ayy + 9); c.lineTo(axx + 8, ayy + 4); c.closePath(); c.fill();
+    c.font = "500 11px " + MONO; c.textAlign = "left"; c.textBaseline = "top"; c.fillText("gira antihorario: τ sale de la pantalla", Math.max(8, bx - 40), by + 66);
+  }
+  var bw = Math.min(260, W - 60), bx0 = W - bw - 24, by0 = 28, val = Math.min(Math.abs(tau), 200) / 200;
+  c.fillStyle = V.dim; c.font = "11px " + MONO; c.textAlign = "left"; c.textBaseline = "bottom"; c.fillText("torque · 0 a 200 N·m", bx0, by0 - 4);
+  c.fillStyle = rgba("line", .7); c.fillRect(bx0, by0, bw, 10);
+  c.fillStyle = ok ? V.ok : V.acc; c.fillRect(bx0, by0, bw * val, 10);
+  var tx = bx0 + bw * 110 / 200; c.strokeStyle = V.no; c.lineWidth = 2; c.beginPath(); c.moveTo(tx, by0 - 3); c.lineTo(tx, by0 + 13); c.stroke();
+  c.fillStyle = V.no; c.textBaseline = "top"; c.textAlign = "center"; c.fillText("110", tx, by0 + 15);
+}
+["tqF", "tqR", "tqA"].forEach(function (id) { $(id).addEventListener("input", drawTq); });
+
+/* =========================================================
+   AUTOEVALUACIÓN
+   ========================================================= */
+var QZ = [
+  { q: "90 km/h equivalen a:", o: ["25 m/s", "324 m/s", "9 m/s", "32.4 m/s"], c: 0, e: "90 ÷ 3.6 = 25 m/s. Multiplicar por 3.6 (324) es el error más común." },
+  { q: "0.0052 A equivale a:", o: ["5.2 mA", "52 mA", "5.2 µA", "0.52 mA"], c: 0, e: "0.0052 = 5.2 × 10⁻³, y 10⁻³ es el prefijo mili." },
+  { q: "Si P = F·v, las dimensiones de la potencia son:", o: ["[M L² T⁻³]", "[M L T⁻²]", "[M L² T⁻²]", "[M L T⁻¹]"], c: 0, e: "[M L T⁻²][L T⁻¹] = [M L² T⁻³]. [M L² T⁻²] es energía; la potencia es energía entre tiempo." },
+  { q: "1 m³ equivale a:", o: ["1000 L", "100 L", "10 000 cm³", "100 dm³"], c: 0, e: "1 m³ = (10 dm)³ = 1000 dm³, y 1 dm³ = 1 L." },
+  { q: "Con C = 5i − 2j y D = −3i + 6j, C + D es:", o: ["2i + 4j", "8i − 8j", "2i − 8j", "−2i + 4j"], c: 0, e: "(5 − 3)i + (−2 + 6)j = 2i + 4j. 8i − 8j sale de restar en lugar de sumar." },
+  { q: "Con los mismos vectores, C · D vale:", o: ["−27", "3", "−3", "27"], c: 0, e: "(5)(−3) + (−2)(6) = −27. Negativo: el ángulo entre ellos pasa de 90°." },
+  { q: "Con 50 N a 90° del mango y r = 0.3 m, el torque es:", o: ["15 N·m", "166.7 N·m", "0 N·m", "1.5 N·m"], c: 0, e: "τ = r F sen 90° = (0.3)(50)(1) = 15 N·m." },
+  { q: "B × A comparado con A × B:", o: ["Misma magnitud, sentido opuesto", "Es igual", "Es cero", "Es perpendicular a A × B"], c: 0, e: "El producto cruz no es conmutativo: B × A = −(A × B)." }
+];
+var ORD = [[1,0,3,2],[2,3,0,1],[0,2,1,3],[3,1,2,0],[1,3,0,2],[2,0,3,1],[3,2,1,0],[0,3,2,1]];
+var qScore = 0, qDone = 0, qBox = $("p-autoevaluacion");
+function quizBuild() {
+  qScore = 0; qDone = 0; qBox.querySelectorAll(".qcard").forEach(function (n) { n.remove(); }); $("score").textContent = "0 de " + QZ.length + " respondidas";
+  QZ.forEach(function (it, qi) {
+    var card = document.createElement("div"); card.className = "card qcard";
+    card.innerHTML = '<span class="tag">Pregunta ' + (qi + 1) + '</span><h3>' + it.q + '</h3><div class="opts"></div><p class="fb" hidden></p>';
+    var opts = card.querySelector(".opts"), fb = card.querySelector(".fb");
+    ORD[qi].forEach(function (oi) { var b = document.createElement("button"); b.type = "button"; b.textContent = it.o[oi]; b.dataset.i = oi;
+      b.addEventListener("click", function () {
+        opts.querySelectorAll("button").forEach(function (x) { x.disabled = true; if (+x.dataset.i === it.c) x.classList.add("right"); });
+        var ok = oi === it.c; if (!ok) b.classList.add("wrong"); if (ok) qScore++; qDone++;
+        fb.hidden = false; fb.innerHTML = '<b class="' + (ok ? "ok" : "no") + '">' + (ok ? "Correcto." : "No es esa.") + "</b> " + it.e;
+        $("score").innerHTML = qDone < QZ.length ? qDone + " de " + QZ.length + " respondidas · <b>" + qScore + " correctas</b>" : "Resultado: <b>" + qScore + " de " + QZ.length + "</b>" + (qScore === QZ.length ? " · listo para estática" : " · revisa los ejemplos de las que fallaste");
+      }); opts.appendChild(b); });
+    qBox.appendChild(card);
+  });
+}
+$("quizReset").addEventListener("click", quizBuild);
+quizBuild();
+
+/* =========================================================
+   PESTAÑAS
+   ========================================================= */
+var DRAW = { conversiones: cvCalc, prefijos: drawPf, "area-volumen": drawAv, dimensiones: function () {}, vectores: drawVec, "producto-cruz": drawCross, torque: drawTq, ejemplos: function () {}, autoevaluacion: function () {} };
+var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]')), cur = "conversiones";
+function nameOf(t) { return t.id.slice(2); }
+function show(name) {
+  if (!DRAW[name]) name = "conversiones";
+  cur = name;
+  tabs.forEach(function (t) { var on = nameOf(t) === name; t.setAttribute("aria-selected", on ? "true" : "false"); t.tabIndex = on ? 0 : -1; $("p-" + nameOf(t)).hidden = !on; });
+  DRAW[name]();
+}
+function redibujar() { DRAW[cur](); }
+function go(name) { if (location.hash !== "#" + name) { try { location.hash = name; } catch (e) { show(name); } } else show(name); }
+tabs.forEach(function (t, i) {
+  t.addEventListener("click", function () { go(nameOf(t)); });
+  t.addEventListener("keydown", function (e) {
+    var k = e.key, j = null;
+    if (k === "ArrowRight") j = (i + 1) % tabs.length; else if (k === "ArrowLeft") j = (i - 1 + tabs.length) % tabs.length; else if (k === "Home") j = 0; else if (k === "End") j = tabs.length - 1;
+    if (j !== null) { e.preventDefault(); go(nameOf(tabs[j])); tabs[j].focus(); }
+  });
+});
+window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+var rt; window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(redibujar, 60); });
+try { new MutationObserver(function () { leerTema(); rotulo(); if (gl3) gl3.retheme(); redibujar(); }).observe(root, { attributes: true, attributeFilter: ["data-tema"] }); } catch (e) {}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(redibujar);
+pfUpdate();
+show(location.hash.slice(1) || "conversiones");
+})();
+</script>
+</body>
+</html>

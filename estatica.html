@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Estática</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+
+<script>
+/* el tema se fija antes del primer pintado para que no parpadee */
+(function () {
+  var r = document.documentElement, t = null;
+  try { t = localStorage.getItem("banco-tema"); } catch (e) {}
+  if (t !== "claro" && t !== "oscuro") t = r.getAttribute("data-theme") === "light" ? "claro" : "oscuro";
+  r.setAttribute("data-tema", t);
+})();
+</script>
+
+<style>
+/* Layout: visor a la izquierda, panel de instrumento a la derecha; una pestaña por herramienta,
+   apila bajo 880px. Mismo sistema visual que los bancos de los otros cursos. */
+:root {
+  color-scheme: dark;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #0a0e15; --panel: #111722; --panel-2: #161e2b; --line: #223044; --line-rgb: 34,48,68;
+  --fg: #dde5f0; --dim: #8695aa;
+  --acc: #f2c454; --acc-rgb: 242,196,84;
+  --cy: #5fa8d8; --cy-rgb: 95,168,216;
+  --vi: #a888d8; --vi-rgb: 168,136,216;
+  --ok: #52b87c; --ok-rgb: 82,184,124;
+  --no: #d4624a; --no-rgb: 212,98,74;
+  --or: #e0743c; --or-rgb: 224,116,60;
+  --vp: #050709;
+  --hot: #6d3a2a; --good: #2a5c3f;
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --math: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+:root[data-tema="claro"] {
+  color-scheme: light;
+  --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eef1f6; --line: #d9dfe7; --line-rgb: 217,223,231;
+  --fg: #253243; --dim: #61728b;
+  --acc: #936904; --acc-rgb: 147,105,4;
+  --cy: #1a76b1; --cy-rgb: 26,118,177;
+  --vi: #8853d7; --vi-rgb: 136,83,215;
+  --ok: #27804c; --ok-rgb: 39,128,76;
+  --no: #ce3c1d; --no-rgb: 206,60,29;
+  --or: #c14a0d; --or-rgb: 193,74,13;
+  --vp: #f7f9fc;
+  --hot: #e8bfb2; --good: #b8dcc6;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0; }
+
+.wrap {
+  position: relative; max-width: 1200px; margin: 0 auto; padding-block: 20px 36px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header { padding-right: 46px; }
+.back { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px; }
+.back:hover { color: var(--acc); }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); margin: 0 0 6px; }
+h1 { font-size: clamp(22px, 4.4vw, 31px); font-weight: 600; letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance; }
+.lede { color: var(--dim); margin: 0; max-width: 70ch; font-size: 14.5px; }
+.lede b { color: var(--fg); font-weight: 500; }
+
+/* pestañas */
+nav { display: flex; flex-wrap: wrap; gap: 5px; margin: 18px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px; cursor: pointer;
+  display: flex; align-items: baseline; gap: 7px; transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] { color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600; }
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.tab.sep { margin-left: 8px; }
+
+/* escenario */
+.stage { display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.viewport {
+  position: relative; background: var(--vp); border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0; max-width: 100%;
+}
+.viewport canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hint {
+  position: absolute; left: 11px; bottom: 9px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+@media (max-width: 700px) { .hint { display: none; } }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0; display: flex; flex-direction: column; gap: 14px;
+}
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output { font-family: var(--mono); font-size: 13.5px; font-weight: 500; color: var(--acc); font-variant-numeric: tabular-nums; }
+.pair2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+
+input[type="range"] { width: 100%; -webkit-appearance: none; appearance: none; background: transparent; margin: 2px 0; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line); }
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px; }
+input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none; }
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+select, input[type="text"], input[type="number"] {
+  font: 500 14px var(--mono); color: var(--fg); background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 9px; width: 100%; min-width: 0;
+}
+select { font-family: var(--sans); }
+select:focus-visible, input:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button, .btn {
+  flex: 1; font-family: var(--sans); font-size: 12.5px; font-weight: 500; background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer; white-space: nowrap;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] { background: rgba(var(--acc-rgb), .14); color: var(--acc); border-color: rgba(var(--acc-rgb), .42); }
+.btn:hover, .toggle button:hover { color: var(--fg); border-color: var(--dim); }
+.toggle button:focus-visible, .btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--dim); }
+.chk input { accent-color: var(--acc); }
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(var(--line-rgb), .55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v { font-family: var(--mono); font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.v.acc { color: var(--acc); } .v.cy { color: var(--cy); } .v.ok { color: var(--ok); } .v.no { color: var(--no); }
+.v.vi { color: var(--vi); } .v.or { color: var(--or); } .v.dim { color: var(--dim); }
+.sect { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+.note { font-size: 12.5px; line-height: 1.5; color: var(--dim); background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; margin: 0; }
+.note b { color: var(--fg); font-weight: 600; }
+.note.hot { border-color: var(--hot); } .note.hot b { color: var(--no); }
+.note.good { border-color: var(--good); } .note.good b { color: var(--ok); }
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+
+/* visor de conversiones */
+.htmlview { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 22px; overflow: auto; }
+.bigres { font-family: var(--mono); font-size: clamp(22px, 4.2vw, 34px); font-weight: 600; letter-spacing: -.01em; text-align: center; font-variant-numeric: tabular-nums; }
+.bigres .from { color: var(--fg); } .bigres .to { color: var(--acc); } .bigres .eqs { color: var(--dim); font-weight: 400; margin: 0 .3em; }
+.chainv { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 12px; font-family: var(--mono); font-size: 15px; }
+.chainv .op { color: var(--dim); }
+.chainv .term { display: inline-flex; gap: 6px; align-items: baseline; }
+.frac { display: inline-flex; flex-direction: column; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; }
+.frac .num, .frac .den { display: flex; gap: 6px; align-items: baseline; white-space: nowrap; }
+.frac .num { border-bottom: 1.5px solid var(--dim); padding-bottom: 4px; margin-bottom: 4px; }
+.u { color: var(--cy); }
+.u.x { color: var(--dim); text-decoration: line-through; text-decoration-color: var(--no); text-decoration-thickness: 2px; }
+.chainv .res { color: var(--acc); font-weight: 600; }
+.steps-v { margin: 0 auto; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; color: var(--dim); max-width: 52ch; }
+.steps-v b { color: var(--fg); font-weight: 500; }
+
+/* visor de análisis dimensional */
+.eqbig { font-family: var(--math); font-size: clamp(24px, 4.4vw, 38px); text-align: center; color: var(--fg); white-space: nowrap; overflow-x: auto; }
+.terms { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.term-c { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 9px 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 112px; }
+.term-c .t { font-family: var(--math); font-size: 19px; }
+.term-c .d { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.term-c.ok { border-color: rgba(var(--ok-rgb), .6); } .term-c.ok .d { color: var(--ok); }
+.term-c.no { border-color: rgba(var(--no-rgb), .6); } .term-c.no .d { color: var(--no); }
+.waiting { text-align: center; color: var(--dim); font-size: 13.5px; }
+.m { font-family: var(--math); font-size: 1.06em; white-space: nowrap; }
+
+/* pestañas a todo el ancho */
+.full { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 15px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.card .tag { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--cy); }
+.card h3 { font-size: 15.5px; font-weight: 600; margin: 0; }
+.card p.q { font-size: 14px; margin: 0; }
+details { border-top: 1px solid rgba(var(--line-rgb), .7); padding-top: 8px; }
+summary { cursor: pointer; font-size: 12.5px; font-weight: 500; color: var(--acc); list-style: none; display: inline-flex; align-items: center; gap: 7px; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "+"; font-family: var(--mono); width: 16px; height: 16px; border: 1.3px solid var(--acc); border-radius: 4px; display: inline-grid; place-items: center; font-size: 11px; line-height: 1; }
+details[open] summary::before { content: "−"; }
+summary:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; border-radius: 4px; }
+.steps { margin: 10px 0 0; padding-left: 1.2rem; display: grid; gap: 6px; font-size: 13.5px; }
+.steps li::marker { font-family: var(--mono); color: var(--dim); font-size: 12px; }
+.ans { display: inline-block; margin-left: 4px; font-family: var(--mono); font-size: 12.5px; font-weight: 500; color: var(--ok); background: rgba(var(--ok-rgb), .12); border-radius: 4px; padding: 1px 7px; }
+
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.opts button { font: 500 13.5px var(--mono); text-align: left; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 11px; cursor: pointer; }
+.opts button:hover:not(:disabled) { border-color: var(--acc); }
+.opts button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.opts button.right { border-color: var(--ok); background: rgba(var(--ok-rgb), .12); color: var(--ok); }
+.opts button.wrong { border-color: var(--no); background: rgba(var(--no-rgb), .12); color: var(--no); }
+.opts button:disabled { cursor: default; }
+.fb { margin: 0; font-size: 13px; color: var(--dim); }
+.fb b.ok { color: var(--ok); } .fb b.no { color: var(--no); }
+.scorebar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-family: var(--mono); font-size: 13px; color: var(--dim); }
+.scorebar b { color: var(--acc); font-weight: 600; }
+
+footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--dim); max-width: 80ch; }
+footer a { color: var(--dim); }
+
+.tema {
+  position: absolute; top: 20px; right: max(16px, env(safe-area-inset-right, 0px)); z-index: 5; width: 34px; height: 34px; padding: 0;
+  display: grid; place-items: center; background: var(--panel); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: color .14s, border-color .14s, background .14s;
+}
+.tema:hover { color: var(--acc); border-color: var(--acc); background: var(--panel-2); }
+.tema:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.tema svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: none; }
+.tema .sol { display: block; }
+:root[data-tema="claro"] .tema .sol { display: none; }
+:root[data-tema="claro"] .tema .luna { display: block; }
+
+@media (max-width: 560px) { .opts { grid-template-columns: minmax(0, 1fr); } .full { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+
+/* fuerzas a elegir y subpaneles */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button {
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500; background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; cursor: pointer;
+}
+.chips button:hover { color: var(--fg); border-color: var(--dim); }
+.chips button[aria-pressed="true"] { background: rgba(var(--acc-rgb), .14); color: var(--acc); border-color: rgba(var(--acc-rgb), .42); }
+.chips button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.sub { display: flex; flex-direction: column; gap: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button class="tema" id="tema" type="button" aria-label="Cambiar a modo claro">
+    <svg class="sol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.3"/><path d="M12 2.6v2.4M12 19v2.4M4.3 4.3l1.7 1.7M18 18l1.7 1.7M2.6 12H5M19 12h2.4M4.3 19.7 6 18M18 6l1.7-1.7"/></svg>
+    <svg class="luna" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.8A8.6 8.6 0 0 1 9.2 3.5a7.7 7.7 0 1 0 11.3 11.3Z"/></svg>
+  </button>
+  <header>
+    <a class="back" href="physical.html">← Propedéutico de Física</a>
+    <p class="eyebrow">Mecánica · Propedéutico</p>
+    <h1>Estática</h1>
+    <p class="lede">Cuándo algo se queda quieto. Un punto está en equilibrio si las fuerzas suman cero; un cuerpo real necesita además que <b>los torques sumen cero</b>, porque puede girar. Con esas dos reglas se dimensionan soportes, cables, vigas y grúas.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="t-cuerpo-libre" aria-controls="p-cuerpo-libre" aria-selected="true"><span class="n">01</span> Cuerpo libre</button>
+    <button class="tab" role="tab" id="t-dos-cables" aria-controls="p-dos-cables" aria-selected="false" tabindex="-1"><span class="n">02</span> Dos cables</button>
+    <button class="tab" role="tab" id="t-plano-inclinado" aria-controls="p-plano-inclinado" aria-selected="false" tabindex="-1"><span class="n">03</span> Plano inclinado</button>
+    <button class="tab" role="tab" id="t-balancin" aria-controls="p-balancin" aria-selected="false" tabindex="-1"><span class="n">04</span> Balancín</button>
+    <button class="tab" role="tab" id="t-centro-de-masa" aria-controls="p-centro-de-masa" aria-selected="false" tabindex="-1"><span class="n">05</span> Centro de masa</button>
+    <button class="tab" role="tab" id="t-viga" aria-controls="p-viga" aria-selected="false" tabindex="-1"><span class="n">06</span> Viga</button>
+    <button class="tab" role="tab" id="t-pluma" aria-controls="p-pluma" aria-selected="false" tabindex="-1"><span class="n">07</span> Pluma</button>
+    <button class="tab sep" role="tab" id="t-ejemplos" aria-controls="p-ejemplos" aria-selected="false" tabindex="-1">Ejemplos</button>
+    <button class="tab" role="tab" id="t-autoevaluacion" aria-controls="p-autoevaluacion" aria-selected="false" tabindex="-1">Autoevaluación</button>
+  </nav>
+
+  <!-- ============ 01 CUERPO LIBRE ============ -->
+  <section class="stage" id="p-cuerpo-libre" role="tabpanel" aria-labelledby="t-cuerpo-libre">
+    <div class="viewport"><canvas id="dclCanvas" aria-label="Escenario con las fuerzas que elegiste"></canvas><div class="hint">elige las fuerzas que actúan sobre el cuerpo marcado</div></div>
+    <div class="panel">
+      <p class="ask">Antes de hacer cuentas: <b>¿qué fuerzas actúan sobre el cuerpo?</b> Sólo las que otro cuerpo ejerce sobre él.</p>
+      <div class="ctrl"><label for="dclSel">Escenario</label>
+        <select id="dclSel">
+          <option value="piso">Caja en reposo sobre el piso</option>
+          <option value="rampaCuerda">Caja sostenida por una cuerda en una rampa lisa</option>
+          <option value="semaforo">Semáforo colgado de dos cables</option>
+          <option value="rampaRugosa">Caja quieta en una rampa rugosa</option>
+          <option value="escalera">Escalera en pared lisa y piso rugoso</option>
+        </select>
+      </div>
+      <div class="chips" id="dclChips" role="group" aria-label="Fuerzas">
+        <button type="button" data-f="peso" aria-pressed="false">Peso</button>
+        <button type="button" data-f="normal" aria-pressed="false">Normal</button>
+        <button type="button" data-f="tension" aria-pressed="false">Tensión</button>
+        <button type="button" data-f="friccion" aria-pressed="false">Fricción</button>
+        <button type="button" data-f="mov" aria-pressed="false">Fuerza del movimiento</button>
+        <button type="button" data-f="sobre" aria-pressed="false">Fuerza del cuerpo sobre el apoyo</button>
+      </div>
+      <div class="toggle">
+        <button type="button" class="btn" id="dclCheck">Revisar mi diagrama</button>
+        <button type="button" class="btn" id="dclClear">Borrar</button>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Resultado</div><div class="v dim" id="dclRes">sin revisar</div></div>
+        <div class="row"><div class="k">Fuerzas que faltan</div><div class="v" id="dclMiss">—</div></div>
+        <div class="row"><div class="k">Fuerzas que sobran</div><div class="v" id="dclExtra">—</div></div>
+      </div>
+      <p class="note" id="dclNote"><b>Prueba rápida:</b> para cada fuerza, di quién la ejerce. Si no puedes nombrar a otro cuerpo, esa fuerza no existe.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 DOS CABLES ============ -->
+  <section class="stage" id="p-dos-cables" role="tabpanel" aria-labelledby="t-dos-cables" hidden>
+    <div class="viewport"><canvas id="cabCanvas" aria-label="Semáforo colgado de dos cables y su triángulo de fuerzas"></canvas><div class="hint">en equilibrio las tres fuerzas cierran un triángulo</div></div>
+    <div class="panel">
+      <p class="ask">Baja los dos ángulos hacia la horizontal. <b>¿Qué le pasa a la tensión?</b></p>
+      <div class="ctrl"><div class="ctrl-top"><label for="cabA1">Ángulo del cable izquierdo &nbsp;θ₁</label><output id="cabA1o"></output></div><input type="range" id="cabA1" min="5" max="85" step="1" value="37"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="cabA2">Ángulo del cable derecho &nbsp;θ₂</label><output id="cabA2o"></output></div><input type="range" id="cabA2" min="5" max="85" step="1" value="53"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="cabW">Peso del semáforo &nbsp;W</label><output id="cabWo"></output></div><input type="range" id="cabW" min="50" max="500" step="10" value="150"></div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Tensión izquierda &nbsp;<em>T₁ = W cos θ₂ / sen(θ₁+θ₂)</em></div><div class="v cy" id="cabT1">—</div></div>
+        <div class="row hero"><div class="k">Tensión derecha &nbsp;<em>T₂ = W cos θ₁ / sen(θ₁+θ₂)</em></div><div class="v vi" id="cabT2">—</div></div>
+        <div class="row"><div class="k">ΣFx &nbsp;<em>T₂ cos θ₂ − T₁ cos θ₁</em></div><div class="v ok" id="cabFx">0</div></div>
+        <div class="row"><div class="k">Suma de tensiones contra el peso</div><div class="v dim" id="cabRatio">—</div></div>
+      </div>
+      <p class="note" id="cabNote"></p>
+      <div class="legend"><span><i style="background:var(--acc)"></i> peso</span><span><i style="background:var(--cy)"></i> T₁</span><span><i style="background:var(--vi)"></i> T₂</span></div>
+    </div>
+  </section>
+
+  <!-- ============ 03 PLANO INCLINADO ============ -->
+  <section class="stage" id="p-plano-inclinado" role="tabpanel" aria-labelledby="t-plano-inclinado" hidden>
+    <div class="viewport"><canvas id="incCanvas" aria-label="Caja en un plano inclinado con sus fuerzas"></canvas><div class="hint">ejes girados: x a lo largo de la rampa</div></div>
+    <div class="panel">
+      <p class="ask">Con fricción, <b>¿hasta qué ángulo se queda quieta la caja sin cuerda?</b></p>
+      <div class="ctrl"><div class="ctrl-top"><label for="incA">Inclinación &nbsp;θ</label><output id="incAo"></output></div><input type="range" id="incA" min="0" max="80" step="1" value="30"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="incM">Masa de la caja &nbsp;m</label><output id="incMo"></output></div><input type="range" id="incM" min="1" max="100" step="1" value="20"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="incMu">Coeficiente de fricción estática &nbsp;μₛ</label><output id="incMuo"></output></div><input type="range" id="incMu" min="0" max="1" step="0.05" value="0"></div>
+      <label class="chk"><input type="checkbox" id="incComp" checked> Mostrar componentes del peso</label>
+      <div class="readout">
+        <div class="row hero"><div class="k">Tensión necesaria en la cuerda</div><div class="v acc" id="incT">—</div></div>
+        <div class="row"><div class="k">Normal &nbsp;<em>N = W cos θ</em></div><div class="v cy" id="incN">—</div></div>
+        <div class="row"><div class="k">Peso a lo largo de la rampa &nbsp;<em>W sen θ</em></div><div class="v" id="incWp">—</div></div>
+        <div class="row"><div class="k">Fricción que actúa &nbsp;<em>≤ μₛN</em></div><div class="v ok" id="incF">—</div></div>
+        <div class="row"><div class="k">Ángulo máximo sin cuerda &nbsp;<em>tan⁻¹ μₛ</em></div><div class="v dim" id="incMax">—</div></div>
+      </div>
+      <p class="note" id="incNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 04 BALANCÍN ============ -->
+  <section class="stage" id="p-balancin" role="tabpanel" aria-labelledby="t-balancin" hidden>
+    <div class="viewport"><canvas id="balCanvas" aria-label="Balancín con dos personas"></canvas><div class="hint">se inclina hacia el lado con más torque, no con más peso</div></div>
+    <div class="panel">
+      <p class="ask">Una persona de 30 kg está a 2 m. <b>¿Dónde debe sentarse la de 75 kg?</b></p>
+      <div class="pair2">
+        <div class="ctrl"><div class="ctrl-top"><label for="balM1">m₁ (izq.)</label><output id="balM1o"></output></div><input type="range" id="balM1" min="10" max="120" step="1" value="30"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="balD1">d₁</label><output id="balD1o"></output></div><input type="range" id="balD1" min="0" max="3" step="0.05" value="2"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="balM2">m₂ (der.)</label><output id="balM2o"></output></div><input type="range" id="balM2" min="10" max="120" step="1" value="75"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="balD2">d₂</label><output id="balD2o"></output></div><input type="range" id="balD2" min="0" max="3" step="0.05" value="1.2"></div>
+      </div>
+      <button type="button" class="btn" id="balEq">Colocar m₂ donde equilibra</button>
+      <div class="readout">
+        <div class="row hero"><div class="k">Torque neto &nbsp;<em>ΣM = m₁g d₁ − m₂g d₂</em></div><div class="v acc" id="balNet">—</div></div>
+        <div class="row"><div class="k">Torque izquierdo (antihorario)</div><div class="v cy" id="balT1">—</div></div>
+        <div class="row"><div class="k">Torque derecho (horario)</div><div class="v vi" id="balT2">—</div></div>
+        <div class="row"><div class="k">Reacción del pivote &nbsp;<em>(m₁+m₂)g</em></div><div class="v dim" id="balR">—</div></div>
+        <div class="row"><div class="k">d₂ de equilibrio &nbsp;<em>m₁d₁/m₂</em></div><div class="v ok" id="balDeq">—</div></div>
+      </div>
+      <p class="note" id="balNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 05 CENTRO DE MASA ============ -->
+  <section class="stage" id="p-centro-de-masa" role="tabpanel" aria-labelledby="t-centro-de-masa" hidden>
+    <div class="viewport"><canvas id="cmCanvas" aria-label="Centro de masa de una barra o de un vehículo"></canvas><div class="hint" id="cmHint">arrastra las masas sobre la barra</div></div>
+    <div class="panel">
+      <div class="toggle" role="group" aria-label="Modo">
+        <button type="button" data-cm="masas" aria-pressed="true">Masas en una barra</button>
+        <button type="button" data-cm="auto" aria-pressed="false">Vehículo</button>
+      </div>
+      <div id="cmMasas" class="sub">
+        <p class="ask">Una barra de 4 m con 2 kg y 6 kg en sus extremos. <b>¿Dónde la sostendrías con un solo dedo?</b></p>
+        <div class="ctrl"><div class="ctrl-top"><label for="cmM1">Masa 1</label><output id="cmM1o"></output></div><input type="range" id="cmM1" min="0" max="10" step="0.5" value="2"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cmM2">Masa 2</label><output id="cmM2o"></output></div><input type="range" id="cmM2" min="0" max="10" step="0.5" value="6"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cmM3">Masa 3</label><output id="cmM3o"></output></div><input type="range" id="cmM3" min="0" max="10" step="0.5" value="0"></div>
+        <div class="readout">
+          <div class="row hero"><div class="k">Centro de masa &nbsp;<em>Σmᵢxᵢ / Σmᵢ</em></div><div class="v acc" id="cmX">—</div></div>
+          <div class="row"><div class="k">Σmᵢxᵢ</div><div class="v cy" id="cmNum">—</div></div>
+          <div class="row"><div class="k">Masa total</div><div class="v dim" id="cmTot">—</div></div>
+        </div>
+      </div>
+      <div id="cmAuto" class="sub" hidden>
+        <p class="ask">Báscula bajo cada eje: <b>¿dónde está el centro de masa del auto?</b></p>
+        <div class="ctrl"><div class="ctrl-top"><label for="cmCarM">Masa del vehículo</label><output id="cmCarMo"></output></div><input type="range" id="cmCarM" min="800" max="3000" step="50" value="1200"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cmCarL">Distancia entre ejes &nbsp;L</label><output id="cmCarLo"></output></div><input type="range" id="cmCarL" min="2" max="3.5" step="0.05" value="2.6"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cmCarA">Centro de masa detrás del eje delantero &nbsp;a</label><output id="cmCarAo"></output></div><input type="range" id="cmCarA" min="0.2" max="0.8" step="0.01" value="0.4"></div>
+        <div class="readout">
+          <div class="row hero"><div class="k">Eje delantero &nbsp;<em>W (L−a)/L</em></div><div class="v cy" id="cmRf">—</div></div>
+          <div class="row hero"><div class="k">Eje trasero &nbsp;<em>W a/L</em></div><div class="v vi" id="cmRr">—</div></div>
+          <div class="row"><div class="k">Reparto delantero / trasero</div><div class="v acc" id="cmPct">—</div></div>
+        </div>
+      </div>
+      <p class="note" id="cmNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 06 VIGA ============ -->
+  <section class="stage" id="p-viga" role="tabpanel" aria-labelledby="t-viga" hidden>
+    <div class="viewport"><canvas id="vigaCanvas" aria-label="Viga con dos apoyos y cargas"></canvas><div class="hint">momentos respecto a A: R_A sale de la ecuación</div></div>
+    <div class="panel">
+      <p class="ask">Mueve el rodillo B hacia adentro y la carga al extremo. <b>¿Qué le pasa al apoyo A?</b></p>
+      <div class="toggle" id="vigaPresets">
+        <button type="button" class="btn" data-p="ej">Ejemplo 4</button>
+        <button type="button" class="btn" data-p="peso">Con peso propio</button>
+        <button type="button" class="btn" data-p="vol">Voladizo</button>
+      </div>
+      <div class="pair2">
+        <div class="ctrl"><div class="ctrl-top"><label for="vgL">Largo &nbsp;L</label><output id="vgLo"></output></div><input type="range" id="vgL" min="2" max="10" step="0.5" value="6"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="vgB">Rodillo B en</label><output id="vgBo"></output></div><input type="range" id="vgB" min="20" max="48" step="1" value="48"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="vgP1">Carga P₁</label><output id="vgP1o"></output></div><input type="range" id="vgP1" min="0" max="3000" step="50" value="1200"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="vgX1">P₁ en</label><output id="vgX1o"></output></div><input type="range" id="vgX1" min="0" max="48" step="1" value="16"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="vgP2">Carga P₂</label><output id="vgP2o"></output></div><input type="range" id="vgP2" min="0" max="3000" step="50" value="0"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="vgX2">P₂ en</label><output id="vgX2o"></output></div><input type="range" id="vgX2" min="0" max="48" step="1" value="36"></div>
+      </div>
+      <div class="ctrl"><div class="ctrl-top"><label for="vgW">Peso de la viga (en su centro)</label><output id="vgWo"></output></div><input type="range" id="vgW" min="0" max="2000" step="50" value="0"></div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Reacción en A &nbsp;<em>ΣP − R_B</em></div><div class="v cy" id="vgRA">—</div></div>
+        <div class="row hero"><div class="k">Reacción en B &nbsp;<em>Σ(Pᵢ xᵢ) / x_B</em></div><div class="v vi" id="vgRB">—</div></div>
+        <div class="row"><div class="k">Carga total</div><div class="v dim" id="vgTot">—</div></div>
+      </div>
+      <p class="note" id="vgNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 07 PLUMA ============ -->
+  <section class="stage" id="p-pluma" role="tabpanel" aria-labelledby="t-pluma" hidden>
+    <div class="viewport"><canvas id="plCanvas" aria-label="Pluma horizontal articulada en la pared con un cable tirante"></canvas><div class="hint">momentos respecto a la articulación</div></div>
+    <div class="panel">
+      <p class="ask">La carga es de 2000 N. <b>¿El cable soporta menos, igual o más que eso?</b></p>
+      <div class="ctrl"><div class="ctrl-top"><label for="plA">Ángulo del cable con la pluma &nbsp;α</label><output id="plAo"></output></div><input type="range" id="plA" min="8" max="80" step="1" value="30"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="plW">Carga colgada &nbsp;W</label><output id="plWo"></output></div><input type="range" id="plW" min="0" max="5000" step="100" value="2000"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="plX">Posición de la carga (pluma de 4 m)</label><output id="plXo"></output></div><input type="range" id="plX" min="0" max="1" step="0.025" value="1"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="plWb">Peso de la pluma (en su centro)</label><output id="plWbo"></output></div><input type="range" id="plWb" min="0" max="2000" step="50" value="0"></div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Tensión del cable &nbsp;<em>T sen α · L = W x + W_p L/2</em></div><div class="v or" id="plT">—</div></div>
+        <div class="row"><div class="k">Reacción horizontal &nbsp;<em>H = T cos α</em></div><div class="v cy" id="plH">—</div></div>
+        <div class="row"><div class="k">Reacción vertical &nbsp;<em>V = W + W_p − T sen α</em></div><div class="v vi" id="plV">—</div></div>
+        <div class="row"><div class="k">Tensión contra la carga</div><div class="v dim" id="plRatio">—</div></div>
+      </div>
+      <p class="note" id="plNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ EJEMPLOS ============ -->
+  <section class="full" id="p-ejemplos" role="tabpanel" aria-labelledby="t-ejemplos" hidden>
+    <article class="card">
+      <span class="tag">Partícula · dos cables</span>
+      <h3>Semáforo colgado</h3>
+      <p class="q">Un semáforo de 150 N cuelga de dos cables a 37° y 53° de la horizontal. Calcula las tensiones.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>ΣFx: T₂ cos 53° = T₁ cos 37°, así que T₂ = 1.333 T₁ (con sen 37° = 0.6 y cos 37° = 0.8).</li>
+          <li>ΣFy: 0.6 T₁ + 0.8 (1.333 T₁) = 150, es decir 1.667 T₁ = 150.</li>
+          <li><span class="ans">T₁ = 90 N</span> <span class="ans">T₂ = 120 N</span> El cable más vertical carga más.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Partícula · plano inclinado</span>
+      <h3>Caja sostenida en una rampa lisa</h3>
+      <p class="q">Una caja de 20 kg en una rampa sin fricción de 30° se sostiene con una cuerda paralela a la rampa. Tensión y normal.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Gira los ejes: x a lo largo de la rampa. W = (20)(9.81) = 196.2 N.</li>
+          <li>Eje x: T = W sen 30°. <span class="ans">T = 98.1 N</span></li>
+          <li>Eje y: N = W cos 30°. <span class="ans">N = 169.9 N</span></li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Cuerpo rígido · torque</span>
+      <h3>Equilibrar el balancín</h3>
+      <p class="q">Un niño de 30 kg está a 2 m del pivote. ¿A qué distancia debe sentarse un adulto de 75 kg?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>ΣM en el pivote: (30)(g)(2) = (75)(g)(d). La g se cancela.</li>
+          <li>d = 60 / 75. <span class="ans">d = 0.8 m</span></li>
+          <li>El pivote empuja con (105)(9.81) = 1030 N: también se cumple ΣFy = 0.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Centro de masa</span>
+      <h3>Cargas por eje de un auto</h3>
+      <p class="q">Un auto de 1200 kg con 2.6 m entre ejes carga el 60 % de su peso en el eje delantero. ¿Dónde está su centro de masa?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>W = 11 772 N; eje delantero 7063 N, eje trasero 4709 N.</li>
+          <li>Momentos en el eje delantero: R_t · 2.6 = W · a, así que a = 0.4 × 2.6. <span class="ans">a = 1.04 m</span> detrás del eje delantero.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Cuerpo rígido · reacciones</span>
+      <h3>Viga simplemente apoyada</h3>
+      <p class="q">Viga de 6 m con pasador en A y rodillo en B (extremos). Carga de 1200 N a 2 m de A. ¿Y si la viga pesa 500 N?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>ΣM_A: R_B (6) = 1200 (2). <span class="ans">R_B = 400 N</span></li>
+          <li>ΣFy: R_A = 1200 − 400. <span class="ans">R_A = 800 N</span></li>
+          <li>Con el peso en x = 3 m: R_B (6) = 2400 + 1500. <span class="ans">R_B = 650 N</span> <span class="ans">R_A = 1050 N</span></li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Cuerpo rígido · tirante</span>
+      <h3>Pluma con cable</h3>
+      <p class="q">Pluma horizontal de 4 m articulada en la pared, con cable a 30° desde su extremo y 2000 N colgados del extremo. Tensión y reacciones.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>ΣM en la articulación: (T sen 30°)(4) = 2000 (4). <span class="ans">T = 4000 N</span></li>
+          <li>H = T cos 30°. <span class="ans">H = 3464 N</span> La pluma trabaja a compresión.</li>
+          <li>V = 2000 − T sen 30°. <span class="ans">V = 0 N</span></li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Reto</span>
+      <h3>Escalera contra la pared</h3>
+      <p class="q">Escalera de 5 m y 200 N en una pared lisa, con la base a 3 m de la pared. Reacciones y μₛ mínimo del piso.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>La escalera llega a 4 m de altura. El peso actúa a 1.5 m horizontales de la base.</li>
+          <li>ΣM en la base: N_pared (4) = 200 (1.5). <span class="ans">N_pared = 75 N</span></li>
+          <li>ΣFx: la fricción iguala a N_pared, f = 75 N. ΣFy: <span class="ans">N_piso = 200 N</span></li>
+          <li>μₛ ≥ f / N_piso = 75 / 200. <span class="ans">μₛ ≥ 0.375</span></li>
+        </ol>
+      </details>
+    </article>
+  </section>
+
+  <!-- ============ AUTOEVALUACIÓN ============ -->
+  <section class="full" id="p-autoevaluacion" role="tabpanel" aria-labelledby="t-autoevaluacion" hidden>
+    <div class="scorebar"><span id="score">0 de 8 respondidas</span><button class="btn" type="button" id="quizReset" style="flex:none">Reiniciar</button></div>
+  </section>
+
+  <footer>
+    Se usa g = 9.81 m/s² y vigas y cables sin peso salvo donde se indica. Anterior: <a href="herramientas.html">Herramientas básicas</a>. Siguiente tema: <a href="cinematica.html">Cinemática</a>. <a href="physical.html">Volver a los temas</a>.
+  </footer>
+</div>
+
+<script>
+(function () {
+"use strict";
+var $ = function (id) { return document.getElementById(id); };
+var root = document.documentElement, G = 9.81;
+
+/* ---------- tema ---------- */
+var V = {};
+function leerTema() {
+  var cs = getComputedStyle(root);
+  ["bg","panel","panel-2","line","fg","dim","acc","cy","vi","ok","no","or","vp"].forEach(function (k) { V[k] = cs.getPropertyValue("--" + k).trim(); });
+  ["line","acc","cy","vi","ok","no","or"].forEach(function (k) { V[k + "Rgb"] = cs.getPropertyValue("--" + k + "-rgb").trim(); });
+}
+function rgba(k, a) { return "rgba(" + V[k + "Rgb"] + "," + a + ")"; }
+leerTema();
+var bt = $("tema");
+function rotulo() { var c = root.getAttribute("data-tema") === "claro"; bt.setAttribute("aria-label", c ? "Cambiar a modo oscuro" : "Cambiar a modo claro"); }
+rotulo();
+bt.addEventListener("click", function () {
+  var nuevo = root.getAttribute("data-tema") === "claro" ? "oscuro" : "claro";
+  root.setAttribute("data-tema", nuevo);
+  try { localStorage.setItem("banco-tema", nuevo); } catch (e) {}
+});
+
+/* ---------- formato y dibujo ---------- */
+function fd(x, d) { var v = Number(x.toFixed(d)); if (Object.is(v, -0)) v = 0; return v.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: d }).replace(/,/g, " "); }
+function N(x) { return (x < 0 ? "−" : "") + fd(Math.abs(x), Math.abs(x) >= 100 ? 0 : 1) + " N"; }
+function setup(cv) {
+  var dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return null;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.fillStyle = V.vp; c.fillRect(0, 0, w, h);
+  return { c: c, w: w, h: h };
+}
+function arrow(c, x1, y1, x2, y2, col, w, dash) {
+  var ang = Math.atan2(y2 - y1, x2 - x1), len = Math.hypot(x2 - x1, y2 - y1), hs = Math.min(12, len * 0.4);
+  c.save(); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = w || 2.5; c.setLineDash(dash || []);
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(ang) * hs * 0.8, y2 - Math.sin(ang) * hs * 0.8); c.stroke(); c.setLineDash([]);
+  if (len > 2) { c.beginPath(); c.moveTo(x2, y2); c.lineTo(x2 - hs * Math.cos(ang - 0.42), y2 - hs * Math.sin(ang - 0.42)); c.lineTo(x2 - hs * Math.cos(ang + 0.42), y2 - hs * Math.sin(ang + 0.42)); c.closePath(); c.fill(); }
+  c.restore();
+}
+/* flecha a partir de un ángulo físico (grados, antihorario desde +x) */
+function arrowA(c, x, y, deg, len, col, w, dash) { var r = deg * Math.PI / 180; arrow(c, x, y, x + len * Math.cos(r), y - len * Math.sin(r), col, w, dash); }
+function label(c, txt, x, y, col, opt) {
+  opt = opt || {}; c.font = (opt.w || "600") + " " + (opt.s || 12.5) + "px " + (opt.f || MONO); c.fillStyle = col;
+  c.textAlign = opt.a || "center"; c.textBaseline = opt.b || "middle"; c.fillText(txt, x, y);
+}
+function hatch(c, x, y, w, h, vertical) {
+  c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.strokeStyle = V.dim; c.lineWidth = 1; c.globalAlpha = .55;
+  for (var k = -h - w; k < w + h; k += 9) { c.beginPath(); c.moveTo(x + k, y + h); c.lineTo(x + k + h, y); c.stroke(); }
+  c.restore();
+}
+var MONO = "'IBM Plex Mono', ui-monospace, monospace", SANS = "'IBM Plex Sans', system-ui, sans-serif";
+function row(k, v, cls, hero) { return '<div class="row' + (hero ? " hero" : "") + '"><div class="k">' + k + '</div><div class="v ' + (cls || "") + '">' + v + "</div></div>"; }
+function bind(ids, fn) { ids.forEach(function (id) { $(id).addEventListener("input", fn); }); }
+
+/* =========================================================
+   01 CUERPO LIBRE
+   ========================================================= */
+var DCL_NAMES = { peso: "peso", normal: "normal", tension: "tensión", friccion: "fricción", mov: "fuerza del movimiento", sobre: "fuerza sobre el apoyo" };
+var dclSel = {}, dclChecked = false;
+function slopeGeo(W, H, deg) {
+  var a = deg * Math.PI / 180, gy = H * 0.84, x0 = W * 0.1, x1 = W * 0.9, base = x1 - x0, hgt = base * Math.tan(a);
+  if (hgt > H * 0.62) { hgt = H * 0.62; base = hgt / Math.tan(a); x0 = x1 - base; }
+  var s = 0.48, px = x0 + base * s, py = gy - hgt * s, off = 34;
+  return { a: a, deg: deg, gy: gy, x0: x0, x1: x1, top: gy - hgt, cx: px - off * Math.sin(a), cy: py - off * Math.cos(a), px: px, py: py };
+}
+function drawSlope(c, g, W) {
+  c.fillStyle = rgba("line", .55); c.strokeStyle = V.dim; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(g.x0, g.gy); c.lineTo(g.x1, g.gy); c.lineTo(g.x1, g.top); c.closePath(); c.fill(); c.stroke();
+  c.strokeStyle = V.dim; c.beginPath(); c.moveTo(0, g.gy); c.lineTo(W, g.gy); c.stroke();
+  c.save(); c.translate(g.cx, g.cy); c.rotate(-g.a); c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2;
+  c.fillRect(-46, -34, 92, 68); c.strokeRect(-46, -34, 92, 68); c.restore();
+  c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.arc(g.x0, g.gy, 40, -g.a, 0); c.stroke();
+  label(c, g.deg + "°", g.x0 + 52 * Math.cos(g.a / 2), g.gy - 52 * Math.sin(g.a / 2) + 2, V.dim, { s: 11 });
+}
+var SCN = {
+  piso: {
+    correct: ["peso", "normal"],
+    why: "Sólo la Tierra (peso) y el piso (normal) actúan sobre la caja. La fuerza de la caja sobre el piso es real, pero va en el DCL del piso. Nada empuja a la caja hacia los lados.",
+    draw: function (c, W, H) {
+      var gy = H * 0.74, cx = W / 2, cy = gy - 50; c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke(); hatch(c, 0, gy, W, 14);
+      c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.fillRect(cx - 70, cy - 50, 140, 100); c.strokeRect(cx - 70, cy - 50, 140, 100);
+      return { peso: [[cx, cy, -90, "W"]], normal: [[cx, cy, 90, "N"]], sobre: [[cx, gy + 2, -90, "caja→piso"]], mov: [[cx, cy, 0, "F mov."]], tension: [[cx, cy, 45, "T"]], friccion: [[cx, cy, 180, "f"]] };
+    }
+  },
+  rampaCuerda: {
+    correct: ["peso", "normal", "tension"],
+    why: "La Tierra (peso), la rampa (normal, perpendicular a ella) y la cuerda (tensión, a lo largo de la cuerda). La rampa es lisa, así que no hay fricción. La \"fuerza del movimiento\" no existe: nadie la ejerce.",
+    draw: function (c, W, H) {
+      var g = slopeGeo(W, H, 30); drawSlope(c, g, W);
+      var ex = g.cx + 46 * Math.cos(g.a), ey = g.cy - 46 * Math.sin(g.a), tx = g.x1 - 6, ty = g.top - 34 * Math.cos(g.a) + 6;
+      c.strokeStyle = V.fg; c.lineWidth = 2; c.beginPath(); c.moveTo(ex, ey); c.lineTo(tx, ty); c.stroke();
+      c.fillStyle = V.dim; c.fillRect(g.x1 - 4, ty - 6, 10, g.top - ty + 6 + 2);
+      return { peso: [[g.cx, g.cy, -90, "W"]], normal: [[g.cx, g.cy, 120, "N"]], tension: [[g.cx, g.cy, 30, "T"]], mov: [[g.cx, g.cy, 210, "F mov."]], friccion: [[g.cx, g.cy, 210, "f"]], sobre: [[g.px, g.py, -60, "caja→rampa"]] };
+    }
+  },
+  semaforo: {
+    correct: ["peso", "tension"],
+    why: "El peso y una tensión por cada cable, dirigida a lo largo del cable y alejándose del semáforo. Un cable siempre jala, nunca empuja. No hay superficie que lo toque, así que no hay normal ni fricción.",
+    draw: function (c, W, H) {
+      var top = H * 0.1, cx = W / 2, ky = H * 0.38, a1 = 37 * Math.PI / 180, a2 = 53 * Math.PI / 180, lx = cx - (ky - top) / Math.tan(a1), rx = cx + (ky - top) / Math.tan(a2);
+      c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, top); c.lineTo(W, top); c.stroke(); hatch(c, 0, top - 14, W, 14);
+      c.strokeStyle = V.fg; c.lineWidth = 2; c.beginPath(); c.moveTo(lx, top); c.lineTo(cx, ky); c.lineTo(rx, top); c.stroke();
+      c.fillStyle = V.panel; c.strokeStyle = V.fg; c.fillRect(cx - 24, ky, 48, 118); c.strokeRect(cx - 24, ky, 48, 118);
+      ["#d4624a", "#f2c454", "#52b87c"].forEach(function (col, i) { c.fillStyle = col; c.globalAlpha = .85; c.beginPath(); c.arc(cx, ky + 22 + i * 37, 12, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1; });
+      var my = ky + 59;
+      return { peso: [[cx, my, -90, "W"]], tension: [[cx, ky, 143, "T₁"], [cx, ky, 53, "T₂"]], normal: [[cx, my, 90, "N"]], friccion: [[cx, my, 0, "f"]], mov: [[cx, my, 180, "F mov."]], sobre: [[cx, ky, 90, "semáforo→cable"]] };
+    }
+  },
+  rampaRugosa: {
+    correct: ["peso", "normal", "friccion"],
+    why: "Peso, normal y fricción estática. La caja tiende a resbalar hacia abajo, así que la fricción apunta hacia arriba de la rampa. Es la rampa la que ejerce la normal y la fricción: son dos componentes de la misma fuerza de contacto.",
+    draw: function (c, W, H) {
+      var g = slopeGeo(W, H, 25); drawSlope(c, g, W);
+      c.strokeStyle = V.dim; c.lineWidth = 1; for (var k = 0; k < 18; k++) { var t = k / 18, x = g.x0 + (g.x1 - g.x0) * t, y = g.gy - (g.gy - g.top) * t; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 4, y + 5); c.stroke(); }
+      return { peso: [[g.cx, g.cy, -90, "W"]], normal: [[g.cx, g.cy, 115, "N"]], friccion: [[g.cx, g.cy, 25, "f"]], mov: [[g.cx, g.cy, 205, "F mov."]], tension: [[g.cx, g.cy, 25, "T"]], sobre: [[g.px, g.py, -65, "caja→rampa"]] };
+    }
+  },
+  escalera: {
+    correct: ["peso", "normal", "friccion"],
+    why: "El peso en el centro de la escalera, una normal del piso (vertical), una normal de la pared (horizontal) y fricción sólo en el piso, apuntando hacia la pared porque la base tiende a resbalar alejándose. La pared es lisa: no hay fricción arriba.",
+    draw: function (c, W, H) {
+      var gy = H * 0.86, wx = W * 0.8, s = Math.min(H * 0.72 / 0.8, W * 0.6 / 0.6), fx = wx - 0.6 * s, ty = gy - 0.8 * s;
+      c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, gy); c.lineTo(wx, gy); c.lineTo(wx, 10); c.stroke(); hatch(c, 0, gy, wx + 14, 14); hatch(c, wx, 10, 14, gy - 10);
+      c.strokeStyle = V.fg; c.lineWidth = 4; c.beginPath(); c.moveTo(fx, gy); c.lineTo(wx, ty); c.stroke();
+      c.lineWidth = 1.5; for (var k = 1; k < 9; k++) { var t = k / 9, x = fx + (wx - fx) * t, y = gy + (ty - gy) * t; c.beginPath(); c.moveTo(x - 7, y - 5); c.lineTo(x + 7, y + 5); c.stroke(); }
+      var mx = (fx + wx) / 2, my = (gy + ty) / 2;
+      return { peso: [[mx, my, -90, "W"]], normal: [[fx, gy, 90, "N piso"], [wx, ty, 180, "N pared"]], friccion: [[fx, gy, 0, "f piso"]], tension: [[mx, my, 53, "T"]], mov: [[fx, gy, 180, "F mov."]], sobre: [[fx, gy, -90, "escalera→piso"]] };
+    }
+  }
+};
+function drawDcl() {
+  var S = setup($("dclCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h, sc = SCN[$("dclSel").value];
+  var pos = sc.draw(c, W, H), L = Math.min(W, H) * 0.17;
+  Object.keys(DCL_NAMES).forEach(function (k) {
+    var sel = !!dclSel[k], good = sc.correct.indexOf(k) >= 0, col = null, dash = null;
+    if (!dclChecked) { if (sel) col = V.acc; }
+    else if (sel && good) col = V.ok;
+    else if (sel && !good) { col = V.no; dash = [6, 4]; }
+    else if (!sel && good) { col = V.cy; dash = [3, 4]; }
+    if (!col) return;
+    pos[k].forEach(function (p) {
+      var r = p[2] * Math.PI / 180, ex = p[0] + L * Math.cos(r), ey = p[1] - L * Math.sin(r);
+      arrow(c, p[0], p[1], ex, ey, col, 3, dash);
+      var lx = ex + 16 * Math.cos(r), ly = ey - 16 * Math.sin(r);
+      label(c, p[3], Math.max(30, Math.min(W - 30, lx)), Math.max(12, Math.min(H - 12, ly)), col, { s: 12 });
+      if (dclChecked && sel && !good) { c.strokeStyle = V.no; c.lineWidth = 2.5; var mx = (p[0] + ex) / 2, my = (p[1] + ey) / 2; c.beginPath(); c.moveTo(mx - 7, my - 7); c.lineTo(mx + 7, my + 7); c.moveTo(mx + 7, my - 7); c.lineTo(mx - 7, my + 7); c.stroke(); }
+    });
+  });
+  var any = Object.keys(dclSel).some(function (k) { return dclSel[k]; });
+  if (!any) label(c, "Marca en el panel las fuerzas que crees que actúan", W / 2, 22, V.dim, { s: 12, w: "500" });
+  if (dclChecked) {
+    label(c, "verde: correcta · rojo: sobra · azul punteado: faltó", W / 2, 22, V.dim, { s: 11.5, w: "500" });
+  }
+}
+function dclReadout() {
+  var sc = SCN[$("dclSel").value], miss = [], extra = [];
+  if (!dclChecked) { $("dclRes").textContent = "sin revisar"; $("dclRes").className = "v dim"; $("dclMiss").textContent = "—"; $("dclExtra").textContent = "—"; $("dclMiss").className = "v"; $("dclExtra").className = "v";
+    $("dclNote").className = "note"; $("dclNote").innerHTML = "<b>Prueba rápida:</b> para cada fuerza, di quién la ejerce. Si no puedes nombrar a otro cuerpo, esa fuerza no existe."; return; }
+  Object.keys(DCL_NAMES).forEach(function (k) { var s = !!dclSel[k], g = sc.correct.indexOf(k) >= 0; if (g && !s) miss.push(DCL_NAMES[k]); if (s && !g) extra.push(DCL_NAMES[k]); });
+  var ok = !miss.length && !extra.length;
+  $("dclRes").textContent = ok ? "diagrama correcto" : "revisa el diagrama"; $("dclRes").className = "v " + (ok ? "ok" : "no");
+  $("dclMiss").textContent = miss.length ? miss.join(", ") : "ninguna"; $("dclMiss").className = "v " + (miss.length ? "cy" : "ok");
+  $("dclExtra").textContent = extra.length ? extra.join(", ") : "ninguna"; $("dclExtra").className = "v " + (extra.length ? "no" : "ok");
+  $("dclNote").className = "note " + (ok ? "good" : "hot"); $("dclNote").innerHTML = "<b>" + (ok ? "Así es." : "Por qué:") + "</b> " + sc.why;
+}
+function dclUpdate() { document.querySelectorAll("#dclChips button").forEach(function (b) { b.setAttribute("aria-pressed", dclSel[b.dataset.f] ? "true" : "false"); }); dclReadout(); drawDcl(); }
+document.querySelectorAll("#dclChips button").forEach(function (b) { b.addEventListener("click", function () { dclSel[b.dataset.f] = !dclSel[b.dataset.f]; dclChecked = false; dclUpdate(); }); });
+$("dclSel").addEventListener("change", function () { dclSel = {}; dclChecked = false; dclUpdate(); });
+$("dclCheck").addEventListener("click", function () { dclChecked = true; dclUpdate(); });
+$("dclClear").addEventListener("click", function () { dclSel = {}; dclChecked = false; dclUpdate(); });
+
+/* =========================================================
+   02 DOS CABLES
+   ========================================================= */
+function drawCab() {
+  var a1d = +$("cabA1").value, a2d = +$("cabA2").value, Wt = +$("cabW").value, a1 = a1d * Math.PI / 180, a2 = a2d * Math.PI / 180;
+  var den = Math.sin(a1 + a2), T1 = Wt * Math.cos(a2) / den, T2 = Wt * Math.cos(a1) / den;
+  $("cabA1o").textContent = a1d + "°"; $("cabA2o").textContent = a2d + "°"; $("cabWo").textContent = Wt + " N";
+  $("cabT1").textContent = N(T1); $("cabT2").textContent = N(T2); $("cabFx").textContent = fd(T2 * Math.cos(a2) - T1 * Math.cos(a1), 2) + " N";
+  $("cabRatio").textContent = fd((T1 + T2) / Wt, 2) + " × W";
+  var n = $("cabNote"), mx = Math.max(T1, T2);
+  if (Math.min(a1d, a2d) <= 15) { n.className = "note hot"; n.innerHTML = "<b>Cable casi horizontal:</b> la tensión llega a " + N(mx) + ", " + fd(mx / Wt, 1) + " veces el peso. Por eso un cable tendido nunca queda perfectamente horizontal: necesitaría una tensión infinita."; }
+  else if (a1d === a2d) { n.className = "note"; n.innerHTML = "<b>Cables simétricos:</b> cargan lo mismo, T = W / (2 sen θ) = " + N(T1) + ". A 30° cada cable soporta exactamente el peso completo."; }
+  else { n.className = "note"; n.innerHTML = "<b>El cable más vertical carga más</b> (" + (T2 > T1 ? "el derecho" : "el izquierdo") + "). Las componentes horizontales siempre se cancelan; las verticales se reparten el peso."; }
+  var S = setup($("cabCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var stack = W < 520, sw = stack ? W : W * 0.6, sh = stack ? H * 0.58 : H;
+  var top = 26, halfW = sw / 2 - 22, h = Math.min(sh * 0.42, halfW * Math.tan(a1), halfW * Math.tan(a2)), cx = sw / 2, ky = top + h;
+  var lx = cx - h / Math.tan(a1), rx = cx + h / Math.tan(a2);
+  c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(8, top); c.lineTo(sw - 8, top); c.stroke(); hatch(c, 8, top - 12, sw - 16, 12);
+  var maxT = Math.max(T1, T2), w1 = 1.5 + 4 * T1 / maxT, w2 = 1.5 + 4 * T2 / maxT;
+  c.lineCap = "round"; c.strokeStyle = V.cy; c.lineWidth = w1; c.beginPath(); c.moveTo(lx, top); c.lineTo(cx, ky); c.stroke();
+  c.strokeStyle = V.vi; c.lineWidth = w2; c.beginPath(); c.moveTo(rx, top); c.lineTo(cx, ky); c.stroke(); c.lineCap = "butt";
+  c.setLineDash([3, 4]); c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.moveTo(cx - 60, ky); c.lineTo(cx + 60, ky); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.arc(cx, ky, 30, Math.PI, Math.PI + a1); c.stroke(); c.beginPath(); c.arc(cx, ky, 38, -a2, 0); c.stroke();
+  label(c, a1d + "°", cx - 46 * Math.cos(a1 / 2), ky - 46 * Math.sin(a1 / 2), V.cy, { s: 11 }); label(c, a2d + "°", cx + 54 * Math.cos(a2 / 2), ky - 54 * Math.sin(a2 / 2), V.vi, { s: 11 });
+  var bh = Math.min(84, sh - ky - 18); c.strokeStyle = V.fg; c.lineWidth = 2; c.beginPath(); c.moveTo(cx, ky); c.lineTo(cx, ky + 10); c.stroke();
+  c.fillStyle = V.panel; c.fillRect(cx - 17, ky + 10, 34, bh); c.strokeRect(cx - 17, ky + 10, 34, bh);
+  ["#d4624a", "#f2c454", "#52b87c"].forEach(function (col, i) { c.fillStyle = col; c.globalAlpha = .85; c.beginPath(); c.arc(cx, ky + 10 + bh * (i + 0.5) / 3, Math.min(9, bh / 8), 0, Math.PI * 2); c.fill(); c.globalAlpha = 1; });
+  label(c, "T₁ = " + N(T1), (lx + cx) / 2 - 14, (top + ky) / 2 + 18, V.cy, { a: "right", s: 12 });
+  label(c, "T₂ = " + N(T2), (rx + cx) / 2 + 14, (top + ky) / 2 + 18, V.vi, { a: "left", s: 12 });
+  // triángulo de fuerzas
+  var rx0 = stack ? 0 : sw, ry0 = stack ? sh : 0, rw = stack ? W : W - sw, rh = stack ? H - sh : H;
+  if (!stack) { c.strokeStyle = V.line; c.lineWidth = 1; c.beginPath(); c.moveTo(sw, 16); c.lineTo(sw, H - 16); c.stroke(); }
+  label(c, "triángulo de fuerzas", rx0 + rw / 2, ry0 + 16, V.dim, { s: 11, w: "500" });
+  var hx = T1 * Math.cos(a1), k = Math.min((rh - 64) / Wt, (rw - 50) / Math.max(hx, 1e-6));
+  var P0x = rx0 + (rw + hx * k) / 2, P0y = ry0 + 36, P1x = P0x, P1y = P0y + Wt * k, P2x = P1x - T1 * Math.cos(a1) * k, P2y = P1y - T1 * Math.sin(a1) * k;
+  arrow(c, P0x, P0y, P1x, P1y, V.acc, 2.6); arrow(c, P1x, P1y, P2x, P2y, V.cy, 2.6); arrow(c, P2x, P2y, P0x, P0y, V.vi, 2.6);
+  label(c, "W", P0x + 10, (P0y + P1y) / 2, V.acc, { a: "left" });
+  label(c, "T₁", (P1x + P2x) / 2 - 6, (P1y + P2y) / 2 + 12, V.cy, { a: "right" });
+  label(c, "T₂", (P2x + P0x) / 2 - 8, (P2y + P0y) / 2 - 6, V.vi, { a: "right" });
+}
+bind(["cabA1", "cabA2", "cabW"], drawCab);
+
+/* =========================================================
+   03 PLANO INCLINADO
+   ========================================================= */
+function drawInc() {
+  var deg = +$("incA").value, m = +$("incM").value, mu = +$("incMu").value, a = deg * Math.PI / 180, Wt = m * G;
+  var Nn = Wt * Math.cos(a), Wp = Wt * Math.sin(a), fmax = mu * Nn, T = Math.max(0, Wp - fmax), f = Math.min(Wp, fmax);
+  $("incAo").textContent = deg + "°"; $("incMo").textContent = m + " kg"; $("incMuo").textContent = fd(mu, 2);
+  $("incT").textContent = N(T); $("incN").textContent = N(Nn); $("incWp").textContent = N(Wp); $("incF").textContent = N(f);
+  var amax = Math.atan(mu) * 180 / Math.PI; $("incMax").textContent = mu === 0 ? "0° (sin fricción)" : fd(amax, 1) + "°";
+  var n = $("incNote");
+  if (mu === 0 && deg > 0) { n.className = "note"; n.innerHTML = "<b>Rampa lisa:</b> sólo la cuerda equilibra la componente W sen θ. Prueba 90° (la caja cuelga: T = W) y 0° (T = 0, N = W)."; }
+  else if (T === 0) { n.className = "note good"; n.innerHTML = "<b>No hace falta cuerda:</b> la fricción estática basta, porque tan θ ≤ μₛ. La fricción sólo vale lo necesario (" + N(f) + "), no siempre su máximo μₛN = " + N(fmax) + "."; }
+  else { n.className = "note hot"; n.innerHTML = "<b>La fricción no alcanza:</b> como mucho da μₛN = " + N(fmax) + " y la rampa pide " + N(Wp) + ". La cuerda pone la diferencia. Sin ella, la caja resbala a partir de " + fd(amax, 1) + "°."; }
+  var S = setup($("incCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var gy = H * 0.86, x1 = W * 0.88, base = W * 0.72, hgt = base * Math.tan(a);
+  if (hgt > H * 0.66) { hgt = H * 0.66; base = deg > 0 ? hgt / Math.tan(a) : base; }
+  var x0 = x1 - base, sTop = gy - hgt;
+  c.fillStyle = rgba("line", .55); c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x0, gy); c.lineTo(x1, gy); c.lineTo(x1, sTop); c.closePath(); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke();
+  if (mu > 0) { c.strokeStyle = V.dim; c.lineWidth = 1; for (var q = 0; q < 16; q++) { var t = q / 16, xx = x0 + base * t, yy = gy - hgt * t; c.beginPath(); c.moveTo(xx, yy); c.lineTo(xx + 4, yy + 5); c.stroke(); } }
+  var s = 0.5, px = x0 + base * s, py = gy - hgt * s, cx = px - 30 * Math.sin(a), cy = py - 30 * Math.cos(a);
+  c.save(); c.translate(cx, cy); c.rotate(-a); c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.fillRect(-40, -30, 80, 60); c.strokeRect(-40, -30, 80, 60); c.restore();
+  if (T > 0.01) { var ex = cx + 40 * Math.cos(a), ey = cy - 40 * Math.sin(a), tx = x1 - 4, ty = sTop - 30 * Math.cos(a);
+    c.strokeStyle = V.fg; c.lineWidth = 2; c.beginPath(); c.moveTo(ex, ey); c.lineTo(tx, ty); c.stroke(); c.fillStyle = V.dim; c.fillRect(x1 - 4, ty - 4, 9, sTop - ty + 6); }
+  c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.arc(x0, gy, 36, -a, 0); c.stroke(); label(c, deg + "°", x0 + 50 * Math.cos(a / 2), gy - 50 * Math.sin(a / 2), V.dim, { s: 11 });
+  var k = Math.min(W, H) * 0.3 / Wt;
+  arrowA(c, cx, cy, -90, Wt * k, V.acc, 3); label(c, "W", cx + 10, cy + Wt * k - 4, V.acc, { a: "left" });
+  if ($("incComp").checked && deg > 0) {
+    arrowA(c, cx, cy, deg + 180, Wp * k, V.acc, 1.6, [5, 4]); arrowA(c, cx, cy, deg - 90, Nn * k, V.acc, 1.6, [5, 4]);
+    var r1 = (deg + 180) * Math.PI / 180; label(c, "W sen θ", cx + (Wp * k + 30) * Math.cos(r1), cy - (Wp * k + 12) * Math.sin(r1), V.acc, { s: 11 });
+  }
+  arrowA(c, cx, cy, deg + 90, Nn * k, V.cy, 3); var rn = (deg + 90) * Math.PI / 180; label(c, "N", cx + (Nn * k + 14) * Math.cos(rn), cy - (Nn * k + 14) * Math.sin(rn), V.cy);
+  if (T > 0.01) { arrowA(c, cx, cy, deg, T * k, V.or, 3); var rt = deg * Math.PI / 180; label(c, "T", cx + (T * k + 14) * Math.cos(rt), cy - (T * k + 14) * Math.sin(rt) - 8, V.or); }
+  if (f > 0.01) { var fx0 = px + 10 * Math.cos(a), fy0 = py - 10 * Math.sin(a); arrowA(c, fx0, fy0, deg, f * k, V.ok, 3); var rf = deg * Math.PI / 180; label(c, "f", fx0 + (f * k + 12) * Math.cos(rf), fy0 - (f * k + 12) * Math.sin(rf) + 10, V.ok); }
+}
+bind(["incA", "incM", "incMu"], drawInc); $("incComp").addEventListener("change", drawInc);
+
+/* =========================================================
+   04 BALANCÍN
+   ========================================================= */
+function drawBal() {
+  var m1 = +$("balM1").value, d1 = +$("balD1").value, m2 = +$("balM2").value, d2 = +$("balD2").value;
+  var t1 = m1 * G * d1, t2 = m2 * G * d2, net = t1 - t2, deq = m1 * d1 / m2;
+  $("balM1o").textContent = m1 + " kg"; $("balD1o").textContent = fd(d1, 2) + " m"; $("balM2o").textContent = m2 + " kg"; $("balD2o").textContent = fd(d2, 2) + " m";
+  $("balT1").textContent = fd(t1, 0) + " N·m"; $("balT2").textContent = fd(t2, 0) + " N·m"; $("balNet").textContent = (net < 0 ? "−" : "") + fd(Math.abs(net), 0) + " N·m";
+  $("balR").textContent = fd((m1 + m2) * G, 0) + " N"; $("balDeq").textContent = deq <= 3 ? fd(deq, 2) + " m" : "más de 3 m";
+  var bal = Math.abs(net) < 0.01 * Math.max(t1, t2, 1);
+  $("balNet").className = "v " + (bal ? "ok" : "acc");
+  var n = $("balNote");
+  if (bal) { n.className = "note good"; n.innerHTML = "<b>En equilibrio:</b> m₁d₁ = m₂d₂ (" + fd(m1 * d1, 1) + " kg·m de cada lado). La g se cancela, por eso basta con masas y distancias."; }
+  else if ((m1 > m2) !== (t1 > t2)) { n.className = "note"; n.innerHTML = "<b>Gana el torque, no el peso:</b> el lado " + (t1 > t2 ? "izquierdo" : "derecho") + " pesa menos pero baja, porque su masa está más lejos del pivote."; }
+  else { n.className = "note"; n.innerHTML = "<b>Baja el lado " + (t1 > t2 ? "izquierdo" : "derecho") + ".</b> Para equilibrar, m₂ tendría que estar a " + (deq <= 3 ? fd(deq, 2) + " m" : "más de 3 m: no cabe en este balancín") + "."; }
+  var S = setup($("balCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var cx = W / 2, py = H * 0.6, half = Math.min(W * 0.44, 360), ppm = half / 3;
+  var mxT = Math.max(t1, t2, 1), tilt = bal ? 0 : 0.2 * Math.tanh(net / (0.25 * mxT));
+  c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, H * 0.86); c.lineTo(W, H * 0.86); c.stroke(); hatch(c, 0, H * 0.86, W, 12);
+  c.fillStyle = V.line; c.strokeStyle = V.dim; c.beginPath(); c.moveTo(cx, py); c.lineTo(cx - 34, H * 0.86); c.lineTo(cx + 34, H * 0.86); c.closePath(); c.fill(); c.stroke();
+  c.save(); c.translate(cx, py); c.rotate(-tilt);
+  c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.fillRect(-half, -8, half * 2, 12); c.strokeRect(-half, -8, half * 2, 12);
+  c.font = "10.5px " + MONO; c.fillStyle = V.dim; c.textAlign = "center"; c.textBaseline = "top";
+  for (var i = -3; i <= 3; i++) { c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.moveTo(i * ppm, 4); c.lineTo(i * ppm, 9); c.stroke(); if (i) c.fillText(Math.abs(i) + " m", i * ppm, 12); }
+  function body(x, m, col, lbl) { var r = 10 + Math.sqrt(m) * 2.4; c.fillStyle = col; c.globalAlpha = .2; c.fillRect(x - r * 0.8, -8 - r * 2, r * 1.6, r * 2); c.globalAlpha = 1; c.strokeStyle = col; c.lineWidth = 2; c.strokeRect(x - r * 0.8, -8 - r * 2, r * 1.6, r * 2);
+    c.fillStyle = col; c.font = "600 12px " + MONO; c.textBaseline = "bottom"; c.fillText(lbl, x, -14 - r * 2); return r; }
+  body(-d1 * ppm, m1, V.cy, m1 + " kg"); body(d2 * ppm, m2, V.vi, m2 + " kg");
+  c.restore();
+  var y0 = H * 0.16; c.fillStyle = V.dim; c.font = "11px " + MONO; c.textAlign = "left"; c.textBaseline = "middle";
+  var bw = Math.min(W * 0.36, 240);
+  c.fillText("torque izq.", 14, y0); c.fillStyle = V.cy; c.fillRect(110, y0 - 5, bw * t1 / mxT, 10);
+  c.fillStyle = V.dim; c.fillText("torque der.", 14, y0 + 20); c.fillStyle = V.vi; c.fillRect(110, y0 + 15, bw * t2 / mxT, 10);
+  c.strokeStyle = V.or; c.lineWidth = 2; c.beginPath(); c.moveTo(cx, py); c.lineTo(cx, py - 4); c.stroke();
+  arrow(c, cx, py + 6, cx, py - 46, V.ok, 2); label(c, "R = " + fd((m1 + m2) * G, 0) + " N", cx + 8, py - 40, V.ok, { a: "left", s: 11 });
+}
+bind(["balM1", "balD1", "balM2", "balD2"], drawBal);
+$("balEq").addEventListener("click", function () { var d = (+$("balM1").value) * (+$("balD1").value) / (+$("balM2").value); if (d <= 3) { $("balD2").value = d; } drawBal(); });
+
+/* =========================================================
+   05 CENTRO DE MASA
+   ========================================================= */
+var cmMode = "masas", cmX = [0, 4, 2], cmDrag = -1, cmGeo = null;
+function cmUpdate() {
+  $("cmMasas").hidden = cmMode !== "masas"; $("cmAuto").hidden = cmMode !== "auto";
+  $("cmHint").textContent = cmMode === "masas" ? "arrastra las masas sobre la barra" : "cada báscula lee la carga de un eje";
+  document.querySelectorAll("[data-cm]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.cm === cmMode ? "true" : "false"); });
+  if (cmMode === "masas") drawCmMasas(); else drawCmAuto();
+}
+function drawCmMasas() {
+  var ms = [+$("cmM1").value, +$("cmM2").value, +$("cmM3").value];
+  ms.forEach(function (m, i) { $("cmM" + (i + 1) + "o").textContent = fd(m, 1) + " kg · x = " + fd(cmX[i], 2) + " m"; });
+  var tot = ms[0] + ms[1] + ms[2], num = ms[0] * cmX[0] + ms[1] * cmX[1] + ms[2] * cmX[2], xc = tot ? num / tot : NaN;
+  $("cmX").textContent = tot ? fd(xc, 2) + " m" : "—"; $("cmNum").textContent = fd(num, 2) + " kg·m"; $("cmTot").textContent = fd(tot, 1) + " kg";
+  var n = $("cmNote"); n.className = "note";
+  n.innerHTML = tot ? "<b>Apoyado en x = " + fd(xc, 2) + " m la barra no gira:</b> ahí los torques de todas las masas se cancelan. El centro de masa queda más cerca de la masa mayor, como en el balancín." : "<b>Sin masa no hay centro de masa.</b> Sube alguna de las masas.";
+  var S = setup($("cmCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var x0 = W * 0.1, x1 = W * 0.9, by = H * 0.5, ppm = (x1 - x0) / 4; cmGeo = { x0: x0, ppm: ppm, by: by };
+  c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.fillRect(x0 - 8, by - 5, x1 - x0 + 16, 10); c.strokeRect(x0 - 8, by - 5, x1 - x0 + 16, 10);
+  c.font = "10.5px " + MONO; c.fillStyle = V.dim; c.textAlign = "center"; c.textBaseline = "top";
+  for (var i = 0; i <= 8; i++) { var xx = x0 + i * ppm / 2; c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.moveTo(xx, by + 8); c.lineTo(xx, by + (i % 2 ? 12 : 16)); c.stroke(); if (i % 2 === 0) c.fillText(i / 2 + " m", xx, by + 20); }
+  var cols = [V.cy, V.vi, V.or];
+  ms.forEach(function (m, i) { if (m <= 0) return; var r = 8 + Math.sqrt(m) * 7, x = x0 + cmX[i] * ppm;
+    c.fillStyle = cols[i]; c.globalAlpha = .25; c.beginPath(); c.arc(x, by - 5 - r, r, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1; c.strokeStyle = cols[i]; c.lineWidth = 2; c.stroke();
+    label(c, fd(m, 1) + " kg", x, by - 5 - r, cols[i], { s: 11.5 }); arrow(c, x, by - 5, x, by + 40 + m * 6, rgba(i === 0 ? "cy" : i === 1 ? "vi" : "or", .5), 1.5, [4, 4]); });
+  if (tot) { var xcp = x0 + xc * ppm;
+    c.fillStyle = V.acc; c.beginPath(); c.moveTo(xcp, by + 6); c.lineTo(xcp - 16, by + 70); c.lineTo(xcp + 16, by + 70); c.closePath(); c.globalAlpha = .9; c.fill(); c.globalAlpha = 1;
+    label(c, "x_cm = " + fd(xc, 2) + " m", xcp, by + 86, V.acc, { s: 12.5 });
+    c.strokeStyle = V.acc; c.setLineDash([3, 4]); c.lineWidth = 1; c.beginPath(); c.moveTo(xcp, 20); c.lineTo(xcp, by - 6); c.stroke(); c.setLineDash([]); }
+}
+function drawCmAuto() {
+  var m = +$("cmCarM").value, L = +$("cmCarL").value, fa = +$("cmCarA").value, a = fa * L, Wt = m * G, Rr = Wt * a / L, Rf = Wt - Rr;
+  $("cmCarMo").textContent = fd(m, 0) + " kg"; $("cmCarLo").textContent = fd(L, 2) + " m"; $("cmCarAo").textContent = fd(a, 2) + " m";
+  $("cmRf").textContent = N(Rf); $("cmRr").textContent = N(Rr); $("cmPct").textContent = fd(100 * Rf / Wt, 0) + " % / " + fd(100 * Rr / Wt, 0) + " %";
+  var n = $("cmNote"); n.className = "note";
+  n.innerHTML = "<b>Momentos respecto al eje delantero:</b> R_trasero · L = W · a, así que a = (R_trasero / W) · L = " + fd(a, 2) + " m. Con básculas bajo cada eje se localiza el centro de masa sin desarmar nada.";
+  var S = setup($("cmCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var gy = H * 0.72, ppm = Math.min(W * 0.62 / 3.5, 120), xf = W / 2 + L * ppm / 2, xr = W / 2 - L * ppm / 2, wr = 0.33 * ppm;
+  c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke(); hatch(c, 0, gy, W, 12);
+  var bl = xr - 0.85 * ppm, br = xf + 0.95 * ppm, bt = gy - wr - 0.75 * ppm;
+  c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.beginPath();
+  c.moveTo(bl, gy - wr); c.lineTo(bl, bt + 0.2 * ppm); c.lineTo(xr + 0.1 * ppm, bt + 0.12 * ppm); c.lineTo(xr + 0.55 * ppm, bt - 0.45 * ppm); c.lineTo(xf - 0.55 * ppm, bt - 0.45 * ppm); c.lineTo(xf - 0.05 * ppm, bt + 0.1 * ppm); c.lineTo(br, bt + 0.3 * ppm); c.lineTo(br, gy - wr); c.closePath(); c.fill(); c.stroke();
+  [xr, xf].forEach(function (x) { c.fillStyle = V.line; c.beginPath(); c.arc(x, gy - wr, wr, 0, Math.PI * 2); c.fill(); c.strokeStyle = V.fg; c.lineWidth = 2; c.stroke(); });
+  label(c, "delantero →", br - 4, bt + 0.3 * ppm - 12, V.dim, { a: "right", s: 10.5 });
+  var xc = xf - a * ppm, yc = gy - wr - 0.35 * ppm;
+  c.fillStyle = V.acc; c.beginPath(); c.arc(xc, yc, 7, 0, Math.PI * 2); c.fill(); c.strokeStyle = V.bg; c.lineWidth = 1.5; c.beginPath(); c.moveTo(xc - 7, yc); c.lineTo(xc + 7, yc); c.moveTo(xc, yc - 7); c.lineTo(xc, yc + 7); c.stroke();
+  var k = (H * 0.28) / Wt;
+  arrow(c, xc, yc, xc, yc + Wt * k * 0.55, V.acc, 3); label(c, "W", xc + 10, yc + Wt * k * 0.3, V.acc, { a: "left" });
+  arrow(c, xf, gy + 30 + Rf * k, xf, gy + 2, V.cy, 3); arrow(c, xr, gy + 30 + Rr * k, xr, gy + 2, V.vi, 3);
+  label(c, N(Rf), xf + 10, gy + 20 + Rf * k * 0.6, V.cy, { a: "left", s: 12 }); label(c, N(Rr), xr - 10, gy + 20 + Rr * k * 0.6, V.vi, { a: "right", s: 12 });
+  var dy = bt - 0.45 * ppm - 22; c.strokeStyle = V.dim; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(xr, dy); c.lineTo(xf, dy); c.moveTo(xr, dy - 5); c.lineTo(xr, dy + 5); c.moveTo(xf, dy - 5); c.lineTo(xf, dy + 5); c.stroke();
+  label(c, "L = " + fd(L, 2) + " m", (xr + xf) / 2, dy - 10, V.dim, { s: 11 });
+  c.strokeStyle = V.acc; c.beginPath(); c.moveTo(xc, dy + 14); c.lineTo(xf, dy + 14); c.moveTo(xc, dy + 9); c.lineTo(xc, dy + 19); c.stroke();
+  label(c, "a = " + fd(a, 2) + " m", (xc + xf) / 2, dy + 26, V.acc, { s: 11 });
+}
+document.querySelectorAll("[data-cm]").forEach(function (b) { b.addEventListener("click", function () { cmMode = b.dataset.cm; cmUpdate(); }); });
+bind(["cmM1", "cmM2", "cmM3"], drawCmMasas); bind(["cmCarM", "cmCarL", "cmCarA"], drawCmAuto);
+(function () {
+  var cv = $("cmCanvas");
+  function pick(e) { if (cmMode !== "masas" || !cmGeo) return -1; var r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, best = -1, bd = 40, ms = [+$("cmM1").value, +$("cmM2").value, +$("cmM3").value];
+    for (var i = 0; i < 3; i++) { if (ms[i] <= 0) continue; var d = Math.abs(px - (cmGeo.x0 + cmX[i] * cmGeo.ppm)); if (d < bd && Math.abs(py - cmGeo.by) < 120) { bd = d; best = i; } } return best; }
+  function move(e) { var r = cv.getBoundingClientRect(), x = (e.clientX - r.left - cmGeo.x0) / cmGeo.ppm; cmX[cmDrag] = Math.max(0, Math.min(4, Math.round(x * 10) / 10)); drawCmMasas(); }
+  cv.addEventListener("pointerdown", function (e) { cmDrag = pick(e); if (cmDrag >= 0) { cv.setPointerCapture(e.pointerId); move(e); e.preventDefault(); } });
+  cv.addEventListener("pointermove", function (e) { if (cmDrag >= 0) move(e); else cv.style.cursor = pick(e) >= 0 ? "ew-resize" : "default"; });
+  ["pointerup", "pointercancel"].forEach(function (t) { cv.addEventListener(t, function () { cmDrag = -1; }); });
+})();
+
+/* =========================================================
+   06 VIGA
+   ========================================================= */
+function drawViga() {
+  var L = +$("vgL").value, xb = +$("vgB").value / 48 * L, P1 = +$("vgP1").value, x1 = +$("vgX1").value / 48 * L, P2 = +$("vgP2").value, x2 = +$("vgX2").value / 48 * L, Wb = +$("vgW").value;
+  var mom = P1 * x1 + P2 * x2 + Wb * L / 2, tot = P1 + P2 + Wb, RB = mom / xb, RA = tot - RB;
+  $("vgLo").textContent = fd(L, 1) + " m"; $("vgBo").textContent = "x = " + fd(xb, 2) + " m"; $("vgP1o").textContent = P1 + " N"; $("vgX1o").textContent = "x = " + fd(x1, 2) + " m";
+  $("vgP2o").textContent = P2 + " N"; $("vgX2o").textContent = "x = " + fd(x2, 2) + " m"; $("vgWo").textContent = Wb + " N";
+  $("vgRA").textContent = N(RA); $("vgRB").textContent = N(RB); $("vgTot").textContent = N(tot);
+  $("vgRA").className = "v " + (RA < -0.5 ? "no" : "cy");
+  var n = $("vgNote");
+  if (RA < -0.5) { n.className = "note hot"; n.innerHTML = "<b>R_A negativa:</b> el apoyo A tendría que jalar la viga hacia abajo con " + N(-RA) + ". Un apoyo simple no puede hacerlo: sin un anclaje, la viga se levanta en A y gira sobre B, como un trampolín."; }
+  else if (Math.abs(RA) <= 0.5 && tot > 0) { n.className = "note"; n.innerHTML = "<b>A no carga nada:</b> todo el momento de las cargas lo equilibra B. Un paso más hacia afuera y A empieza a levantarse."; }
+  else { n.className = "note"; n.innerHTML = "<b>Momentos respecto a A:</b> R_B · " + fd(xb, 2) + " = " + fd(mom, 0) + " N·m. Con R_B conocida, ΣFy da R_A. El apoyo más cercano a las cargas es el que más soporta."; }
+  var S = setup($("vigaCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var x0 = W * 0.09, ppm = (W * 0.82) / L, by = H * 0.44, X = function (x) { return x0 + x * ppm; };
+  var Pmax = Math.max(P1, P2, Wb, Math.abs(RA), Math.abs(RB), 1), k = (H * 0.2) / Pmax;
+  c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.fillRect(X(0), by - 8, L * ppm, 16); c.strokeRect(X(0), by - 8, L * ppm, 16);
+  function sup(x, roller, col) { var px = X(x); c.fillStyle = V.line; c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath(); c.moveTo(px, by + 8); c.lineTo(px - 14, by + 32); c.lineTo(px + 14, by + 32); c.closePath(); c.fill(); c.stroke();
+    if (roller) { c.beginPath(); c.arc(px - 7, by + 37, 4.5, 0, Math.PI * 2); c.arc(px + 7, by + 37, 4.5, 0, Math.PI * 2); c.stroke(); hatch(c, px - 22, by + 42, 44, 8); } else hatch(c, px - 22, by + 32, 44, 8); }
+  sup(0, false, V.cy); sup(xb, true, V.vi);
+  label(c, "A", X(0) - 22, by + 22, V.cy, { s: 13 }); label(c, "B", X(xb) + 24, by + 22, V.vi, { s: 13 });
+  function load(x, P, col, txt, dash) { if (P <= 0) return; var px = X(x), len = 18 + P * k; arrow(c, px, by - 8 - len, px, by - 9, col, 3, dash); label(c, txt, px, by - 18 - len, col, { s: 12, b: "bottom" }); }
+  load(x1, P1, V.acc, "P₁ = " + P1 + " N"); load(x2, P2, V.or, "P₂ = " + P2 + " N"); load(L / 2, Wb, V.dim, "peso " + Wb + " N", [5, 4]);
+  function react(x, R, col, txt) { if (Math.abs(R) < 0.5) { label(c, txt + " = 0", X(x), by + 70, col, { s: 12 }); return; } var px = X(x), len = 18 + Math.abs(R) * k, y0 = by + 52;
+    if (R > 0) arrow(c, px, y0 + len, px, y0, col, 3); else arrow(c, px, y0, px, y0 + len, col, 3, [6, 4]);
+    label(c, txt + " = " + N(R), px + (x === 0 ? 10 : -10), y0 + len * 0.6, col, { s: 12, a: x === 0 ? "left" : "right" }); }
+  react(0, RA, RA < -0.5 ? V.no : V.cy, "R_A"); react(xb, RB, V.vi, "R_B");
+  c.font = "10.5px " + MONO; c.fillStyle = V.dim; c.textAlign = "center"; c.textBaseline = "top";
+  var step = L > 6 ? 2 : 1; for (var i = 0; i <= L + 1e-9; i += step) { c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.moveTo(X(i), H - 52); c.lineTo(X(i), H - 46); c.stroke(); c.fillText(i + " m", X(i), H - 43); }
+  c.strokeStyle = V.dim; c.beginPath(); c.moveTo(X(0), H - 49); c.lineTo(X(L), H - 49); c.stroke();
+}
+bind(["vgL", "vgB", "vgP1", "vgX1", "vgP2", "vgX2", "vgW"], drawViga);
+var VPRE = { ej: { vgL: 6, vgB: 48, vgP1: 1200, vgX1: 16, vgP2: 0, vgX2: 36, vgW: 0 }, peso: { vgL: 6, vgB: 48, vgP1: 1200, vgX1: 16, vgP2: 0, vgX2: 36, vgW: 500 }, vol: { vgL: 6, vgB: 32, vgP1: 1200, vgX1: 48, vgP2: 0, vgX2: 36, vgW: 0 } };
+document.querySelectorAll("#vigaPresets button").forEach(function (b) { b.addEventListener("click", function () { var p = VPRE[b.dataset.p]; Object.keys(p).forEach(function (id) { $(id).value = p[id]; }); drawViga(); }); });
+
+/* =========================================================
+   07 PLUMA
+   ========================================================= */
+function drawPl() {
+  var ad = +$("plA").value, a = ad * Math.PI / 180, Wl = +$("plW").value, fx = +$("plX").value, Wb = +$("plWb").value, L = 4, xw = fx * L;
+  var T = (Wl * xw + Wb * L / 2) / (L * Math.sin(a)), Hh = T * Math.cos(a), Vv = Wl + Wb - T * Math.sin(a);
+  $("plAo").textContent = ad + "°"; $("plWo").textContent = Wl + " N"; $("plXo").textContent = "x = " + fd(xw, 2) + " m"; $("plWbo").textContent = Wb + " N";
+  $("plT").textContent = N(T); $("plH").textContent = N(Hh) + " (compresión)"; $("plV").textContent = Math.abs(Vv) < 0.5 ? "0 N" : N(Math.abs(Vv)) + (Vv > 0 ? " ↑" : " ↓");
+  $("plRatio").textContent = Wl > 0 ? fd(T / Wl, 2) + " × W" : "—";
+  var n = $("plNote");
+  if (ad <= 20) { n.className = "note hot"; n.innerHTML = "<b>Tirante muy acostado:</b> sólo la componente T sen α sostiene la carga, y con " + ad + "° es apenas el " + fd(100 * Math.sin(a), 0) + " % de T. Por eso las grúas torre levantan el mástil sobre la pluma."; }
+  else if (Wl > 0 && T > Wl * 1.05) { n.className = "note"; n.innerHTML = "<b>El cable carga más que la carga:</b> " + fd(T / Wl, 2) + " veces. La componente horizontal no sostiene nada; sólo comprime la pluma contra la pared con " + N(Hh) + "."; }
+  else { n.className = "note"; n.innerHTML = "<b>Momentos en la articulación:</b> H y V pasan por ella y salen de la ecuación, así que T se obtiene directo. Después ΣFx da H y ΣFy da V."; }
+  var S = setup($("plCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var wx = 54, by = H * 0.68, Lp = Math.min(W - wx - 60, (by - 30) / Math.tan(a)), ppm = Lp / L, tipX = wx + Lp, cy = by - Lp * Math.tan(a);
+  c.fillStyle = V.line; c.fillRect(wx - 26, 10, 26, H - 44); hatch(c, wx - 26, 10, 26, H - 44); c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(wx, 10); c.lineTo(wx, H - 34); c.stroke();
+  c.strokeStyle = V.or; c.lineWidth = 2.5; c.beginPath(); c.moveTo(tipX, by); c.lineTo(wx, cy); c.stroke();
+  c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.fillRect(wx, by - 7, Lp, 14); c.strokeRect(wx, by - 7, Lp, 14);
+  c.fillStyle = V.fg; c.beginPath(); c.arc(wx + 4, by, 5, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.arc(tipX, by, 34, Math.PI, Math.PI + a); c.stroke(); label(c, ad + "°", tipX - 46 * Math.cos(a / 2), by - 46 * Math.sin(a / 2), V.dim, { s: 11 });
+  var lx = wx + xw * ppm; if (Wl > 0) { c.strokeStyle = V.fg; c.lineWidth = 1.5; c.beginPath(); c.moveTo(lx, by + 7); c.lineTo(lx, by + 34); c.stroke(); c.fillStyle = V.panel; c.fillRect(lx - 20, by + 34, 40, 30); c.strokeRect(lx - 20, by + 34, 40, 30);
+    label(c, Wl + " N", lx, by + 76, V.acc, { s: 12 }); }
+  var k = Math.min(70, H * 0.18) / Math.max(T, Wl + Wb, 1);
+  var tl = Math.max(28, T * k); arrow(c, tipX, by, tipX - tl * Math.cos(a), by - tl * Math.sin(a), V.or, 3); label(c, "T = " + N(T), tipX - tl * Math.cos(a) - 6, by - tl * Math.sin(a) - 12, V.or, { a: "right", s: 12 });
+  var hl = Math.max(24, Hh * k); arrow(c, wx + 4, by + 22, wx + 4 + hl, by + 22, V.cy, 2.6); label(c, "H", wx + 10 + hl, by + 22, V.cy, { a: "left" });
+  if (Math.abs(Vv) > 0.5) { var vl = Math.max(20, Math.abs(Vv) * k); arrow(c, wx + 14, by, wx + 14, by - (Vv > 0 ? vl : -vl), V.vi, 2.6); label(c, "V", wx + 22, by - (Vv > 0 ? vl : -vl) * 0.7, V.vi, { a: "left" }); }
+  if (Wb > 0) { arrow(c, wx + Lp / 2, by, wx + Lp / 2, by + 20 + Wb * k, V.dim, 2, [5, 4]); label(c, "peso pluma", wx + Lp / 2 + 8, by + 26, V.dim, { a: "left", s: 11 }); }
+  label(c, "L = 4 m", wx + Lp / 2, by - 20, V.dim, { s: 11 });
+}
+bind(["plA", "plW", "plX", "plWb"], drawPl);
+
+/* =========================================================
+   AUTOEVALUACIÓN
+   ========================================================= */
+var QZ = [
+  { q: "Un cuerpo está en equilibrio cuando:", o: ["Su aceleración es cero", "Su velocidad es cero", "No actúa ninguna fuerza", "Sólo actúan fuerzas verticales"], c: 0, e: "Equilibrio es aceleración cero. Un auto a velocidad constante en línea recta también está en equilibrio." },
+  { q: "¿Qué fuerza NO va en el DCL de una caja sobre una mesa?", o: ["La fuerza de la caja sobre la mesa", "El peso de la caja", "La normal de la mesa", "Todas van"], c: 0, e: "Esa fuerza actúa sobre la mesa, no sobre la caja. Va en el DCL de la mesa." },
+  { q: "Un cuadro de 40 N cuelga de dos cuerdas simétricas a 30° de la horizontal. Cada tensión vale:", o: ["40 N", "20 N", "23.1 N", "80 N"], c: 0, e: "T = W / (2 sen 30°) = 40 / 1 = 40 N. Dividir el peso entre dos ignora el ángulo." },
+  { q: "Caja de 10 kg en rampa lisa de 30°, sostenida por cuerda paralela. La tensión es:", o: ["49 N", "85 N", "98 N", "0 N"], c: 0, e: "T = mg sen 30° = (98.1)(0.5) ≈ 49 N. 85 N es la normal: seno y coseno intercambiados." },
+  { q: "En un balancín, 40 kg están a 1.5 m. Una persona de 60 kg lo equilibra a:", o: ["1.0 m", "2.25 m", "1.5 m", "0.67 m"], c: 0, e: "60 d = 40 (1.5), d = 1.0 m. El más pesado va más cerca del pivote." },
+  { q: "Viga de 4 m con apoyos en los extremos y 800 N en su centro. Las reacciones son:", o: ["400 N y 400 N", "800 N y 0 N", "800 N y 800 N", "200 N y 600 N"], c: 0, e: "Por simetría cada apoyo carga la mitad. Con momentos en A: R_B (4) = 800 (2)." },
+  { q: "¿Por qué conviene tomar momentos respecto a un apoyo?", o: ["Sus reacciones no producen momento y salen de la ecuación", "Ahí el momento siempre es máximo", "Es la única opción válida", "Así no hace falta ΣF = 0"], c: 0, e: "Cualquier punto sirve, pero en el apoyo desaparecen sus incógnitas y queda una ecuación con una sola." },
+  { q: "Al bajar el ángulo del tirante de una pluma, la tensión del cable:", o: ["Aumenta", "Disminuye", "No cambia", "Se vuelve cero"], c: 0, e: "Sólo T sen α sostiene la carga. Si α baja, T debe crecer: a 15° es casi 4 veces la carga." }
+];
+var ORD = [[1,0,3,2],[2,3,0,1],[0,2,1,3],[3,1,2,0],[1,3,0,2],[2,0,3,1],[3,2,1,0],[0,3,2,1]];
+var qScore = 0, qDone = 0, qBox = $("p-autoevaluacion");
+function quizBuild() {
+  qScore = 0; qDone = 0; qBox.querySelectorAll(".qcard").forEach(function (n) { n.remove(); }); $("score").textContent = "0 de " + QZ.length + " respondidas";
+  QZ.forEach(function (it, qi) {
+    var card = document.createElement("div"); card.className = "card qcard";
+    card.innerHTML = '<span class="tag">Pregunta ' + (qi + 1) + '</span><h3>' + it.q + '</h3><div class="opts"></div><p class="fb" hidden></p>';
+    var opts = card.querySelector(".opts"), fb = card.querySelector(".fb");
+    ORD[qi].forEach(function (oi) { var b = document.createElement("button"); b.type = "button"; b.textContent = it.o[oi]; b.dataset.i = oi;
+      b.addEventListener("click", function () {
+        opts.querySelectorAll("button").forEach(function (x) { x.disabled = true; if (+x.dataset.i === it.c) x.classList.add("right"); });
+        var ok = oi === it.c; if (!ok) b.classList.add("wrong"); if (ok) qScore++; qDone++;
+        fb.hidden = false; fb.innerHTML = '<b class="' + (ok ? "ok" : "no") + '">' + (ok ? "Correcto." : "No es esa.") + "</b> " + it.e;
+        $("score").innerHTML = qDone < QZ.length ? qDone + " de " + QZ.length + " respondidas · <b>" + qScore + " correctas</b>" : "Resultado: <b>" + qScore + " de " + QZ.length + "</b>" + (qScore === QZ.length ? " · listo para cinemática" : " · revisa los ejemplos de las que fallaste");
+      }); opts.appendChild(b); });
+    qBox.appendChild(card);
+  });
+}
+$("quizReset").addEventListener("click", quizBuild);
+quizBuild();
+
+/* =========================================================
+   PESTAÑAS
+   ========================================================= */
+var DRAW = { "cuerpo-libre": drawDcl, "dos-cables": drawCab, "plano-inclinado": drawInc, balancin: drawBal, "centro-de-masa": cmUpdate, viga: drawViga, pluma: drawPl, ejemplos: function () {}, autoevaluacion: function () {} };
+var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]')), cur = "cuerpo-libre";
+function nameOf(t) { return t.id.slice(2); }
+function show(name) {
+  if (!DRAW[name]) name = "cuerpo-libre";
+  cur = name;
+  tabs.forEach(function (t) { var on = nameOf(t) === name; t.setAttribute("aria-selected", on ? "true" : "false"); t.tabIndex = on ? 0 : -1; $("p-" + nameOf(t)).hidden = !on; });
+  DRAW[name]();
+}
+function redibujar() { DRAW[cur](); }
+function go(name) { if (location.hash !== "#" + name) { try { location.hash = name; } catch (e) { show(name); } } else show(name); }
+tabs.forEach(function (t, i) {
+  t.addEventListener("click", function () { go(nameOf(t)); });
+  t.addEventListener("keydown", function (e) {
+    var k = e.key, j = null;
+    if (k === "ArrowRight") j = (i + 1) % tabs.length; else if (k === "ArrowLeft") j = (i - 1 + tabs.length) % tabs.length; else if (k === "Home") j = 0; else if (k === "End") j = tabs.length - 1;
+    if (j !== null) { e.preventDefault(); go(nameOf(tabs[j])); tabs[j].focus(); }
+  });
+});
+window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+var rt; window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(redibujar, 60); });
+try { new MutationObserver(function () { leerTema(); rotulo(); redibujar(); }).observe(root, { attributes: true, attributeFilter: ["data-tema"] }); } catch (e) {}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(redibujar);
+dclReadout();
+show(location.hash.slice(1) || "cuerpo-libre");
+})();
+</script>
+</body>
+</html>
