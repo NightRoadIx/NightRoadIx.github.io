@@ -5,24 +5,57 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 
+<script>
+/* el tema se fija antes del primer pintado para que no parpadee */
+(function () {
+  try {
+    var t = localStorage.getItem("banco-tema");
+    if (t === "claro" || t === "oscuro") document.documentElement.setAttribute("data-tema", t);
+  } catch (e) {}
+})();
+</script>
+
 <style>
 /* Mismo sistema visual del banco. Trazado exacto en corte meridional arriba,
    zoom de la region focal abajo: ahi es donde se ve la caustica. */
 :root {
   color-scheme: dark;
-
-  --bg:      #0a0e15;
-  --panel:   #111722;
+  --bg: #0a0e15;
+  --bg-rgb: 10,14,21;
+  --panel: #111722;
+  --panel-rgb: 17,23,34;
   --panel-2: #161e2b;
-  --line:    #223044;
-  --fg:      #dde5f0;
-  --dim:     #8695aa;
-  --acc:     #f2c454;   /* rayos paraxiales */
-  --cy:      #5fa8d8;   /* vidrio, plano de observacion */
-  --vi:      #a888d8;   /* foco paraxial */
-  --ok:      #52b87c;
-  --no:      #d4624a;   /* rayos marginales */
-
+  --panel-2-rgb: 22,30,43;
+  --line: #223044;
+  --line-rgb: 34,48,68;
+  --fg: #dde5f0;
+  --fg-rgb: 221,229,240;
+  --dim: #8695aa;
+  --dim-rgb: 134,149,170;
+  --acc: #f2c454;
+  --acc-rgb: 242,196,84;
+  --cy: #5fa8d8;
+  --cy-rgb: 95,168,216;
+  --vi: #a888d8;
+  --vi-rgb: 168,136,216;
+  --ok: #52b87c;
+  --ok-rgb: 82,184,124;
+  --no: #d4624a;
+  --no-rgb: 212,98,74;
+  --or: #e0743c;
+  --or-rgb: 224,116,60;
+  --rad: #e08a3c;
+  --rad-rgb: 224,138,60;
+  --cv: #070a10;
+  --cv-rgb: 7,10,16;
+  --vp: #050709;
+  --vp-rgb: 5,7,9;
+  --hot: #6d3a2a;
+  --hot-rgb: 109,58,42;
+  --good: #2a5c3f;
+  --good-rgb: 42,92,63;
+  --warn: #6d4a2a;
+  --warn-rgb: 109,74,42;
   --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
@@ -34,7 +67,7 @@ body {
   font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0;
 }
 
-.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
+.wrap { position: relative; max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 36px; }
 
 .back {
   font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
@@ -79,7 +112,7 @@ nav {
 @media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
 
 .viewport {
-  position: relative; background: #070a10;
+  position: relative; background: var(--cv);
   border: 1px solid var(--line); border-radius: 10px;
   overflow: hidden; aspect-ratio: 4 / 3; min-width: 0;
 }
@@ -90,6 +123,9 @@ nav {
   font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
   color: var(--dim); pointer-events: none; opacity: .8;
 }
+/* en pantalla estrecha el pie se encimaba con los rotulos del eje del lienzo */
+@media (max-width: 700px) { .hint { display: none; } }
+
 
 .panel {
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
@@ -142,7 +178,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset
   transition: color .14s, background .14s, border-color .14s;
 }
 .toggle button[aria-pressed="true"] {
-  background: rgba(242,196,84,.14); color: var(--acc); border-color: rgba(242,196,84,.42);
+  background: rgba(var(--acc-rgb), .14); color: var(--acc); border-color: rgba(var(--acc-rgb), .42);
 }
 .toggle button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .toggle.cinco button { flex: 1 1 30%; font-size: 12px; padding: 6px 4px; }
@@ -164,7 +200,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset
 
 .readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
 .row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
-.row + .row { border-top: 1px solid rgba(34,48,68,.55); }
+.row + .row { border-top: 1px solid rgba(var(--line-rgb), .55); }
 .row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
 .row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
 .row .v {
@@ -196,9 +232,9 @@ input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset
 }
 .note b { color: var(--fg); font-weight: 600; }
 .note code { font-family: var(--mono); font-size: 11.5px; color: var(--acc); }
-.good { border-color: #2a5c3f; }
+.good { border-color: var(--good); }
 .good b { color: var(--ok); }
-.hot { border-color: #6d3a2a; }
+.hot { border-color: var(--hot); }
 .hot b { color: var(--no); }
 
 .legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
@@ -215,14 +251,80 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }
+
+header { padding-right: 46px; }
+
+/* ---------- modo claro ----------
+   Mismos tonos que el oscuro, con la claridad ajustada para que cada acento
+   pase 4.5:1 sobre el papel; asi el color sigue significando lo mismo. */
+:root[data-tema="claro"] {
+  color-scheme: light;
+  --bg: #f4f6f9;
+  --bg-rgb: 244,246,249;
+  --panel: #ffffff;
+  --panel-rgb: 255,255,255;
+  --panel-2: #eef1f6;
+  --panel-2-rgb: 238,241,246;
+  --line: #d9dfe7;
+  --line-rgb: 217,223,231;
+  --fg: #253243;
+  --fg-rgb: 37,50,67;
+  --dim: #61728b;
+  --dim-rgb: 97,114,139;
+  --acc: #936904;
+  --acc-rgb: 147,105,4;
+  --cy: #1a76b1;
+  --cy-rgb: 26,118,177;
+  --vi: #8853d7;
+  --vi-rgb: 136,83,215;
+  --ok: #27804c;
+  --ok-rgb: 39,128,76;
+  --no: #ce3c1d;
+  --no-rgb: 206,60,29;
+  --or: #c14a0d;
+  --or-rgb: 193,74,13;
+  --rad: #af5a0c;
+  --rad-rgb: 175,90,12;
+  --cv: #fbfcfe;
+  --cv-rgb: 251,252,254;
+  --vp: #f7f9fc;
+  --vp-rgb: 247,249,252;
+  --hot: #e8bfb2;
+  --hot-rgb: 232,191,178;
+  --good: #b8dcc6;
+  --good-rgb: 184,220,198;
+  --warn: #e3d0ab;
+  --warn-rgb: 227,208,171;
+}
+
+/* ---------- conmutador de tema ---------- */
+.tema {
+  position: absolute; top: 20px; right: 16px; z-index: 5;
+  width: 34px; height: 34px; padding: 0;
+  display: grid; place-items: center;
+  background: var(--panel); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+  transition: color .14s, border-color .14s, background .14s;
+}
+.tema:hover { color: var(--acc); border-color: var(--acc); background: var(--panel-2); }
+.tema:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.tema svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7;
+            stroke-linecap: round; stroke-linejoin: round; display: none; }
+.tema .sol { display: block; }
+:root[data-tema="claro"] .tema .sol { display: none; }
+:root[data-tema="claro"] .tema .luna { display: block; }
 </style>
 
 <div class="wrap">
+  <button class="tema" id="tema" type="button" aria-label="Cambiar a modo claro">
+    <svg class="sol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.3"/><path d="M12 2.6v2.4M12 19v2.4M4.3 4.3l1.7 1.7M18 18l1.7 1.7M2.6 12H5M19 12h2.4M4.3 19.7 6 18M18 6l1.7-1.7"/></svg>
+    <svg class="luna" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.8A8.6 8.6 0 0 1 9.2 3.5a7.7 7.7 0 1 0 11.3 11.3Z"/></svg>
+  </button>
   <header>
     <a class="back" href="index.html">← Banco óptico</a>
     <p class="eyebrow">Fundamentos de Óptica · Puente hacia la óptica de ondas</p>
     <h1>Banco de oscilaciones</h1>
-    <p class="lede">Antes de que la luz sea una onda hay que tener claro qué es oscilar. Estos cuatro montajes no llevan nada de óptica: construyen, paso a paso, las tres ideas con las que después se explica todo lo demás.</p>
+    <p class="lede">Antes de que la luz sea una onda hay que tener claro qué es oscilar. Estos siete montajes no llevan nada de óptica: construyen, paso a paso, las ideas con las que después se explica todo lo demás — incluida la última, que dice <b>cuánto dura un oscilador y por qué eso le pone anchura a su color</b>.</p>
   </header>
 
   <nav role="tablist" aria-label="Montajes">
@@ -230,6 +332,9 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">02</span> Sumar dos</button>
     <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">03</span> De oscilar a viajar</button>
     <button class="tab" role="tab" id="tab3" aria-controls="p3" aria-selected="false"><span class="n">04</span> Batidos y paquetes</button>
+    <button class="tab" role="tab" id="tab4" aria-controls="p4" aria-selected="false"><span class="n">05</span> El que se apaga</button>
+    <button class="tab" role="tab" id="tab5" aria-controls="p5" aria-selected="false"><span class="n">06</span> Lo ancho de la línea</button>
+    <button class="tab" role="tab" id="tab6" aria-controls="p6" aria-selected="false"><span class="n">07</span> Perpendiculares</button>
   </nav>
 
   <div class="stage">
@@ -475,16 +580,287 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
         <span><i style="background:var(--vi)"></i> la envolvente</span>
       </div>
     </div>
+
+    <!-- ============ 05 EL OSCILADOR QUE SE APAGA ============ -->
+    <div class="panel" id="p4" role="tabpanel" aria-labelledby="tab4" hidden>
+      <p class="ask">Ningún oscilador real sigue para siempre. <b>Lo interesante no es que se apague, sino cuántas veces alcanza a oscilar antes de hacerlo</b>: ese número es todo lo que hay que saber de él.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s4-z">Amortiguamiento &nbsp;ζ</label>
+          <output id="s4-z-v">0.10</output>
+        </div>
+        <input type="range" id="s4-z" min="0.015" max="2.5" step="0.005" value="0.1">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s4-f">Frecuencia propia &nbsp;f₀</label>
+          <output id="s4-f-v">1.00 Hz</output>
+        </div>
+        <input type="range" id="s4-f" min="0.3" max="3" step="0.01" value="1">
+      </div>
+
+      <div class="toggle cuatro" role="group" aria-label="Regímenes">
+        <button id="z-poco" aria-pressed="true">Poco</button>
+        <button id="z-rapido">El más rápido</button>
+        <button id="z-crit">Crítico</button>
+        <button id="z-sobre">De sobra</button>
+      </div>
+
+      <div class="toggle" role="group" aria-label="Animación">
+        <button id="s4-play" aria-pressed="true">Pausa</button>
+      </div>
+
+      <div class="form">
+        <span class="lb">La ecuación</span>
+        ẍ <span class="z">+</span> γẋ <span class="z">+</span> ω₀²x <span class="z">= 0</span>,
+        con <span class="t">ζ = γ/2ω₀</span> y <span class="t">Q = 1/2ζ</span>
+      </div>
+
+      <div class="readout">
+        <div class="sect">El régimen</div>
+        <div class="row pair">
+          <div class="k">Régimen</div>
+          <div class="v cy" id="s4-reg">subamortiguado</div>
+        </div>
+        <div class="row">
+          <div class="k">Factor de calidad &nbsp;<em>Q = 1/2ζ</em></div>
+          <div class="v acc" id="s4-Q">5.00</div>
+        </div>
+        <div class="row">
+          <div class="k">Frecuencia al oscilar &nbsp;<em>f_d = f₀√(1−ζ²)</em></div>
+          <div class="v dim" id="s4-fd">0.995 Hz</div>
+        </div>
+
+        <div class="sect">Lo que tarda en apagarse</div>
+        <div class="row hero">
+          <div class="k">Ciclos hasta quedarle 1/e de energía</div>
+          <div class="v ok" id="s4-ciclos">0.80</div>
+        </div>
+        <div class="row">
+          <div class="k">Vida de la energía &nbsp;<em>τ = 1/γ</em></div>
+          <div class="v dim" id="s4-tau">0.796 s</div>
+        </div>
+        <div class="row">
+          <div class="k">Energía que pierde por ciclo</div>
+          <div class="v no" id="s4-perd">71.5 %</div>
+        </div>
+
+        <div class="sect">Si lo que quieres es que pare</div>
+        <div class="row pair">
+          <div class="k">Se pasa de largo &nbsp;<em>e^(−πζ/√(1−ζ²))</em></div>
+          <div class="v no" id="s4-sobre">72.9 %</div>
+        </div>
+        <div class="row">
+          <div class="k">Tarda en quedarse dentro del ±2 %</div>
+          <div class="v cy" id="s4-asien">6.07 s</div>
+        </div>
+      </div>
+
+      <p class="note" id="s4-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> elongación</span>
+        <span><i style="background:var(--dim)"></i> envolvente e^(−ζω₀t)</span>
+        <span><i style="background:var(--cy)"></i> banda del ±2 %</span>
+      </div>
+    </div>
+
+    <!-- ============ 06 LO ANCHO DE LA LINEA ============ -->
+    <div class="panel" id="p5" role="tabpanel" aria-labelledby="tab5" hidden>
+      <p class="ask">Un oscilador que dura poco <b>no tiene una frecuencia: tiene un intervalo de frecuencias</b>. Y de ahí sale, por fin, el Δλ que el montaje 04 daba por conocido.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s5-Q">Factor de calidad del emisor &nbsp;Q</label>
+          <output id="s5-Q-v">982</output>
+        </div>
+        <input type="range" id="s5-Q" min="0" max="6" step="0.01" value="2.9921">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s5-lam">Longitud de onda &nbsp;λ</label>
+          <output id="s5-lam-v">589 nm</output>
+        </div>
+        <input type="range" id="s5-lam" min="400" max="1600" step="1" value="589">
+      </div>
+
+      <div class="toggle cuatro" role="group" aria-label="Fuentes">
+        <button id="f-blanca">Luz blanca</button>
+        <button id="f-led">LED rojo</button>
+        <button id="f-sodio" aria-pressed="true">Sodio</button>
+        <button id="f-hene">He-Ne</button>
+      </div>
+
+      <div class="form">
+        <span class="lb">Lo que ata todo</span>
+        <span class="z">Δf/f =</span> Δλ/λ <span class="z">=</span> <span class="t">1/Q</span>
+        <span class="z">, y por tanto</span> ℓ<sub>c</sub> = λ²/Δλ = <span class="t">λ·Q</span>
+      </div>
+
+      <div class="readout">
+        <div class="sect">El emisor</div>
+        <div class="row pair">
+          <div class="k">Factor de calidad &nbsp;<em>Q</em></div>
+          <div class="v acc" id="s5-Q2">982</div>
+        </div>
+        <div class="row">
+          <div class="k">Vida de la oscilación &nbsp;<em>τ = Q/ω₀</em></div>
+          <div class="v dim" id="s5-tau">0.307 ps</div>
+        </div>
+        <div class="row">
+          <div class="k">Ciclos que alcanza a dar &nbsp;<em>Q/2π</em></div>
+          <div class="v dim" id="s5-cic">156</div>
+        </div>
+
+        <div class="sect">La línea que produce</div>
+        <div class="row pair">
+          <div class="k">Anchura &nbsp;<em>Δf = f₀/Q</em></div>
+          <div class="v cy" id="s5-df">518 GHz</div>
+        </div>
+        <div class="row">
+          <div class="k">En longitud de onda &nbsp;<em>Δλ = λ/Q</em></div>
+          <div class="v cy" id="s5-dl">0.600 nm</div>
+        </div>
+
+        <div class="sect">Lo que eso permite</div>
+        <div class="row hero">
+          <div class="k">Longitud de coherencia &nbsp;<em>ℓ<sub>c</sub> = λ·Q</em></div>
+          <div class="v ok" id="s5-lc">0.578 mm</div>
+        </div>
+        <div class="row">
+          <div class="k">Comprobación &nbsp;<em>λ²/Δλ</em></div>
+          <div class="v dim" id="s5-lc2">0.578 mm</div>
+        </div>
+      </div>
+
+      <p class="note" id="s5-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--acc)"></i> la oscilación que decae</span>
+        <span><i style="background:var(--vi)"></i> su espectro</span>
+      </div>
+    </div>
+
+    <!-- ============ 07 PERPENDICULARES ============ -->
+    <div class="panel" id="p6" role="tabpanel" aria-labelledby="tab6" hidden>
+      <p class="ask">El montaje 02 sumó dos oscilaciones <b>en la misma dirección</b> y salió la interferencia. Ponlas <b>perpendiculares</b>, con el mismo desfase, y sale una elipse. Son la misma construcción girada 90°.</p>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s6-d">Desfase entre las dos &nbsp;δ</label>
+          <output id="s6-d-v">45°</output>
+        </div>
+        <input type="range" id="s6-d" min="0" max="360" step="1" value="45">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-top">
+          <label for="s6-r">Amplitud vertical &nbsp;A<sub>y</sub>/A<sub>x</sub></label>
+          <output id="s6-r-v">0.60</output>
+        </div>
+        <input type="range" id="s6-r" min="0" max="1.6" step="0.01" value="0.6">
+      </div>
+
+      <div class="toggle cinco" role="group" aria-label="Relación de frecuencias">
+        <button id="r-11" aria-pressed="true">1 : 1</button>
+        <button id="r-12">1 : 2</button>
+        <button id="r-23">2 : 3</button>
+        <button id="r-34">3 : 4</button>
+        <button id="r-35">3 : 5</button>
+        <button id="r-ir">1 : √2</button>
+      </div>
+
+      <div class="toggle" role="group" aria-label="Animación">
+        <button id="s6-play" aria-pressed="true">Pausa</button>
+      </div>
+
+      <div class="form">
+        <span class="lb">Las dos oscilaciones</span>
+        x = A<sub>x</sub>·cos(ω<sub>x</sub>t) <span class="z">,</span>
+        y = A<sub>y</sub>·cos(ω<sub>y</sub>t <span class="t">+ δ</span>)
+      </div>
+
+      <div class="readout">
+        <div class="sect">La figura</div>
+        <div class="row pair">
+          <div class="k">Relación de frecuencias &nbsp;<em>f<sub>x</sub> : f<sub>y</sub></em></div>
+          <div class="v acc" id="s6-rel">1 : 1</div>
+        </div>
+        <div class="row">
+          <div class="k">Toques en el borde derecho / superior</div>
+          <div class="v dim" id="s6-toq">1 / 1</div>
+        </div>
+        <div class="row">
+          <div class="k">¿Se cierra sobre sí misma?</div>
+          <div class="v ok" id="s6-cierra">sí</div>
+        </div>
+
+        <div class="sect">Con frecuencias iguales, es una elipse</div>
+        <div class="row hero">
+          <div class="k">Qué sale</div>
+          <div class="v vi" id="s6-tipo">elíptica</div>
+        </div>
+        <div class="row">
+          <div class="k">Azimut &nbsp;<em>ψ = ½·atan2(S₂, S₁)</em></div>
+          <div class="v vi" id="s6-psi">26.49°</div>
+        </div>
+        <div class="row">
+          <div class="k">Elipticidad &nbsp;<em>χ = ½·asen(S₃/S₀)</em></div>
+          <div class="v vi" id="s6-chi">19.30°</div>
+        </div>
+        <div class="row">
+          <div class="k">Sentido de giro</div>
+          <div class="v dim" id="s6-giro">antihorario</div>
+        </div>
+        <div class="row">
+          <div class="k">Semiejes &nbsp;<em>a, b</em> &nbsp;con <em>b/a = |tan χ|</em></div>
+          <div class="v cy" id="s6-ejes">1.101 y 0.385</div>
+        </div>
+      </div>
+
+      <p class="note" id="s6-note">—</p>
+
+      <div class="legend">
+        <span><i style="background:var(--vi)"></i> la figura</span>
+        <span><i style="background:var(--acc)"></i> x(t), abajo</span>
+        <span><i style="background:var(--cy)"></i> y(t), a la izquierda</span>
+      </div>
+    </div>
   </div>
 
   <footer>
-    Nada de esta página es óptica: vale igual para un péndulo, un circuito RLC o una cuerda. Esa es justamente la razón de ponerla antes. El montaje 02 da <code>A² = A₁² + A₂² + 2A₁A₂cos δ</code>, que con <code>A₁ = A₂</code> se reduce a <code>I = 4I₁cos²(δ/2)</code>: es la fórmula del banco de interferencia, deducida aquí sin mencionar la luz. El montaje 04 cierra el puente: un pulso que dura <code>τ</code> necesita un ancho de frecuencias <code>Δf ≈ 1/τ</code>, y al traducirlo al espacio queda <code>c·τ = λ²/Δλ</code>, <b>exactamente la longitud de coherencia</b>. El paquete de ondas y la coherencia no son dos temas, son el mismo escrito de dos maneras. Puente · antes de la óptica de ondas.
+    Nada de esta página es óptica: vale igual para un péndulo, un circuito RLC o una cuerda. Esa es justamente la razón de ponerla antes. El montaje 02 da <code>A² = A₁² + A₂² + 2A₁A₂cos δ</code>, que con <code>A₁ = A₂</code> se reduce a <code>I = 4I₁cos²(δ/2)</code>: es la fórmula del banco de interferencia, deducida aquí sin mencionar la luz. El montaje 04 cierra el puente: un pulso que dura <code>τ</code> necesita un ancho de frecuencias <code>Δf ≈ 1/τ</code>, y al traducirlo al espacio queda <code>c·τ = λ²/Δλ</code>, <b>exactamente la longitud de coherencia</b>. El paquete de ondas y la coherencia no son dos temas, son el mismo escrito de dos maneras. <b>Los montajes 05 y 06 cierran ese círculo por el otro extremo</b>: el 04 deducía la longitud de coherencia a partir de un Δλ que había que dar por conocido, y el 06 dice de dónde sale. Un oscilador que se apaga en un tiempo τ no tiene una frecuencia sino una lorentziana de anchura Δf = 1/2πτ, de modo que Δλ/λ = Δf/f = 1/Q y la longitud de coherencia se reduce a <code>ℓ_c = λ·Q</code>: la propia longitud de onda multiplicada por el número de veces que el emisor consigue repetirse. Lo que el montaje 04 llamaba «longitud del paquete» ya calculaba exactamente eso. Una advertencia sobre el 05, porque el libro suele decirlo mal: el amortiguamiento crítico es el regreso más rápido <i>sin pasarse de largo</i>, no el más rápido. Si se acepta un sobreimpulso que quepa en la tolerancia, el óptimo está en ζ ≈ 0.78 para una banda del ±2 %, y en general en aquel ζ cuyo sobreimpulso iguala a la banda. <b>El montaje 07 gira el 02 noventa grados.</b> Las mismas dos oscilaciones, el mismo desfase δ, pero perpendiculares en vez de alineadas: donde antes salía una interferencia, ahora sale una elipse. Está calculada con las mismas convenciones de Stokes que el banco de polarización — <code>S₂ = 2A_xA_y cos δ</code>, <code>S₃ = 2A_xA_y sen δ</code>, <code>ψ = ½ atan2(S₂,S₁)</code>, <code>χ = ½ asen(S₃/S₀)</code> — de modo que los mismos valores dan allí los mismos números, y el alumno puede comprobarlo abriendo las dos páginas. Con frecuencias distintas la figura deja de ser una elipse y se convierte en el método del osciloscopio: toca el borde derecho tantas veces como vale f_x y el superior tantas como f_y, y sólo se cierra si el cociente es una fracción exacta. Puente · antes de la óptica de ondas.
   </footer>
 </div>
 
 <script>
 (function () {
   "use strict";
+
+  // ---------- tema ----------
+  // los colores salen de las variables CSS: al cambiar de tema se releen y se
+  // vuelve a dibujar, en vez de tener los valores escritos en el codigo
+  var V = {};
+  function rgba(t, a) { return "rgba(" + V[t + "Rgb"] + "," + a + ")"; }
+  function leerTema() {
+    var cs = getComputedStyle(document.documentElement);
+    [["bg", "bg"], ["panel", "panel"], ["panel2", "panel-2"], ["line", "line"], ["fg", "fg"], ["dim", "dim"], ["acc", "acc"], ["cy", "cy"], ["vi", "vi"], ["ok", "ok"], ["no", "no"], ["or", "or"], ["rad", "rad"], ["cv", "cv"], ["vp", "vp"], ["hot", "hot"], ["good", "good"], ["warn", "warn"]].forEach(function (p) {
+      V[p[0]] = cs.getPropertyValue("--" + p[1]).trim();
+      V[p[0] + "Rgb"] = cs.getPropertyValue("--" + p[1] + "-rgb").trim();
+    });
+  }
+  leerTema();
+  function hx(t) { return parseInt(V[t].slice(1), 16); }
+  // no todas las paginas tienen draw(): las primeras redibujan por show(i).
+  // volver a pulsar la pestana activa vale en las dos formas.
+  function redibujar() {
+    if (typeof draw === "function") { draw(); return; }
+    var t = document.querySelector('[role="tab"][aria-selected="true"]');
+    if (t) t.click();
+  }
 
   var cv = document.getElementById("cv");
   var viewport = cv.parentElement;
@@ -504,13 +880,13 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
   function ctx2d() {
     var ctx = cv.getContext("2d");
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = "#070a10";
+    ctx.fillStyle = V.cv;
     ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.scale(dpr, dpr);
     return ctx;
   }
 
-  var C = { acc: "#f2c454", cy: "#5fa8d8", vi: "#a888d8", ok: "#52b87c", no: "#d4624a", dim: "#8695aa", fg: "#dde5f0" };
+  var C = V;   // mismos nombres que las variables CSS
 
   function fmt(x, d) {
     if (Math.abs(x) < 0.5 / Math.pow(10, d)) x = 0;
@@ -527,7 +903,7 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     ctx.font = size + "px 'IBM Plex Mono', ui-monospace, Menlo, monospace";
     var tw = ctx.measureText(txt).width, pad = 3;
     var left = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
-    ctx.fillStyle = "rgba(7,10,16,.82)";
+    ctx.fillStyle = rgba("cv", .82);
     ctx.fillRect(left - pad, y - size / 2 - pad, tw + 2 * pad, size + 2 * pad);
     lab(ctx, txt, x, y, col, align, size);
   }
@@ -555,7 +931,7 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
 
   // reloj comun a los cuatro montajes
   var t = 0, ultimo = 0;
-  var corriendo = [true, true, true, true];
+  var corriendo = [true, true, true, true, true, true, true];
 
   // ================================================================
   // 01  la fase es un angulo
@@ -584,9 +960,9 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     // conecta dos alturas iguales, que es lo que se quiere que vean.
     var px = cx - s0.A * e * Math.sin(ang), py = cy - s0.A * e * Math.cos(ang);
 
-    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba("line", .95); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(cx, cy, s0.A * e, 0, 6.2832); ctx.stroke();
-    ctx.strokeStyle = "rgba(134,149,170,.25)"; ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = rgba("dim", .25); ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.moveTo(cx, cy - e * 1.45); ctx.lineTo(cx, cy + e * 1.45);
     ctx.moveTo(cx - e * 1.45, cy); ctx.lineTo(cx + e * 1.45, cy);
@@ -596,7 +972,7 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     flecha(ctx, cx, cy, px, py, C.acc, 2.2);
 
     // de la punta al eje vertical, y de ahi a la curva: todo a la misma altura
-    ctx.strokeStyle = "rgba(242,196,84,.45)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = rgba("acc", .45); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
     ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(cx, py); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = C.acc;
     ctx.beginPath(); ctx.arc(cx, py, 4.2, 0, 6.2832); ctx.fill();
@@ -604,7 +980,7 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     // la grafica en el tiempo, con el pasado hacia la izquierda
     var Tver = 4 / s0.f;
     var X = function (dt) { return xG + wG - (dt / Tver) * wG; };
-    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba("line", .95); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(xG, cy); ctx.lineTo(xG + wG, cy); ctx.stroke();
 
     ctx.strokeStyle = C.cy; ctx.lineWidth = 1.9;
@@ -616,12 +992,12 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     }
     ctx.stroke();
 
-    ctx.strokeStyle = "rgba(242,196,84,.4)"; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+    ctx.strokeStyle = rgba("acc", .4); ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
     ctx.beginPath(); ctx.moveTo(cx, py); ctx.lineTo(X(0), cy - x * e); ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = C.acc;
     ctx.beginPath(); ctx.arc(X(0), cy - x * e, 4.4, 0, 6.2832); ctx.fill();
-    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.3; ctx.stroke();
+    ctx.strokeStyle = V.cv; ctx.lineWidth = 1.3; ctx.stroke();
 
     // un periodo, medido sobre la curva
     cotaH(ctx, X(1 / s0.f), X(0), cy + e * 1.34, "T = " + fmt(1 / s0.f, 2) + " s", C.vi);
@@ -698,7 +1074,7 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     var R = Math.min(h * 0.3, w * 0.16);
     var cx = 24 + R, cy = h / 2, esc = R / 2.1;
 
-    ctx.strokeStyle = "rgba(134,149,170,.22)"; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba("dim", .22); ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(cx - R - 6, cy); ctx.lineTo(cx + R + 6, cy);
     ctx.moveTo(cx, cy - R - 6); ctx.lineTo(cx, cy + R + 6);
@@ -717,7 +1093,7 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     var Tver = 3 / 0.35;
     var X = function (dt) { return xG + wG - (dt / Tver) * wG; };
     var escY = Math.min(h * 0.19, R / 1.5);
-    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba("line", .95); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(xG, cy); ctx.lineTo(xG + wG, cy); ctx.stroke();
 
     function curva(fn, col, lw) {
@@ -729,12 +1105,12 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
       }
       ctx.stroke();
     }
-    curva(function (tt) { return A1 * Math.cos(om * tt); }, "rgba(242,196,84,.5)", 1.2);
-    curva(function (tt) { return A2 * Math.cos(om * tt + d); }, "rgba(95,168,216,.5)", 1.2);
+    curva(function (tt) { return A1 * Math.cos(om * tt); }, rgba("acc", .5), 1.2);
+    curva(function (tt) { return A2 * Math.cos(om * tt + d); }, rgba("cy", .5), 1.2);
     curva(function (tt) { return A1 * Math.cos(om * tt) + A2 * Math.cos(om * tt + d); }, C.ok, 2.2);
 
     var A = Math.sqrt(A1 * A1 + A2 * A2 + 2 * A1 * A2 * Math.cos(d));
-    ctx.strokeStyle = "rgba(82,184,124,.35)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = rgba("ok", .35); ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.moveTo(xG, cy - A * escY); ctx.lineTo(xG + wG, cy - A * escY);
     ctx.moveTo(xG, cy + A * escY); ctx.lineTo(xG + wG, cy + A * escY);
@@ -779,7 +1155,7 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     var k = 2 * Math.PI / s2.lam, om = 2 * Math.PI / s2.T;
 
     // ---- arriba: foto en el espacio ----
-    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba("line", .95); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(mL, yS); ctx.lineTo(mL + pw, yS); ctx.stroke();
     var XX = function (x) { return mL + x / Xmax * pw; };
     ctx.strokeStyle = C.acc; ctx.lineWidth = 2;
@@ -795,16 +1171,16 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
 
     // el punto observado
     var yObs = Math.cos(k * XOBS - om * t);
-    ctx.strokeStyle = "rgba(82,184,124,.45)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = rgba("ok", .45); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
     ctx.beginPath(); ctx.moveTo(XX(XOBS), yS - escY - 6); ctx.lineTo(XX(XOBS), yS + escY + 6); ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = C.ok;
     ctx.beginPath(); ctx.arc(XX(XOBS), yS - yObs * escY, 4.4, 0, 6.2832); ctx.fill();
-    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.3; ctx.stroke();
+    ctx.strokeStyle = V.cv; ctx.lineWidth = 1.3; ctx.stroke();
     labBg(ctx, "este punto", XX(XOBS), yS - escY - 14, C.ok, "center", 10);
 
     // ---- abajo: ese punto a lo largo del tiempo ----
-    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba("line", .95); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(mL, yI); ctx.lineTo(mL + pw, yI); ctx.stroke();
     var XT = function (dt) { return mL + pw - dt / Tver * pw; };
     ctx.strokeStyle = C.cy; ctx.lineWidth = 2;
@@ -819,7 +1195,7 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     lab(ctx, "ahora", mL + pw, yI + escY + 30, C.dim, "right", 10);
     ctx.fillStyle = C.ok;
     ctx.beginPath(); ctx.arc(XT(0), yI - yObs * escY, 4.4, 0, 6.2832); ctx.fill();
-    ctx.strokeStyle = "#070a10"; ctx.lineWidth = 1.3; ctx.stroke();
+    ctx.strokeStyle = V.cv; ctx.lineWidth = 1.3; ctx.stroke();
   }
 
   // ================================================================
@@ -866,9 +1242,9 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     var f2 = F1 + s3.df;
 
     // arriba: las dos por separado
-    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba("line", .95); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(mL, yS); ctx.lineTo(mL + pw, yS); ctx.stroke();
-    [[F1, "rgba(242,196,84,.85)"], [f2, "rgba(95,168,216,.85)"]].forEach(function (p) {
+    [[F1, rgba("acc", .85)], [f2, rgba("cy", .85)]].forEach(function (p) {
       ctx.strokeStyle = p[1]; ctx.lineWidth = 1.2;
       ctx.beginPath();
       for (var i = 0; i <= 900; i++) {
@@ -880,10 +1256,10 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     lab(ctx, "las dos frecuencias por separado", mL, 14, C.dim, "left", 10);
 
     // abajo: la suma y su envolvente
-    ctx.strokeStyle = "rgba(34,48,68,.95)"; ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba("line", .95); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(mL, yI); ctx.lineTo(mL + pw, yI); ctx.stroke();
 
-    ctx.strokeStyle = "rgba(168,136,216,.75)"; ctx.lineWidth = 1.4;
+    ctx.strokeStyle = rgba("vi", .75); ctx.lineWidth = 1.4;
     [1, -1].forEach(function (sg) {
       ctx.beginPath();
       for (var i = 0; i <= 600; i++) {
@@ -914,17 +1290,514 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     lab(ctx, "ahora", mL + pw, h - 12, C.dim, "right", 10);
   }
 
+
+  // ================================================================
+  // 05  el oscilador que se apaga
+  // ================================================================
+  var s4 = { z: 0.1, f: 1 };
+
+  // soltado desde el reposo en x = 1. las tres soluciones son distintas,
+  // no una sola formula con un caso limite
+  function xAmort(tt, z, w0) {
+    if (Math.abs(z - 1) < 1e-6) return (1 + w0 * tt) * Math.exp(-w0 * tt);
+    if (z < 1) {
+      var wd = w0 * Math.sqrt(1 - z * z);
+      return Math.exp(-z * w0 * tt) * (Math.cos(wd * tt) + z * w0 / wd * Math.sin(wd * tt));
+    }
+    var sg = w0 * Math.sqrt(z * z - 1), r1 = -z * w0 + sg, r2 = -z * w0 - sg;
+    return (r1 * Math.exp(r2 * tt) - r2 * Math.exp(r1 * tt)) / (r1 - r2);
+  }
+  // tiempo que tarda en no volver a salirse de la banda
+  function asentamiento(z, w0, tol) {
+    var tmax = 40 / (z * w0), N = 4000, ult = 0;
+    for (var i = 0; i <= N; i++) {
+      var tt = tmax * i / N;
+      if (Math.abs(xAmort(tt, z, w0)) > tol) ult = tt;
+    }
+    return ult;
+  }
+
+  function update4() {
+    s4.z = +$("s4-z").value; s4.f = +$("s4-f").value;
+    $("s4-z-v").textContent = fmt(s4.z, 3);
+    $("s4-f-v").textContent = fmt(s4.f, 2) + " Hz";
+    [["z-poco", .1], ["z-rapido", .78], ["z-crit", 1], ["z-sobre", 2]].forEach(function (p) {
+      $(p[0]).setAttribute("aria-pressed", Math.abs(s4.z - p[1]) < 1e-6 ? "true" : "false");
+    });
+
+    var w0 = 2 * Math.PI * s4.f, z = s4.z, g = 2 * z * w0;
+    var Q = 1 / (2 * z), sub = z < 0.999;
+    var wd = sub ? w0 * Math.sqrt(1 - z * z) : 0;
+
+    $("s4-reg").textContent = sub ? "subamortiguado" : (z < 1.001 ? "crítico" : "sobreamortiguado");
+    $("s4-reg").className = "v " + (sub ? "cy" : (z < 1.001 ? "ok" : "no"));
+    $("s4-Q").textContent = fmt(Q, Q < 10 ? 3 : 1);
+    $("s4-fd").textContent = sub ? fmt(wd / (2 * Math.PI), 3) + " Hz" : "ya no oscila";
+    $("s4-fd").className = "v " + (sub ? "dim" : "no");
+
+    var ciclos = Q / (2 * Math.PI);
+    $("s4-ciclos").textContent = sub ? fmt(ciclos, ciclos < 10 ? 2 : 1) : "menos de uno";
+    $("s4-ciclos").className = "v " + (ciclos >= 1 ? "ok" : "no");
+    $("s4-tau").textContent = fmt(1 / g, 3) + " s";
+    var perd = 1 - Math.exp(-2 * Math.PI / Q);
+    $("s4-perd").textContent = !sub ? "toda en una"
+      : (perd > 0.999 ? "más del 99.9 %" : fmt(perd * 100, 1) + " %");
+
+    var sobre = sub ? Math.exp(-Math.PI * z / Math.sqrt(1 - z * z)) : 0;
+    $("s4-sobre").textContent = sobre > 1e-4 ? fmt(sobre * 100, 2) + " %" : "no se pasa";
+    $("s4-sobre").className = "v " + (sobre > 0.05 ? "no" : "ok");
+    $("s4-asien").textContent = fmt(asentamiento(z, w0, 0.02), 2) + " s";
+
+    var nt;
+    if (z < 0.2) {
+      nt = "Con Q = " + fmt(Q, 1) + " el oscilador <b>aguanta " + fmt(ciclos, 1) +
+           " ciclos antes de perder todo menos 1/e de su energía</b>. Un diapasón anda por Q ≈ 1 000, " +
+           "un cristal de cuarzo por 10⁵, y una cavidad láser puede pasar de 10⁸. Q es, literalmente, " +
+           "cuántas veces consigue repetirse.";
+    } else if (z < 0.9) {
+      nt = "Zona útil para un instrumento: oscila poco y se queda quieto pronto. <b>El mínimo está en " +
+           "ζ ≈ 0.78</b>, no en el crítico, porque un sobreimpulso del " + fmt(sobre * 100, 1) +
+           " % que no se sale de la banda del ±2 % no cuesta tiempo — y ahorra el que el crítico gasta " +
+           "acercándose despacio.";
+    } else if (z < 1.001) {
+      nt = "<b>Crítico es la frontera, no el récord.</b> Es el regreso más rápido <i>sin pasarse de largo</i>; " +
+           "si aceptas un sobreimpulso que quepa en tu tolerancia, ζ ≈ 0.78 llega antes. " +
+           "Aquí es donde se diseña una montura, un galvanómetro o un actuador de enfoque: " +
+           "no se quiere que oscile, se quiere que llegue.";
+    } else {
+      nt = "Pasado el crítico <b>ya no gana nada: pierde</b>. El sistema vuelve sin oscilar, sí, pero cada vez " +
+           "más despacio, porque el propio rozamiento le estorba. Una puerta con el cierre demasiado " +
+           "apretado tarda una eternidad en cerrar.";
+    }
+    $("s4-note").innerHTML = nt;
+  }
+
+  function draw4(ctx, w, h) {
+    var mL = 52, mR = 18, mT = 26, mB = 44;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var w0 = 2 * Math.PI * s4.f, z = s4.z;
+    // hasta que la envolvente baja al 1 %, con minimo de 4 periodos y tope de 25
+    var tmax = Math.max(4 / s4.f, Math.min(Math.log(100) / (z * w0), 25 / s4.f));
+    var X = function (tt) { return mL + tt / tmax * pw; };
+    var Y = function (v) { return mT + ph / 2 - v * ph * 0.44; };
+
+    lab(ctx, "elongación  ·  soltado desde el reposo", mL - 4, mT - 12, C.dim, "left", 10);
+
+    ctx.strokeStyle = rgba("line", .7); ctx.lineWidth = 1;
+    [-1, -0.5, 0.5, 1].forEach(function (v) {
+      ctx.beginPath(); ctx.moveTo(mL, Y(v)); ctx.lineTo(mL + pw, Y(v)); ctx.stroke();
+      lab(ctx, fmt(v, 1), mL - 8, Y(v), C.dim, "right", 9.5);
+    });
+    // banda de tolerancia
+    ctx.fillStyle = rgba("cy", .13);
+    ctx.fillRect(mL, Y(0.02), pw, Y(-0.02) - Y(0.02));
+    ctx.strokeStyle = rgba("fg", .5); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(mL, Y(0)); ctx.lineTo(mL + pw, Y(0)); ctx.stroke();
+    lab(ctx, "0", mL - 8, Y(0), C.dim, "right", 9.5);
+    // paso de rejilla adaptativo: con ventanas largas, un rotulo por segundo
+    // se solapa consigo mismo hasta ser ilegible
+    var paso = Math.pow(10, Math.floor(Math.log10(tmax / 7)));
+    [1, 2, 5, 10].some(function (m) { if (paso * m >= tmax / 9) { paso *= m; return true; } });
+    var dec = paso < 1 ? (paso < 0.1 ? 2 : 1) : 0;
+    for (var k = 0; k * paso <= tmax + 1e-9; k++) {
+      var tk = k * paso;
+      ctx.strokeStyle = rgba("line", .5);
+      ctx.beginPath(); ctx.moveTo(X(tk), mT); ctx.lineTo(X(tk), mT + ph); ctx.stroke();
+      lab(ctx, fmt(tk, dec) + (k ? "" : " s"), X(tk), mT + ph + 14, C.dim, "center", 9.5);
+    }
+
+    // envolvente
+    if (z < 0.999) {
+      var amp = 1 / Math.sqrt(1 - z * z);
+      ctx.strokeStyle = rgba("dim", .75); ctx.lineWidth = 1.2; ctx.setLineDash([4, 3]);
+      [1, -1].forEach(function (sg) {
+        ctx.beginPath();
+        for (var i = 0; i <= 300; i++) {
+          var tt = tmax * i / 300, v = sg * amp * Math.exp(-z * w0 * tt);
+          (i ? ctx.lineTo : ctx.moveTo).call(ctx, X(tt), Y(v));
+        }
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+    }
+
+    // la curva
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var j = 0; j <= 1400; j++) {
+      var tj = tmax * j / 1400;
+      (j ? ctx.lineTo : ctx.moveTo).call(ctx, X(tj), Y(xAmort(tj, z, w0)));
+    }
+    ctx.stroke();
+
+    // asentamiento
+    var ta = asentamiento(z, w0, 0.02);
+    if (ta < tmax) {
+      ctx.strokeStyle = rgba("cy", .6); ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(X(ta), mT); ctx.lineTo(X(ta), mT + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      // cerca del borde derecho el rotulo se sale del marco: se vuelca al otro lado
+      var der = X(ta) > mL + pw * 0.66;
+      labBg(ctx, "ya no se sale · " + fmt(ta, 2) + " s",
+            X(ta) + (der ? -7 : 7), mT + 11, C.cy, der ? "right" : "left", 10);
+    }
+
+    // punto que recorre
+    var tp = tmax > 0 ? (t % (tmax * 1.25)) : 0;
+    if (tp <= tmax) {
+      var xp = xAmort(tp, z, w0);
+      ctx.fillStyle = C.acc;
+      ctx.beginPath(); ctx.arc(X(tp), Y(xp), 4.5, 0, 6.2832); ctx.fill();
+    }
+    lab(ctx, "tiempo", mL + pw, mT + ph + 31, C.dim, "right", 10);
+  }
+
+  // ================================================================
+  // 06  lo ancho de la linea
+  // ================================================================
+  var CLUZ = 299792458;
+  var s5 = { Q: 982, lam: 589 };
+  // el deslizador va a pasos de 0.01 en el exponente: un preajuste se guarda
+  // aparte para que la lampara de sodio diga 981.7 y no 977
+  var fijo5 = ["f-sodio", 589, 0.6];
+  var FUENTES = {
+    "f-blanca": ["luz blanca", 550, 300],
+    "f-led":    ["LED rojo", 630, 20],
+    "f-sodio":  ["lámpara de sodio", 589, 0.6],
+    "f-hene":   ["láser He-Ne", 632.8, 0.002]
+  };
+
+  function ing(x, u, d) {
+    var P = [[1e-15, "f"], [1e-12, "p"], [1e-9, "n"], [1e-6, "µ"], [1e-3, "m"],
+             [1, ""], [1e3, "k"], [1e6, "M"], [1e9, "G"], [1e12, "T"]];
+    if (!isFinite(x) || x === 0) return "0 " + u;
+    var a = Math.abs(x), k = 0;
+    for (var i = P.length - 1; i >= 0; i--) { if (a >= P[i][0] * 0.9995) { k = i; break; } }
+    return fmt(x / P[k][0], d === undefined ? 2 : d) + " " + P[k][1] + u;
+  }
+
+  function update5() {
+    if (fijo5) { s5.lam = fijo5[1]; s5.Q = fijo5[1] / fijo5[2]; }
+    else { s5.Q = Math.pow(10, +$("s5-Q").value); s5.lam = +$("s5-lam").value; }
+    $("s5-Q-v").textContent = s5.Q >= 1e4 ? cien5(s5.Q) : fmt(s5.Q, s5.Q < 10 ? 2 : 0);
+    $("s5-lam-v").textContent = fmt(s5.lam, s5.lam % 1 ? 1 : 0) + " nm";
+    Object.keys(FUENTES).forEach(function (k) {
+      $(k).setAttribute("aria-pressed", (fijo5 && fijo5[0] === k) ? "true" : "false");
+    });
+
+    var lam = s5.lam * 1e-9, f0 = CLUZ / lam, w0 = 2 * Math.PI * f0;
+    var tau = s5.Q / w0, df = f0 / s5.Q, dl = lam / s5.Q, lc = lam * s5.Q;
+
+    $("s5-Q2").textContent = s5.Q >= 1e4 ? cien5(s5.Q) : fmt(s5.Q, s5.Q < 10 ? 2 : 0);
+    $("s5-tau").textContent = ing(tau, "s", 3);
+    $("s5-cic").textContent = fmt(s5.Q / (2 * Math.PI), s5.Q < 60 ? 2 : 0);
+    $("s5-df").textContent = ing(df, "Hz", 3);
+    $("s5-dl").textContent = dl * 1e9 >= 1 ? fmt(dl * 1e9, 2) + " nm" : ing(dl, "m", 3);
+    $("s5-lc").textContent = ing(lc, "m", 3);
+    $("s5-lc2").textContent = ing(lam * lam / dl, "m", 3);
+
+    var nt;
+    if (s5.Q < 5) {
+      nt = "Apenas un par de oscilaciones: <b>la «línea» es casi todo el espectro visible</b>. Por eso con " +
+           "luz blanca las franjas sólo salen cuando los dos caminos están igualados a menos de una micra, " +
+           "y por eso mismo se usa para medir espesores: lo que la hace mala para interferir la hace exacta " +
+           "para localizar.";
+    } else if (s5.Q < 2000) {
+      nt = "Con Q = " + fmt(s5.Q, 0) + " la línea mide " + fmt(dl * 1e9, 3) + " nm de ancha y la coherencia " +
+           "llega a " + ing(lc, "m", 2) + ". <b>Esto es lo que montaje 04 llamaba «longitud del paquete»</b>: " +
+           "es la misma cantidad, λ·Q, sólo que ahora se sabe quién fija Q — lo deprisa que se apaga el átomo " +
+           "que emitió.";
+    } else {
+      nt = "Un emisor que aguanta " + fmt(s5.Q / (2 * Math.PI), 0) + " ciclos da una línea de " +
+           ing(df, "Hz", 1) + " sobre una portadora de " + ing(f0, "Hz", 1) + ": <b>una parte en " +
+           fmt(s5.Q, 0) + "</b>. De ahí los " + ing(lc, "m", 2) + " de coherencia que permiten interferir " +
+           "con los brazos desiguales.";
+    }
+    $("s5-note").innerHTML = nt;
+  }
+  function cien5(x) {
+    var e = Math.floor(Math.log10(x));
+    var sup = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
+    return fmt(x / Math.pow(10, e), 2) + " × 10" + String(e).split("").map(function (c) { return sup[c] || c; }).join("");
+  }
+
+  function draw5(ctx, w, h) {
+    var mL = 54, mR = 18, mT = 26, mB = 42;
+    var pw = w - mL - mR, ph = h - mT - mB;
+    var hA = ph * 0.46, yB = mT + ph - ph * 0.40, hB = ph * 0.40;
+    var Q = s5.Q, lam = s5.lam * 1e-9, f0 = CLUZ / lam, w0 = 2 * Math.PI * f0;
+    var tau = Q / w0, ciclos = Q / (2 * Math.PI);
+
+    // ---- arriba: la oscilacion que decae ----
+    lab(ctx, "la oscilación del emisor  ·  se apaga en " + fmt(ciclos, ciclos < 60 ? 1 : 0) + " ciclos",
+        mL - 4, mT - 12, C.dim, "left", 10);
+    var tmax = 3.2 * tau;
+    var XA = function (tt) { return mL + tt / tmax * pw; };
+    var YA = function (v) { return mT + hA / 2 - v * hA * 0.42; };
+    ctx.strokeStyle = rgba("fg", .4); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(mL, YA(0)); ctx.lineTo(mL + pw, YA(0)); ctx.stroke();
+
+    var nCic = ciclos * 3.2;
+    // el interior de la envolvente se rellena: con miles de ciclos, dos lineas
+    // punteadas no se leen como un tren de ondas que se apaga
+    ctx.fillStyle = rgba("acc", .17);
+    ctx.beginPath();
+    for (var i = 0; i <= 240; i++) {
+      var tt = tmax * i / 240;
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, XA(tt), YA(Math.exp(-tt / (2 * tau))));
+    }
+    for (var i2 = 240; i2 >= 0; i2--) {
+      var t2 = tmax * i2 / 240;
+      ctx.lineTo(XA(t2), YA(-Math.exp(-t2 / (2 * tau))));
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = rgba("dim", .85); ctx.lineWidth = 1.2; ctx.setLineDash([4, 3]);
+    [1, -1].forEach(function (sg) {
+      ctx.beginPath();
+      for (var i3 = 0; i3 <= 240; i3++) {
+        var t3 = tmax * i3 / 240;
+        (i3 ? ctx.lineTo : ctx.moveTo).call(ctx, XA(t3), YA(sg * Math.exp(-t3 / (2 * tau))));
+      }
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    if (nCic <= 90) {
+      ctx.strokeStyle = C.acc; ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      for (var j = 0; j <= 2600; j++) {
+        var tj = tmax * j / 2600;
+        (j ? ctx.lineTo : ctx.moveTo).call(ctx, XA(tj), YA(Math.exp(-tj / (2 * tau)) * Math.cos(w0 * tj)));
+      }
+      ctx.stroke();
+    } else {
+      labBg(ctx, fmt(nCic, 0) + " ciclos en esta ventana: demasiados para dibujarlos uno a uno",
+            mL + pw / 2, YA(-0.52), C.acc, "center", 10.5);
+    }
+    labBg(ctx, "τ = " + ing(tau, "s", 2), XA(tau), YA(0.82), C.dim, "center", 10);
+    ctx.strokeStyle = rgba("dim", .5); ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.moveTo(XA(tau), YA(0.72)); ctx.lineTo(XA(tau), YA(-1)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // ---- abajo: la lorentziana ----
+    var df = f0 / Q, rango = 3.0 * df;
+    var XB = function (ff) { return mL + (ff + rango) / (2 * rango) * pw; };
+    var YB = function (v) { return yB + hB - v * hB * 0.86; };
+    lab(ctx, "su espectro  ·  lorentziana de anchura Δf = f₀/Q", mL - 4, yB - 12, C.dim, "left", 10);
+    ctx.strokeStyle = rgba("line", .7); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(mL, YB(0)); ctx.lineTo(mL + pw, YB(0)); ctx.stroke();
+
+    ctx.strokeStyle = C.vi; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var m = 0; m <= 400; m++) {
+      var ff = -rango + 2 * rango * m / 400;
+      var L = 1 / (1 + Math.pow(2 * ff / df, 2));
+      (m ? ctx.lineTo : ctx.moveTo).call(ctx, XB(ff), YB(L));
+    }
+    ctx.stroke();
+    // media altura
+    ctx.strokeStyle = rgba("vi", .5); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(mL, YB(0.5)); ctx.lineTo(mL + pw, YB(0.5)); ctx.stroke();
+    ctx.setLineDash([]);
+    cotaH(ctx, XB(-df / 2), XB(df / 2), YB(0.5), "Δf = " + ing(df, "Hz", 2), C.vi);
+    lab(ctx, "f₀ = " + ing(f0, "Hz", 3), XB(0), yB + hB + 14, C.dim, "center", 9.5);
+    lab(ctx, "−" + ing(rango, "Hz", 1), mL, yB + hB + 14, C.dim, "left", 9.5);
+    lab(ctx, "+" + ing(rango, "Hz", 1), mL + pw, yB + hB + 14, C.dim, "right", 9.5);
+  }
+
+
+  // ================================================================
+  // 07  perpendiculares
+  // ================================================================
+  var s6 = { d: 45, r: 0.6, nx: 1, ny: 1, irr: false };
+  var RAZONES = {
+    "r-11": [1, 1], "r-12": [1, 2], "r-23": [2, 3],
+    "r-34": [3, 4], "r-35": [3, 5], "r-ir": null
+  };
+  var RAIZ2 = Math.SQRT2;
+
+  // mismas convenciones que el banco de polarizacion, para que los numeros
+  // de los dos montajes coincidan cuando el alumno los compare
+  function elipse(Ax, Ay, dGrados) {
+    var dr = dGrados * Math.PI / 180;
+    var S0 = Ax * Ax + Ay * Ay, S1 = Ax * Ax - Ay * Ay;
+    var S2 = 2 * Ax * Ay * Math.cos(dr), S3 = 2 * Ax * Ay * Math.sin(dr);
+    if (S0 < 1e-12) return null;
+    var chi = 0.5 * Math.asin(Math.max(-1, Math.min(1, S3 / S0))) * 180 / Math.PI;
+    var lin = Math.hypot(S1, S2);
+    var psi = lin / S0 < 1e-6 ? null : 0.5 * Math.atan2(S2, S1) * 180 / Math.PI;
+    var tipo = Math.abs(chi) < 0.6 ? "lineal"
+             : (Math.abs(Math.abs(chi) - 45) < 0.6 ? "circular" : "elíptica");
+    var giro = Math.abs(chi) < 0.6 ? "no gira" : (S3 > 0 ? "antihorario" : "horario");
+    var a = Math.sqrt(S0 / 2 * (1 + lin / S0)), b = Math.sqrt(S0 / 2 * (1 - lin / S0));
+    return { psi: psi, chi: chi, tipo: tipo, giro: giro, a: a, b: b };
+  }
+
+  function update6() {
+    s6.d = +$("s6-d").value; s6.r = +$("s6-r").value;
+    $("s6-d-v").textContent = fmt(s6.d, 0) + "°";
+    $("s6-r-v").textContent = fmt(s6.r, 2);
+    Object.keys(RAZONES).forEach(function (k) {
+      var R = RAZONES[k];
+      $(k).setAttribute("aria-pressed",
+        (R === null ? s6.irr : (!s6.irr && s6.nx === R[0] && s6.ny === R[1])) ? "true" : "false");
+    });
+
+    var uno = !s6.irr && s6.nx === 1 && s6.ny === 1;
+    $("s6-rel").textContent = s6.irr ? "1 : √2" : s6.nx + " : " + s6.ny;
+    $("s6-toq").textContent = s6.irr ? "no acaba de dar vueltas" : s6.nx + " / " + s6.ny;
+    $("s6-cierra").textContent = s6.irr ? "nunca" : "sí";
+    $("s6-cierra").className = "v " + (s6.irr ? "no" : "ok");
+
+    var e = elipse(1, s6.r, s6.d);
+    var campos = ["s6-tipo", "s6-psi", "s6-chi", "s6-giro", "s6-ejes"];
+    if (!uno || !e) {
+      campos.forEach(function (c) { $(c).textContent = "sólo con 1 : 1"; $(c).className = "v dim"; });
+    } else {
+      $("s6-tipo").textContent = e.tipo; $("s6-tipo").className = "v vi";
+      $("s6-psi").textContent = e.psi === null ? "indefinido" : fmt(e.psi, 2) + "°";
+      $("s6-psi").className = "v vi";
+      $("s6-chi").textContent = fmt(e.chi, 2) + "°"; $("s6-chi").className = "v vi";
+      $("s6-giro").textContent = e.giro; $("s6-giro").className = "v dim";
+      $("s6-ejes").textContent = fmt(e.a, 3) + " y " + fmt(e.b, 3); $("s6-ejes").className = "v cy";
+    }
+
+    var nt;
+    if (s6.irr) {
+      nt = "Con una razón irracional <b>la figura no se cierra nunca</b>: cada vuelta pasa un poco corrida de " +
+           "la anterior y acaba ennegreciendo todo el cuadro. Dos frecuencias sólo dan una curva cerrada si " +
+           "su cociente es una fracción exacta, y eso es lo que se usa para medirlas.";
+    } else if (!uno) {
+      nt = "Aquí está el método del osciloscopio: <b>la figura toca el borde derecho " + s6.nx +
+           " vez" + (s6.nx > 1 ? "es" : "") + " y el borde superior " + s6.ny + "</b>, y esa es justamente la " +
+           "razón de frecuencias f_x/f_y = " + s6.nx + "/" + s6.ny + ". Se cuentan los toques y se conoce una " +
+           "frecuencia desconocida comparándola con una de referencia, sin medir ningún tiempo.";
+    } else if (e && e.tipo === "lineal") {
+      nt = "Con δ = " + fmt(s6.d, 0) + "° las dos oscilaciones suben y bajan a la vez, así que el punto " +
+           "<b>sólo recorre una recta</b>. En el banco de polarización esto es la luz polarizada linealmente: " +
+           "un estado sin giro, que es el caso particular, no el general.";
+    } else if (e && e.tipo === "circular") {
+      nt = "Amplitudes iguales y δ = ±90°: <b>el punto describe un círculo a velocidad constante</b>. " +
+           "Y aquí conviene detenerse — un círculo no es más que dos rectas perpendiculares desfasadas un cuarto " +
+           "de periodo. La luz circular no tiene nada de exótico: es esto.";
+    } else {
+      nt = "Esta elipse es <b>exactamente la del banco de polarización</b>. Pon allí E_x = 1, E_y = " +
+           fmt(s6.r, 2) + " y δ = " + fmt(s6.d, 0) + "° y leerás el mismo azimut de " +
+           (e && e.psi !== null ? fmt(e.psi, 2) + "°" : "—") + " y la misma elipticidad. Lo único que cambia es " +
+           "el nombre: aquí son dos muelles, allí son las dos componentes del campo eléctrico.";
+    }
+    $("s6-note").innerHTML = nt;
+  }
+
+  function draw6(ctx, w, h) {
+    var mL = 12, mR = 14, mT = 24, mB = 26;
+    var aw = w - mL - mR, ah = h - mT - mB;
+    // el cuadro y sus dos margenes forman un bloque que se centra:
+    // si no, sobra espacio muerto a la derecha
+    var frac = 0.36, hueco = 14;
+    var S = Math.min((aw - hueco) / (1 + frac), (ah - hueco) / (1 + frac));
+    var wt = S * frac, ht = S * frac;
+    var bx0 = mL + (aw - (wt + hueco + S)) / 2 + wt + hueco;
+    var by0 = mT, bx1 = bx0 + S, by1 = by0 + S;
+    var Ax = 1, Ay = s6.r, M = 1.08;
+    var X = function (v) { return bx0 + S / 2 + v / M * S / 2; };
+    var Y = function (v) { return by0 + S / 2 - v / M * S / 2; };
+
+    var rx = s6.irr ? 1 : s6.nx, ry = s6.irr ? RAIZ2 : s6.ny;
+    var vueltas = s6.irr ? 60 : 1;
+    var dr = s6.d * Math.PI / 180;
+    var fx = function (u) { return Ax * Math.cos(2 * Math.PI * rx * u); };
+    var fy = function (u) { return Ay * Math.cos(2 * Math.PI * ry * u + dr); };
+
+    // marco
+    ctx.strokeStyle = rgba("line", .9); ctx.lineWidth = 1;
+    ctx.strokeRect(bx0 - .5, by0 - .5, S + 1, S + 1);
+    ctx.strokeStyle = rgba("line", .55);
+    ctx.beginPath();
+    ctx.moveTo(bx0, Y(0)); ctx.lineTo(bx1, Y(0));
+    ctx.moveTo(X(0), by0); ctx.lineTo(X(0), by1);
+    ctx.stroke();
+
+    // la figura
+    var N = s6.irr ? 14000 : 2600;
+    ctx.strokeStyle = C.vi; ctx.lineWidth = s6.irr ? 0.7 : 2;
+    if (s6.irr) ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    for (var i = 0; i <= N; i++) {
+      var u = vueltas * i / N;
+      (i ? ctx.lineTo : ctx.moveTo).call(ctx, X(fx(u)), Y(fy(u)));
+    }
+    ctx.stroke(); ctx.globalAlpha = 1;
+
+    // trazas marginales: x(t) abajo con el tiempo hacia abajo,
+    // y(t) a la izquierda con el tiempo hacia la izquierda
+    var VT = 1;
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (var j = 0; j <= 600; j++) {
+      var uj = VT * j / 600;
+      (j ? ctx.lineTo : ctx.moveTo).call(ctx, X(fx(uj)), by1 + 6 + uj / VT * (ht - 6));
+    }
+    ctx.stroke();
+    ctx.strokeStyle = C.cy; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (var k = 0; k <= 600; k++) {
+      var uk = VT * k / 600;
+      (k ? ctx.lineTo : ctx.moveTo).call(ctx, bx0 - 6 - uk / VT * (wt - 6), Y(fy(uk)));
+    }
+    ctx.stroke();
+
+    // el punto
+    var up = (t * 0.22) % VT;
+    var px = fx(up), py = fy(up);
+    var cxp = X(px), cyp = Y(py);
+    var mx = by1 + 6 + up / VT * (ht - 6), my = bx0 - 6 - up / VT * (wt - 6);
+    ctx.strokeStyle = rgba("fg", .3); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(cxp, cyp); ctx.lineTo(cxp, mx);
+    ctx.moveTo(cxp, cyp); ctx.lineTo(my, cyp);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = C.acc;
+    ctx.beginPath(); ctx.arc(cxp, mx, 3.6, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = C.cy;
+    ctx.beginPath(); ctx.arc(my, cyp, 3.6, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = C.vi;
+    ctx.beginPath(); ctx.arc(cxp, cyp, 5, 0, 6.2832); ctx.fill();
+
+    lab(ctx, "la figura", bx0, mT - 12, C.dim, "left", 10);
+    lab(ctx, "x(t)", bx1, by1 + ht + 13, C.acc, "right", 10);
+    lab(ctx, "y(t)", bx0 - wt - hueco, by0 - 12, C.cy, "left", 10);
+
+    // tangencias marcadas, que es lo que se cuenta en el osciloscopio
+    if (!s6.irr) {
+      ctx.fillStyle = C.ok;
+      for (var q = 0; q < s6.nx; q++) {
+        var uq = q / s6.nx;
+        ctx.beginPath(); ctx.arc(X(fx(uq)), Y(fy(uq)), 3.2, 0, 6.2832); ctx.fill();
+      }
+      for (var z = 0; z < s6.ny; z++) {
+        var uz = (-dr / (2 * Math.PI) + z) / ry;
+        uz = ((uz % 1) + 1) % 1;
+        ctx.beginPath(); ctx.arc(X(fx(uz)), Y(fy(uz)), 3.2, 0, 6.2832); ctx.fill();
+      }
+      lab(ctx, s6.nx + " toque" + (s6.nx > 1 ? "s" : "") + " a la derecha · " + s6.ny + " arriba",
+          bx1, mT - 12, C.ok, "right", 10);
+    }
+  }
+
   // ================================================================
   // pestañas y bucle
   // ================================================================
   var cur = 0;
-  var dibujos = [draw0, draw1, draw2, draw3];
+  var dibujos = [draw0, draw1, draw2, draw3, draw4, draw5, draw6];
 
   var views = [
     { p: "p0", t: "tab0", u: update0, hint: "el punto que gira y el que sube y baja son el mismo" },
     { p: "p1", t: "tab1", u: update1, hint: "mueve el desfase y mira la flecha verde" },
     { p: "p2", t: "tab2", u: update2, hint: "compara la gráfica de arriba con la de abajo" },
-    { p: "p3", t: "tab3", u: update3, hint: "separa las frecuencias y mira cuánto dura el pulso" }
+    { p: "p3", t: "tab3", u: update3, hint: "separa las frecuencias y mira cuánto dura el pulso" },
+    { p: "p4", t: "tab4", u: update4, hint: "sube el amortiguamiento y mira cuándo deja de oscilar" },
+    { p: "p5", t: "tab5", u: update5, hint: "sube Q y mira cómo se estrecha la línea" },
+    { p: "p6", t: "tab6", u: update6, hint: "mueve el desfase y mira cómo se abre la recta" }
   ];
   function show(i) {
     cur = i;
@@ -941,8 +1814,36 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
   ["s1-d", "s1-r"].forEach(function (id) { $(id).addEventListener("input", update1); });
   ["s2-lam", "s2-T"].forEach(function (id) { $(id).addEventListener("input", update2); });
   $("s3-df").addEventListener("input", update3);
+  ["s4-z", "s4-f"].forEach(function (id) { $(id).addEventListener("input", update4); });
+  [["z-poco", .1], ["z-rapido", .78], ["z-crit", 1], ["z-sobre", 2]].forEach(function (p) {
+    $(p[0]).addEventListener("click", function () { $("s4-z").value = p[1]; update4(); });
+  });
+  ["s6-d", "s6-r"].forEach(function (id) { $(id).addEventListener("input", update6); });
+  Object.keys(RAZONES).forEach(function (k) {
+    $(k).addEventListener("click", function () {
+      var R = RAZONES[k];
+      if (R === null) { s6.irr = true; }
+      else { s6.irr = false; s6.nx = R[0]; s6.ny = R[1]; }
+      update6();
+    });
+  });
+  ["s5-Q", "s5-lam"].forEach(function (id) {
+    $(id).addEventListener("input", function () { fijo5 = null; update5(); });
+  });
+  Object.keys(FUENTES).forEach(function (k) {
+    $(k).addEventListener("click", function () {
+      var f = FUENTES[k];
+      fijo5 = [k, f[1], f[2]];
+      $("s5-lam").value = Math.round(f[1]);
+      $("s5-Q").value = Math.log10(f[1] / f[2]);
+      update5();
+    });
+  });
 
-  ["s0-play", "s1-play", "s2-play", "s3-play"].forEach(function (id, i) {
+  // el montaje 06 no se anima, asi que el boton ya no va por indice de posicion
+  [["s0-play", 0], ["s1-play", 1], ["s2-play", 2], ["s3-play", 3],
+   ["s4-play", 4], ["s6-play", 6]].forEach(function (p) {
+    var id = p[0], i = p[1];
     $(id).addEventListener("click", function () {
       corriendo[i] = !corriendo[i];
       $(id).textContent = corriendo[i] ? "Pausa" : "Reanudar";
@@ -953,7 +1854,7 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
 
   resize();
   show(0);
-  update0(); update1(); update2(); update3();
+  update0(); update1(); update2(); update3(); update4(); update5(); update6();
   window.addEventListener("load", resize);
 
   (function bucle(ms) {
@@ -966,6 +1867,25 @@ footer code { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
     var ctx = ctx2d();
     dibujos[cur](ctx, cv.width / dpr, cv.height / dpr);
   })();
+
+  // ---------- conmutador ----------
+  var btTema = document.getElementById("tema");
+  function rotuloTema() {
+    var claro = document.documentElement.getAttribute("data-tema") === "claro";
+    btTema.setAttribute("aria-label", claro ? "Cambiar a modo oscuro" : "Cambiar a modo claro");
+  }
+  rotuloTema();
+  btTema.addEventListener("click", function () {
+    var claro = document.documentElement.getAttribute("data-tema") === "claro";
+    var nuevo = claro ? "oscuro" : "claro";
+    document.documentElement.setAttribute("data-tema", nuevo);
+    try { localStorage.setItem("banco-tema", nuevo); } catch (e) {}
+    rotuloTema();
+    leerTema();
+    
+    redibujar();
+  });
+
 })();
 </script>
 
