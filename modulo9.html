@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apuntadores a funciones</title>
+<script>try{var t=localStorage.getItem('punteros-tema'),r=document.documentElement;r.dataset.mode=(t?t==='dark':(r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches))?'dark':'light'}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: aula de programación, claro y preciso
+   IDEA el mismo depurador con volcado hexadecimal, más una zona de código donde viven las funciones
+   PICTURE bloques de código de doble, cuadrado, compara y qsort; la flecha de f saltando entre funciones; qsort llamando a compara con a y b apuntando al arreglo
+   COLOUR blanco o noche #0e1116; violeta código, gris violáceo biblioteca, rojo apuntador, verde enteros, verde azulado locales de compara
+   TYPE Figtree 800 + Figtree; JetBrains Mono para código y direcciones
+   LAYOUT laptop: título, [código | memoria], controles, [explicación | cálculo | consola]; teléfono: título, memoria, controles, código, resto */
+:root{--cod:#6d4aff;--lib:#9a8fc2;--arr:#0a5cff;--nul:#14171c;--hdr:#8c94a3;--loc:#0b8a8a;--ptr:#e6261f;--bg:#ffffff;--ink:#14171c;--mute:#5b6270;--panel:#f4f6f9;--line:#dfe3ea;--scene:#eef2f8;--chr:#8a2bb8;--sht:#0b8a8a;--int:#00a05a;--dbl:#0a5cff;--hop:#e09d00;--pad:#c3c8d0;--cur:#fff1c2;--kw:#8a2bb8;--str:#9a5b00;--num:#0b7a7a}
+:root[data-mode=dark]{--cod:#9d86ff;--lib:#6f6696;--arr:#4f8bff;--nul:#e8eaee;--hdr:#59626f;--loc:#2fc7c7;--ptr:#ff5d52;--bg:#0e1116;--ink:#e8eaee;--mute:#9aa3b2;--panel:#161b23;--line:#262d38;--scene:#111723;--chr:#c37bff;--sht:#2fc7c7;--int:#2fc77f;--dbl:#4f8bff;--hop:#ffb400;--pad:#3b424e;--cur:#3a3112;--kw:#d58cff;--str:#f0b45b;--num:#5fd4d4}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;overflow-x:clip}
+code,pre,.mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+code{font-size:.92em;overflow-wrap:anywhere}
+.wrap{max-width:1320px;margin:0 auto;padding:0 max(3vw,16px)}
+.themebtn{position:fixed;top:12px;right:12px;z-index:30;width:44px;height:44px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--panel);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.themebtn svg{width:22px;height:22px}
+.crumbs{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;padding:12px 56px 0 0;font-size:15px}
+.crumbs a,.pager a{color:var(--ink);font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.crumbs a:hover,.pager a:hover{text-decoration:underline}
+.crumbs span{color:var(--mute)}
+.pager{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:4px;padding:8px 0 32px}
+.pager .nx{margin-left:auto}
+header{padding:6px 56px 16px 0}
+h1{margin:0;font-weight:800;font-size:clamp(30px,4vw,44px);line-height:1.05;letter-spacing:-.02em;text-wrap:balance}
+.lead{margin:6px 0 0;color:var(--mute);max-width:72ch}
+button{font:600 15px Figtree,system-ui,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;min-height:44px;padding:0 14px;cursor:pointer}
+button:hover{border-color:var(--mute)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--dbl);outline-offset:2px}
+button.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stage{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.25fr);gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.code{display:flex;flex-direction:column}
+.card h2{font-size:15px;font-weight:600;margin:0;color:var(--mute)}
+.code .hd{display:flex;justify-content:space-between;gap:8px;padding:12px 14px 6px}
+.src{font-size:13px;line-height:1.7;padding:4px 0 10px;overflow-x:auto}
+.ln{display:grid;grid-template-columns:3em minmax(0,1fr);white-space:pre-wrap;padding-right:12px;border-left:4px solid transparent}
+.ln .n{color:var(--mute);text-align:right;padding-right:12px;user-select:none}
+.ln.cur{background:var(--cur);border-left-color:var(--hop)}
+.ln.nxt{outline:2px dashed var(--hop);outline-offset:-2px}
+.k{color:var(--kw)}.s{color:var(--str)}.c{color:var(--mute);font-style:italic}.num{color:var(--num)}
+.v-chr{color:var(--chr);font-weight:600}.v-sht{color:var(--sht);font-weight:600}.v-int{color:var(--int);font-weight:600}.v-dbl{color:var(--dbl);font-weight:600}.v-ptr{color:var(--ptr);font-weight:600}
+.lb.tag.bad{border-color:var(--ptr)}
+.fn{color:var(--dbl);font-weight:600}
+.v-loc{color:var(--loc);font-weight:600}
+.v-cod{color:var(--cod);font-weight:600}
+.lb.zone small{font-weight:400;color:var(--mute);font-size:13px}
+.lb.val.nulc{color:var(--bg);text-shadow:none}
+.lb.gap{font:400 13px Figtree,system-ui,sans-serif;color:var(--mute)}
+.lb.zone{font:800 15px Figtree,system-ui,sans-serif;color:var(--ink)}
+.watch{border-top:1px solid var(--line);padding:10px 14px 14px;display:grid;gap:6px;margin-top:auto}
+.w{display:grid;grid-template-columns:12px auto minmax(0,1fr);gap:8px;align-items:center;font-size:14px}
+.w i{width:12px;height:12px;border-radius:3px}
+.w span{font-family:"JetBrains Mono",monospace;font-size:13.5px;text-align:right;overflow-wrap:anywhere}
+.fig{position:relative;min-height:540px;border-radius:14px;overflow:hidden;background:var(--scene);border:1px solid var(--line);touch-action:pan-y;cursor:grab}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;font:600 13px "JetBrains Mono",monospace;line-height:1;will-change:transform}
+.lb.nm{color:var(--ink);background:color-mix(in srgb,var(--scene) 80%,transparent);padding:3px 5px;border-radius:5px}
+.lb.nm .t{color:var(--mute);font-weight:400}
+.lb.pd{color:var(--mute);font-weight:400}
+.lb.val{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);font-size:14px}
+.lb.val.dim{color:var(--ink);text-shadow:none;opacity:.7}
+.lb.by{font-size:13px}
+.lb.row,.lb.col{color:var(--mute);font-weight:400}
+.lb.tag{font-size:14px;color:var(--ink);background:var(--bg);border:2px solid var(--hop);padding:5px 8px;border-radius:8px}
+.badge{position:absolute;left:12px;top:12px;right:12px;display:flex;flex-wrap:wrap;gap:8px;pointer-events:none}
+.pill{font:600 14px "JetBrains Mono",monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.legend{position:absolute;left:12px;bottom:10px;right:12px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute);pointer-events:none}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.legend .hint{margin-left:auto}
+.nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--mute)}
+.bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding-block:14px}
+.bar .grow{flex:1 1 200px;display:flex;align-items:center;gap:10px}
+input[type=range]{flex:1;accent-color:var(--hop);height:44px}
+.stepn{font-size:14px;color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tg{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;cursor:pointer;background:var(--bg)}
+.tg input{width:18px;height:18px;accent-color:var(--hop)}
+.score{font-size:14px;color:var(--mute);white-space:nowrap}
+.bottom{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:16px;padding-bottom:28px}
+.bottom .card{padding:14px 16px}
+#expl h3{margin:4px 0 6px;font-size:22px;line-height:1.15;font-weight:800;letter-spacing:-.01em}
+#expl p{margin:0 0 8px;max-width:66ch}
+.calc{font:14px/1.75 "JetBrains Mono",monospace;margin-top:6px;overflow-wrap:anywhere}
+.calc b{color:var(--hop)}
+.con{margin:6px 0 0;background:#0b0e13;color:#d6dbe3;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.6;min-height:120px;max-height:240px;overflow:auto;white-space:pre}
+.con .last{color:#ffd166}
+.q{margin-top:10px;padding:12px;border:2px solid var(--hop);border-radius:12px;background:var(--bg)}
+.q .qh{margin:0 0 4px;font-size:13px;color:var(--mute)}
+.q p{margin:0 0 8px;font-weight:600}
+.q .opts{display:flex;flex-wrap:wrap;gap:8px}
+.q .opts button{font-family:"JetBrains Mono",monospace}
+.q .fb{margin:8px 0 0;font-weight:400}
+.q .fb.ok{color:var(--int)}.q .fb.no{color:var(--ptr)}
+.note{font-size:13px;color:var(--mute);margin:8px 0 0}
+@media(max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}.fig{order:-1;min-height:560px}.bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.bottom .conc{grid-column:1/-1}}
+@media(max-width:600px){.fig{min-height:520px}.bottom{grid-template-columns:minmax(0,1fr)}.legend .hint{display:none}h1{font-size:30px}}
+@media(max-width:900px){.wrap{display:flex;flex-direction:column}.stage{display:contents}.crumbs{order:0}header{order:1}.fig{order:2}.bar{order:3}.code{order:4;margin-bottom:16px}.bottom{order:5}.pager{order:6}}
+</style>
+</head>
+<body>
+<button id="theme" class="themebtn" type="button" aria-label="Cambiar a tema oscuro" title="Cambiar tema"></button>
+<div class="wrap">
+<nav class="crumbs" aria-label="Navegación"><a href="index2.html">← Apuntadores en C</a><span>Módulo 9 de 10</span></nav>
+<header>
+  <h1>Apuntadores a funciones</h1>
+  <p class="lead">Módulo 9 · El código de cada función también está en memoria, así que un apuntador puede guardar su dirección. Aquí ves cómo <code>f(5)</code> ejecuta funciones distintas y cómo <code>qsort</code> llama a tu función de comparación. Basado en <code>PUNT8.CPP</code>, <code>PUNT8A.CPP</code> y <code>PUNT8B.CPP</code>.</p>
+</header>
+
+<section class="stage">
+  <div class="card code">
+    <div class="hd"><h2>punteros_funcion.c</h2><span class="stepn" id="lineTag">línea 3</span></div>
+    <div class="src mono" id="src"></div>
+    <div class="watch" id="watch"></div>
+  </div>
+  <div class="fig" id="fig">
+    <div class="labels" id="labels"></div>
+    <div class="badge"><div class="pill" id="pill"></div></div>
+    <div class="legend">
+      <span><i style="background:var(--cod)"></i>código</span>
+      <span><i style="background:var(--lib)"></i>biblioteca</span>
+      <span><i style="background:var(--ptr)"></i>apuntador a función</span>
+      <span><i style="background:var(--int)"></i>int</span>
+      <span><i style="background:var(--loc)"></i>parámetros de compara</span>
+      <span><i style="background:var(--pad)"></i>basura / hueco</span>
+      <span class="hint">Arrastra para girar · rueda para acercar</span>
+    </div>
+  </div>
+</section>
+
+<div class="bar">
+  <button id="bReset" type="button">⟲ Reiniciar</button>
+  <button id="bPrev" type="button" title="Paso anterior (←)">◀ Atrás</button>
+  <button id="bPlay" type="button" class="pri">▶ Reproducir</button>
+  <button id="bNext" type="button" title="Paso siguiente (→)">Adelante ▶</button>
+  <div class="grow"><input id="scrub" type="range" min="0" value="0" aria-label="Paso"><span class="stepn" id="stepn"></span></div>
+  <label class="tg"><input id="tBytes" type="checkbox">Ver bytes</label>
+  <label class="tg"><input id="tPred" type="checkbox">Modo predice</label>
+  <span class="score" id="score" hidden></span>
+</div>
+
+<section class="bottom">
+  <div class="card"><h2>Qué está pasando</h2><div id="expl"></div></div>
+  <div class="card"><h2>El cálculo</h2><div class="calc" id="calc"></div></div>
+  <div class="card conc"><h2>Consola</h2><pre class="con" id="con"></pre>
+    <p class="note">Direcciones de ejemplo: en tu equipo serán otras y pueden cambiar en cada ejecución. Las funciones aparecen como bloques de 4 bytes por simplicidad: son solo sus primeros bytes de ejemplo; su código real ocupa muchos más. qsort vive en la biblioteca de C, en otra zona de direcciones.</p></div>
+</section>
+<nav class="pager" aria-label="Módulos"><a href="modulo8.html">← Módulo 8 · Apuntadores y funciones</a><a class="nx" href="modulo10.html">Módulo 10 · Estructuras y -&gt; →</a></nav>
+</div>
+
+<div id="probes" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <i data-c="chr" style="color:var(--chr)"></i><i data-c="cod" style="color:var(--cod)"></i><i data-c="lib" style="color:var(--lib)"></i><i data-c="arr" style="color:var(--arr)"></i><i data-c="nul" style="color:var(--nul)"></i><i data-c="hdr" style="color:var(--hdr)"></i><i data-c="loc" style="color:var(--loc)"></i><i data-c="mute" style="color:var(--mute)"></i><i data-c="ptr" style="color:var(--ptr)"></i><i data-c="sht" style="color:var(--sht)"></i><i data-c="int" style="color:var(--int)"></i><i data-c="dbl" style="color:var(--dbl)"></i><i data-c="hop" style="color:var(--hop)"></i><i data-c="pad" style="color:var(--pad)"></i><i data-c="scene" style="color:var(--scene)"></i><i data-c="line" style="color:var(--line)"></i><i data-c="ink" style="color:var(--ink)"></i>
+</div>
+
+<script src="js/three.min.js"></script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const hex = n => '0x' + n.toString(16);
+const sh = n => '0x…' + n.toString(16).slice(-4);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/* ---------- Programa ---------- */
+const CODE = [
+ '#include <stdio.h>',
+ '#include <stdlib.h>',
+ '',
+ 'int doble(int x)    { return 2 * x; }',
+ 'int cuadrado(int x) { return x * x; }',
+ '',
+ 'int compara(const void *a, const void *b)',
+ '{',
+ '    int x = *(const int *)a, y = *(const int *)b;',
+ '    return (x > y) - (x < y);        // -1, 0 o 1',
+ '}',
+ '',
+ 'int main(void)',
+ '{',
+ '    int (*f)(int);                    // apuntador a función',
+ '    int v[4] = {7, 2, 9, 4};',
+ '',
+ '    f = doble;                        // el nombre es la dirección',
+ '    printf("%d\\n", f(5));',
+ '    f = cuadrado;',
+ '    printf("%d\\n", f(5));',
+ '',
+ '    qsort(v, 4, sizeof(int), compara);   // qsort recibe la función',
+ '    printf("%d %d %d %d\\n", v[0], v[1], v[2], v[3]);',
+ '    return 0;',
+ '}'
+];
+const TOK = /(\/\/.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(#include|<stdio\.h>|<stdlib\.h>)|\b(int|char|return|void|const|sizeof)\b|\b(doble|cuadrado|compara|qsort|main)\b|\b(f|v)\b|\b(a|b)\b|\b(\d+)\b/g;
+function hl(line) {
+  let out = '', last = 0, m; TOK.lastIndex = 0;
+  while ((m = TOK.exec(line))) {
+    out += esc(line.slice(last, m.index));
+    const t = esc(m[0]);
+    if (m[1]) out += `<span class="c">${t}</span>`;
+    else if (m[2]) out += `<span class="s">${t}</span>`;
+    else if (m[3] || m[4]) out += `<span class="k">${t}</span>`;
+    else if (m[5]) out += `<span class="v-cod">${t}</span>`;
+    else if (m[6]) out += `<span class="${m[6] === 'f' ? 'v-ptr' : 'v-int'}">${t}</span>`;
+    else if (m[7]) out += `<span class="v-loc">${t}</span>`;
+    else out += `<span class="num">${t}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(line.slice(last));
+}
+$('#src').innerHTML = CODE.map((l, i) => `<div class="ln" data-l="${i + 1}"><span class="n">${i + 1}</span><span>${hl(l) || ' '}</span></div>`).join('');
+
+/* ---------- Memoria ---------- */
+const FN = {doble: 0x555555555169, cuadrado: 0x555555555181, compara: 0x555555555199, qsort: 0x7ffff7e2a3c0};
+const ROWS = {COD: {z: -4.7, a: null}, S0: {a: 0x7ffd5e3c1a10, z: -2.4}, S1: {a: 0x7ffd5e3c1a20, z: -.4}, C: {a: 0x7ffd5e3c19f0, z: 2.3}};
+const SL = [
+  {id: 'fn_doble', label: 'doble()', row: 'COD', c0: 0, size: 4, kind: 'cod', fr: 'all', fa: FN.doble},
+  {id: 'fn_cuadrado', label: 'cuadrado()', row: 'COD', c0: 4, size: 4, kind: 'cod', fr: 'all', fa: FN.cuadrado},
+  {id: 'fn_compara', label: 'compara()', row: 'COD', c0: 8, size: 4, kind: 'cod', fr: 'all', fa: FN.compara},
+  {id: 'fn_qsort', label: 'qsort()', row: 'COD', c0: 12, size: 4, kind: 'lib', fr: 'all', fa: FN.qsort},
+  {id: 'f', label: 'f', type: 'int (*)(int)', row: 'S0', c0: 0, size: 8, kind: 'ptr', fr: 'main'},
+  {id: 'sp', label: 'hueco', row: 'S0', c0: 8, size: 8, kind: 'pad', fr: 'main'},
+  {id: 'v0', label: 'v[0]', row: 'S1', c0: 0, size: 4, kind: 'int', fr: 'main'},
+  {id: 'v1', label: 'v[1]', row: 'S1', c0: 4, size: 4, kind: 'int', fr: 'main'},
+  {id: 'v2', label: 'v[2]', row: 'S1', c0: 8, size: 4, kind: 'int', fr: 'main'},
+  {id: 'v3', label: 'v[3]', row: 'S1', c0: 12, size: 4, kind: 'int', fr: 'main'},
+  {id: 'free', label: '', row: 'C', c0: 0, size: 16, kind: 'pad', fr: 'free'},
+  {id: 'ca', label: 'a', type: 'const void *', row: 'C', c0: 0, size: 8, kind: 'loc', fr: 'compara'},
+  {id: 'cb', label: 'b', type: 'const void *', row: 'C', c0: 8, size: 8, kind: 'loc', fr: 'compara'}
+];
+const SB = id => SL.find(v => v.id === id);
+const addr = id => { const v = SB(id); return v.fa || ROWS[v.row].a + v.c0; };
+const le = (n, k) => { const b = []; for (let i = 0; i < k; i++) b.push((Math.floor(n / 256 ** i) % 256).toString(16).padStart(2, '0')); return b; };
+const visible = (v, s) => v.fr === 'all' || v.fr === 'main' || (v.fr === 'free' ? !s.cmp : !!s.cmp);
+const PTRVAL = {f: s => s.vals.f ? addr(s.vals.f) : null, ca: s => s.cmp ? addr('v' + s.cmp[0]) : null, cb: s => s.cmp ? addr('v' + s.cmp[1]) : null};
+
+/* ---------- Pasos ---------- */
+const C = (id, cls) => `<code class="${cls || 'v-int'}">${id}</code>`;
+const F = id => C(id, 'v-cod');
+const steps = [];
+let cur = {line: 13, frame: true, vals: {f: null, v: null}, cmp: null, qs: false, out: []};
+function push(o, outLine) {
+  const s = Object.assign({}, cur, {glow: [], rd: null, tag: '', q: null}, o);
+  s.vals = Object.assign({}, cur.vals, o.vals || {});
+  s.out = outLine ? cur.out.concat([outLine]) : cur.out; s.fresh = !!outLine;
+  steps.push(s); cur = s;
+}
+push({line: 13, title: 'Las funciones también viven en memoria',
+  expl: `<p>Hasta ahora todo lo que apuntaba eran datos. Pero el <b>código</b> de cada función también está en memoria, en otra zona (la de texto, arriba en la escena). Cada función empieza en una dirección.</p>`,
+  calc: `doble    en ${hex(FN.doble)}<br>cuadrado en ${hex(FN.cuadrado)}<br>compara  en ${hex(FN.compara)}<br>qsort    en ${hex(FN.qsort)}`});
+push({line: 15, glow: ['f'], title: 'Declarar un apuntador a función',
+  expl: `<p><code>int (*f)(int)</code> se lee: ${C('f', 'v-ptr')} es un apuntador a una función que recibe un <code>int</code> y regresa un <code>int</code>. Ocupa 8 bytes, como cualquier apuntador.</p><p>Los paréntesis importan: <code>int *f(int)</code> sin ellos declararía una <b>función</b> que regresa un <code>int *</code>.</p>`,
+  calc: `sizeof(f) = 8<br>f = ? (basura)`});
+push({line: 16, vals: {v: [7, 2, 9, 4]}, glow: ['v0', 'v1', 'v2', 'v3'], title: 'Un arreglo para ordenar', expl: `<p>Cuatro enteros desordenados que <code>qsort</code> ordenará más adelante.</p>`, calc: `&v[0] = ${hex(ROWS.S1.a)}`});
+push({line: 18, vals: {f: 'fn_doble'}, glow: ['f'], title: 'f = doble',
+  expl: `<p>Igual que con los arreglos, el nombre de una función sin paréntesis es su <b>dirección</b>. ${C('f', 'v-ptr')} guarda dónde empieza el código de ${F('doble')}: la flecha sube a la zona de código.</p><p>Con «Ver bytes» verás <code>f3 0f 1e fa</code> al inicio de cada función: la instrucción <code>endbr64</code>, que muchos compiladores actuales para x86-64 (por ejemplo, GCC en Ubuntu) ponen al principio de cada función. En otras plataformas los bytes serán otros.</p>`,
+  calc: `f = doble = &doble<br>f = <b>${hex(FN.doble)}</b>`,
+  q: {text: '¿Qué guardará f después de esta línea?', opts: ['El número 10', 'La dirección donde empieza el código de doble', 'Una copia de la función doble'], ans: 1, why: 'El nombre de una función es su dirección.', hint: 'Sin paréntesis, doble no se ejecuta.'}});
+push({line: 19, glow: ['fn_doble'], rd: 'fn_doble', tag: 'f(5) ejecuta doble(5) → 10', title: 'Llamar a través de f',
+  expl: `<p><code>f(5)</code> salta a la dirección que guarda ${C('f', 'v-ptr')} y ejecuta ese código con 5. También se puede escribir <code>(*f)(5)</code>; es lo mismo.</p>`,
+  calc: `f(5) = doble(5) = <b>10</b>`}, '10');
+push({line: 20, vals: {f: 'fn_cuadrado'}, glow: ['f'], title: 'f = cuadrado',
+  expl: `<p>${C('f', 'v-ptr')} ahora guarda la dirección de ${F('cuadrado')}. La misma línea de código, <code>f(5)</code>, hará algo distinto.</p>`,
+  calc: `f = <b>${hex(FN.cuadrado)}</b>`});
+push({line: 21, glow: ['fn_cuadrado'], rd: 'fn_cuadrado', tag: 'f(5) ejecuta cuadrado(5) → 25', title: 'Misma llamada, otra función',
+  expl: `<p>Ahora <code>f(5)</code> ejecuta ${F('cuadrado')}. Así funciona <code>funcsuma(n, inversos)</code> de <code>PUNT8.CPP</code>: la función que hace el trabajo se decide al llamar.</p>`,
+  calc: `f(5) = cuadrado(5) = <b>25</b>`,
+  q: {text: '¿Qué imprimirá f(5) ahora?', opts: ['10', '25', '5'], ans: 1, why: 'f apunta ahora a cuadrado: 5 × 5.', hint: '¿A qué función apunta f ahora?'}}, '25');
+push({line: 23, qs: true, glow: ['fn_qsort'], title: 'qsort recibe una función',
+  expl: `<p><code>qsort</code> sabe ordenar, pero no sabe <b>comparar</b> tus datos: podrían ser enteros, flotantes o cadenas. Por eso recibe la dirección de ${F('compara')} (flecha violeta) y la llamará cada vez que necesite comparar dos elementos.</p><p>Como es genérica, le pasa a compara dos <code>const void *</code> (módulo 6).</p>`,
+  calc: `qsort(v, 4, sizeof(int), compara)<br>base = ${sh(ROWS.S1.a)}, n = 4<br>tamaño = 4, cmp = ${hex(FN.compara)}`,
+  q: {text: '¿Qué recibe qsort como cuarto argumento?', opts: ['El resultado de llamar a compara', 'La dirección de la función compara', 'Una copia del arreglo'], ans: 1, why: 'compara sin paréntesis es la dirección de la función.', hint: 'Fíjate: compara aparece sin paréntesis.'}});
+const CALLS = [[[7, 2, 9, 4], 0, 1, 1, 'intercambia'], [[2, 7, 9, 4], 1, 2, -1, 'ya están en orden'], [[2, 7, 9, 4], 2, 3, 1, 'intercambia'], [[2, 7, 4, 9], 1, 2, 1, 'intercambia'], [[2, 4, 7, 9], 0, 1, -1, 'ya están en orden']];
+const sg = r => String(r).replace('-', '−');
+CALLS.forEach(([arr, i, j, r, que], n) => {
+  push({line: 10, qs: true, cmp: [i, j], vals: {v: arr}, glow: ['fn_compara', 'v' + i, 'v' + j], rd: 'fn_compara', tag: `compara(&v[${i}], &v[${j}]) → ${sg(r)}`,
+    title: `qsort llama a compara (${n + 1})`,
+    expl: n === 0
+      ? `<p><code>qsort</code> llama a ${F('compara')} con las direcciones de dos elementos: ${C('a', 'v-loc')} apunta a <code>v[${i}]</code> y ${C('b', 'v-loc')} a <code>v[${j}]</code>. En la línea 9, compara convierte cada <code>const void *</code> a <code>const int *</code> y lee 7 y 2; en la línea 10 regresa <b>1</b>: el primero es mayor. qsort entonces los intercambia.</p><p>Esta es una secuencia posible de comparaciones; el qsort de tu biblioteca puede compararlos en otro orden.</p>`
+      : `<p>Otra llamada: compara ${arr[i]} contra ${arr[j]} y regresa <b>${sg(r)}</b>, así que qsort ${que === 'intercambia' ? 'los intercambia' : 'los deja así: ya están en orden'}.</p>`,
+    calc: `a → v[${i}] = ${arr[i]}<br>b → v[${j}] = ${arr[j]}<br>regresa <b>${sg(r)}</b> → ${que}`,
+    q: n === 0 ? {text: 'compara recibe 7 y 2. ¿Qué regresará?', opts: ['−1', '0', '1'], ans: 2, why: '7 > 2: (1) − (0) = 1.', hint: 'Calcula (x > y) − (x < y) con x = 7 y y = 2.'} : null});
+});
+push({line: 24, qs: false, cmp: null, vals: {v: [2, 4, 7, 9]}, glow: ['v0', 'v1', 'v2', 'v3'], title: 'Ordenado',
+  expl: `<p>${C('v')} quedó ordenado. Para ordenar al revés no hay que tocar qsort: basta con otra función de comparación que regrese el signo contrario.</p><p>El orden exacto de las comparaciones depende de cómo esté programado qsort en tu biblioteca; aquí se mostró una secuencia posible.</p>`,
+  calc: `v = {2, 4, 7, 9}`}, '2 4 7 9');
+push({line: 25, frame: false, title: 'Cierre',
+  expl: `<p>Un apuntador a función guarda la dirección de un código. Sirve para decidir qué función se ejecuta al llamar: qsort y bsearch (de <code>PUNT8B.CPP</code>) lo usan para comparar.</p><p>Ojo con <code>PUNT8A.CPP</code>: <code>return (*x - *y);</code> con <code>float</code> trunca la resta al convertirla a <code>int</code>. Con 9.1 y 10.0, la resta da −0.9, que se vuelve 0: qsort cree que son iguales y puede dejarlos desordenados. La forma segura es <code>return (x &gt; y) - (x &lt; y);</code>.</p>`,
+  calc: `(int)(9.1 − 10.0) = (int)(−0.9) = <b>0</b><br>(9.1 > 10.0) − (9.1 < 10.0) = <b>−1</b>`});
+
+/* ---------- Estado ---------- */
+let k = 0, playing = false, timer = null, qTimer = null, showBytes = false, predict = false;
+let answered = {}, tried = {}, score = {ok: 0, n: 0};
+const askNext = () => predict && k + 1 < steps.length && steps[k + 1].q && !answered[k + 1];
+const valOf = (v, s) => {
+  if (!s.frame && v.fr === 'main') return null;
+  if (v.kind === 'int') return s.vals.v ? s.vals.v[+v.id[1]] : null;
+  if (v.id === 'f') return PTRVAL.f(s);
+  if (v.id === 'ca') return PTRVAL.ca(s);
+  if (v.id === 'cb') return PTRVAL.cb(s);
+  return null;
+};
+
+/* ---------- Escena 3D ---------- */
+const fig = $('#fig'), labelsEl = $('#labels');
+const BW = 0.55, BOX = 0.5, BH = 0.32, BD = 0.9;
+const bx = c => (c - 7.5) * BW;
+let gl = null;
+try {
+  const rnd = new THREE.WebGLRenderer({antialias: true});
+  rnd.setPixelRatio(Math.min(devicePixelRatio, 2));
+  fig.prepend(rnd.domElement); gl = {rnd};
+} catch (e) {
+  fig.insertAdjacentHTML('afterbegin', '<div class="nogl">No se pudo iniciar la escena 3D (WebGL o la biblioteca three.js no cargó). La explicación y la consola siguen funcionando abajo.</div>');
+}
+const col = {};
+const readColors = () => document.querySelectorAll('#probes i').forEach(el => { col[el.dataset.c] = new THREE.Color(getComputedStyle(el).color); });
+
+if (gl) {
+  readColors();
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8890a0, 0.75));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.75); dl.position.set(-4, 10, 7); scene.add(dl);
+  const trayMat = new THREE.MeshStandardMaterial({roughness: 1}), edgeMat = new THREE.LineBasicMaterial();
+  const mkTray = (z0, z1) => {
+    const g = new THREE.BoxGeometry(16 * BW + 1.2, .06, z1 - z0);
+    const m = new THREE.Mesh(g, trayMat); m.position.set(0, -BH / 2 - .08, (z0 + z1) / 2); scene.add(m);
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(g), edgeMat); e.position.copy(m.position); scene.add(e);
+  };
+  mkTray(ROWS.COD.z - .8, ROWS.COD.z + .9); mkTray(ROWS.S0.z - .8, ROWS.C.z + .9);
+  const hopMat = new THREE.MeshStandardMaterial({roughness: .5}), ptrMat = new THREE.MeshStandardMaterial({roughness: .5}), locMat = new THREE.MeshStandardMaterial({roughness: .5}), cmpMat = new THREE.MeshStandardMaterial({roughness: .5, transparent: true, opacity: .7});
+  const labels = [];
+  const mkLabel = (cls, pos, html, anchor) => {
+    const el = document.createElement('div'); el.className = 'lb ' + cls; el.innerHTML = html || '';
+    labelsEl.appendChild(el); const Lb = {el, pos, cls, show: true, anchor: anchor || 'c'}; labels.push(Lb); return Lb;
+  };
+  const tname = v => v.type ? `<span class="t">${v.type}</span> ${v.label}` : v.label;
+  SL.forEach(v => {
+    v.z = ROWS[v.row].z; v.cx = (bx(v.c0) + bx(v.c0 + v.size - 1)) / 2; v.y = 0; v.yT = 0; v.op = 1; v.opT = 1; v.mats = []; v.meshes = [];
+    for (let b = 0; b < v.size; b++) {
+      const m = new THREE.MeshStandardMaterial({roughness: .55, metalness: .05, transparent: true});
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(BOX, BH, BD), m);
+      mesh.position.set(bx(v.c0 + b), 0, v.z); scene.add(mesh); v.mats.push(m); v.meshes.push(mesh);
+    }
+    v.lName = v.label ? mkLabel(v.kind === 'pad' ? 'pd' : 'nm', new THREE.Vector3(v.cx, -BH / 2, v.z + BD / 2 + .12), tname(v), 't') : null;
+    v.lVal = v.kind === 'pad' ? null : mkLabel('val', new THREE.Vector3(v.cx, BH / 2, v.z), '?');
+    v.lBytes = [];
+    for (let b = 0; b < v.size; b++) v.lBytes.push(mkLabel('val by', new THREE.Vector3(bx(v.c0 + b), BH / 2, v.z), '??'));
+  });
+  const rowL = [['S0', ROWS.S0.a], ['S1', ROWS.S1.a], ['C', ROWS.C.a]].map(([r, a]) => ({L: mkLabel('row', new THREE.Vector3(bx(0) - BW * .75, 0, ROWS[r].z), '', 'r'), a, r}));
+  const zCod = mkLabel('zone', new THREE.Vector3(bx(15) + BW * .5, -BH / 2, ROWS.COD.z - .8), 'Código <small>(texto)</small>', 'br');
+  const zPila = mkLabel('zone', new THREE.Vector3(bx(0) - BW * .5, -BH / 2, ROWS.S0.z - .8), 'Pila <small>· marco de main()</small>', 'bl');
+  const zCmp = mkLabel('zone', new THREE.Vector3(bx(15) + BW * .5, -BH / 2, ROWS.C.z - .75), 'marco de compara()', 'br');
+  const tagL = mkLabel('tag', new THREE.Vector3(), '', 'b');
+
+  const brace = new THREE.Group(); scene.add(brace);
+  let braceFor = null;
+  function buildBrace(v) {
+    brace.children.slice().forEach(o => { o.geometry.dispose(); brace.remove(o); });
+    braceFor = v; if (!v) return;
+    const w = v.size * BW - .08, y = .62;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, .06, .06), hopMat); bar.position.set(v.cx, y, 0); brace.add(bar);
+    [-1, 1].forEach(sgn => { const t = new THREE.Mesh(new THREE.BoxGeometry(.06, .22, .06), hopMat); t.position.set(v.cx + sgn * w / 2, y - .08, 0); brace.add(t); });
+    brace.position.z = v.z;
+  }
+  const top = (x, z, y) => new THREE.Vector3(x, (y || 0) + BH / 2 + .03, z);
+  function arc(from, to, h, prog, mat, rad) {
+    const g = new THREE.Group(); if (prog <= .001) return g;
+    const mid = from.clone().add(to).multiplyScalar(.5); mid.y = Math.max(from.y, to.y) + h;
+    const cv = new THREE.QuadraticBezierCurve3(from, mid, to);
+    const pts = []; for (let i = 0; i <= 28; i++) pts.push(cv.getPoint(prog * i / 28));
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 36, rad, 7, false), mat));
+    const end = cv.getPoint(prog), tg = cv.getTangent(prog).normalize();
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(rad * 3, rad * 7, 12), mat);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tg); cone.position.copy(end).addScaledVector(tg, -rad * 3.5);
+    g.add(cone); return g;
+  }
+  const dispose = g => { if (!g) return; g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); scene.remove(g); };
+  // flechas: f → función, a/b → elementos, cmp (qsort → compara)
+  const AR = {f: {key: '', prog: 0, g: null}, ca: {key: '', prog: 0, g: null}, cb: {key: '', prog: 0, g: null}, cmp: {key: '', prog: 0, g: null}};
+  const arrowSpec = s => ({
+    f: s.frame && s.vals.f ? {src: SB('f'), dst: SB(s.vals.f), mat: ptrMat} : null,
+    ca: s.cmp ? {src: SB('ca'), dst: SB('v' + s.cmp[0]), mat: locMat} : null,
+    cb: s.cmp ? {src: SB('cb'), dst: SB('v' + s.cmp[1]), mat: locMat} : null,
+    cmp: s.qs ? {src: SB('fn_qsort'), dst: SB('fn_compara'), mat: cmpMat} : null
+  });
+
+  function paint() {
+    const s = steps[k];
+    SL.forEach(v => {
+      const vis = visible(v, s); v.meshes.forEach(m => m.visible = vis);
+      let c = ({cod: col.cod, lib: col.lib, ptr: col.ptr, int: col.int, loc: col.loc, pad: col.pad})[v.kind].clone();
+      const val = valOf(v, s);
+      if ((v.kind === 'ptr' || v.kind === 'int' || v.kind === 'loc') && (val === null || val === undefined)) c.lerp(col.pad, .78);
+      v.opT = v.kind === 'pad' && v.fr === 'free' ? .45 : (v.fr === 'main' && !s.frame) ? .5 : 1;
+      const g = s.glow.includes(v.id);
+      v.mats.forEach(m => { m.color.copy(c); m.emissive.copy(g ? col.hop : new THREE.Color(0)); m.emissiveIntensity = g ? .3 : 0; });
+    });
+  }
+  function recolor() {
+    readColors(); scene.background = col.scene.clone();
+    trayMat.color.copy(col.scene).lerp(col.ink, .06); edgeMat.color.copy(col.line); hopMat.color.copy(col.hop); ptrMat.color.copy(col.ptr); locMat.color.copy(col.loc); cmpMat.color.copy(col.cod);
+    paint();
+  }
+  let az = -0.16, el = 1.0, zoom = 1, dist = 16;
+  const target = new THREE.Vector3(-.35, 0, -.9);
+  const elFor = () => fig.clientWidth / fig.clientHeight < 1.25 ? 1.1 : .98;
+  function fit() {
+    const W = fig.clientWidth, H = fig.clientHeight;
+    gl.rnd.setSize(W, H, false); camera.aspect = W / H;
+    el = elFor(); const nar = W < 600; target.x = nar ? -.95 : -.35;
+    const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const halfW = 16 * BW / 2 + (nar ? 2.6 : 1.9), halfH = 4.4 * Math.sin(el) + 2.2;
+    dist = Math.max(halfW / (t * camera.aspect), halfH / t) + 1;
+    camera.updateProjectionMatrix();
+  }
+  const ro = new ResizeObserver(fit); ro.observe(fig); fit();
+  let drag = null;
+  gl.rnd.domElement.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, az, el, type: e.pointerType}; fig.style.cursor = 'grabbing'; });
+  addEventListener('pointermove', e => {
+    if (!drag) return;
+    az = Math.max(-1.1, Math.min(1.1, drag.az - (e.clientX - drag.x) * .006));
+    if (drag.type === 'mouse') el = Math.max(.3, Math.min(1.4, drag.el + (e.clientY - drag.y) * .005));
+  });
+  addEventListener('pointerup', () => { drag = null; fig.style.cursor = ''; });
+  addEventListener('pointercancel', () => { drag = null; fig.style.cursor = ''; });
+  gl.rnd.domElement.addEventListener('wheel', e => { e.preventDefault(); zoom = Math.max(.45, Math.min(1.6, zoom * (1 + Math.sign(e.deltaY) * .08))); }, {passive: false});
+  gl.rnd.domElement.addEventListener('dblclick', () => { az = -0.16; el = elFor(); zoom = 1; });
+
+  let specs = {}, prevCmp = null;
+  gl.sync = () => {
+    const s = steps[k];
+    if (s.cmp && !prevCmp && !reduce) ['ca', 'cb'].forEach(id => SB(id).y = -.6);
+    prevCmp = s.cmp;
+    SL.forEach(v => { v.yT = s.glow.includes(v.id) ? .2 : 0; });
+    const rv = s.rd ? SB(s.rd) : null;
+    if (rv !== braceFor) buildBrace(rv);
+    paint();
+    tagL.el.innerHTML = esc(s.tag || '');
+    specs = arrowSpec(s);
+    Object.keys(AR).forEach(id => {
+      const A = AR[id], sp = specs[id], key = sp ? sp.dst.id : '';
+      if (key !== A.key) { const had = !!A.key; A.key = key; dispose(A.g); A.g = null; A.prog = !sp ? 0 : (had || reduce ? 1 : 0); }
+    });
+    SL.forEach(v => {
+      const val = valOf(v, s), kn = val !== null && val !== undefined;
+      if (v.kind === 'cod' || v.kind === 'lib') {
+        v.lVal.el.textContent = sh(v.fa); v.lVal.el.classList.remove('dim');
+        v.lBytes.forEach((Lb, i) => { Lb.el.textContent = ['f3', '0f', '1e', 'fa'][i]; });
+        return;
+      }
+      if (v.lVal) { v.lVal.el.textContent = !kn ? '?' : v.kind === 'int' ? String(val) : sh(val); v.lVal.el.classList.toggle('dim', !kn); }
+      const b = !kn ? Array(v.size).fill('??') : le(val, v.size);
+      v.lBytes.forEach((Lb, i) => { Lb.el.textContent = b[i]; Lb.el.classList.toggle('dim', !kn); });
+    });
+  };
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    const d = dist * zoom;
+    camera.position.set(target.x + d * Math.cos(el) * Math.sin(az), target.y + d * Math.sin(el), target.z + d * Math.cos(el) * Math.cos(az));
+    camera.lookAt(target);
+    const f = reduce ? 1 : Math.min(1, dt * 9);
+    let moving = false;
+    SL.forEach(v => {
+      const dy = (v.yT - v.y) * f; if (Math.abs(dy) > 1e-4) moving = true; v.y += dy; v.op += (v.opT - v.op) * f;
+      v.meshes.forEach(m => m.position.y = v.y); v.mats.forEach(m => { m.opacity = v.op; m.depthWrite = v.op > .9; });
+    });
+    if (braceFor) brace.position.y = braceFor.y + BH / 2;
+    const s = steps[k];
+    Object.keys(AR).forEach(id => {
+      const A = AR[id], sp = specs[id];
+      if (!sp) return;
+      if (A.prog < 1 || !A.g || moving) {
+        A.prog = Math.min(1, A.prog + dt * 1.4);
+        dispose(A.g);
+        const tx = id === 'cmp' ? sp.dst.cx : bx(sp.dst.c0);
+        const from = top(id === 'cmp' ? sp.src.cx : sp.src.cx + Math.max(-1.1, Math.min(1.1, tx - sp.src.cx)), sp.src.z, sp.src.y), to = top(tx, sp.dst.z, sp.dst.y);
+        A.g = arc(from, to, id === 'cmp' ? .9 : 1.2 + Math.abs(sp.dst.z - sp.src.z) * .25, A.prog, sp.mat, id === 'cmp' ? .04 : .05); scene.add(A.g);
+      }
+    });
+    const W = fig.clientWidth, H = fig.clientHeight;
+    const p1 = new THREE.Vector3(bx(0), 0, 0).project(camera), p2 = new THREE.Vector3(bx(1), 0, 0).project(camera);
+    const bytePx = Math.abs(p2.x - p1.x) * W / 2;
+    SL.forEach(v => {
+      const vis = visible(v, s);
+      if (v.lVal) { v.lVal.show = vis && !showBytes && (v.kind !== 'cod' && v.kind !== 'lib' || bytePx * 4 >= 64); v.lVal.pos.y = BH / 2 + v.y; }
+      v.lBytes.forEach(Lb => { Lb.show = vis && showBytes && v.kind !== 'pad' && bytePx >= 21; Lb.pos.y = BH / 2 + v.y; });
+      if (v.lName) {
+        v.lName.show = vis && (v.kind !== 'pad' || bytePx >= 30);
+        const small = bytePx < 28, html = small || !v.type ? v.label : tname(v);
+        if (v.lName.el.innerHTML !== html) v.lName.el.innerHTML = html;
+        if (v.id === 'fn_cuadrado' || v.id === 'fn_qsort') { const up = bytePx * 4 < 90; v.lName.anchor = up ? 'b' : 't'; v.lName.pos.z = up ? v.z - BD / 2 - .1 : v.z + BD / 2 + .12; v.lName.pos.y = up ? BH / 2 + v.y : -BH / 2; }
+      }
+    });
+    rowL.forEach(({L: Lb, a, r}) => { Lb.el.textContent = W > 760 ? hex(a) : sh(a); Lb.show = r !== 'C' || !!s.cmp; });
+    zCmp.show = !!s.cmp;
+    zPila.el.innerHTML = W < 800 ? 'Pila' : 'Pila <small>· marco de main()</small>';
+    tagL.show = !!(braceFor && s.tag);
+    if (tagL.show) tagL.pos.set(braceFor.cx, braceFor.y + BH / 2 + .95, braceFor.z);
+    const v3 = new THREE.Vector3();
+    labels.forEach(Lb => {
+      if (!Lb.show) { if (Lb.el.style.display !== 'none') Lb.el.style.display = 'none'; return; }
+      v3.copy(Lb.pos).project(camera);
+      if (v3.z > 1) { Lb.el.style.display = 'none'; return; }
+      let x = (v3.x + 1) / 2 * W; const y = (1 - v3.y) / 2 * H;
+      if (Lb === tagL) { const hw = Lb.el.offsetWidth / 2 + 8; x = Math.max(hw, Math.min(W - hw, x)); }
+      Lb.el.style.display = '';
+      const tr = {c: '-50%,-50%', t: '-50%,0', r: '-100%,-50%', b: '-50%,-100%', br: '-100%,-100%', bl: '0,-100%'}[Lb.anchor];
+      Lb.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(${tr})`;
+    });
+    gl.rnd.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+  gl.recolor = recolor; gl.reset = () => { prevCmp = null; };
+  recolor();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Paneles ---------- */
+function render() {
+  const s = steps[k], ask = askNext(), nx = ask ? steps[k + 1] : null;
+  document.querySelectorAll('.ln').forEach(l => { l.classList.toggle('cur', +l.dataset.l === s.line); l.classList.toggle('nxt', !!nx && +l.dataset.l === nx.line); });
+  $('#lineTag').textContent = 'línea ' + s.line;
+  const w = (kind, name, txt) => `<div class="w"><i style="background:var(--${kind})"></i><code>${name}</code><span>${txt}</span></div>`;
+  const fv = !s.frame ? '—' : s.vals.f ? `${sh(addr(s.vals.f))} → ${SB(s.vals.f).label}` : '? (basura)';
+  let rows = w('ptr', 'int (*f)(int)', fv) + w('int', 'int v[4]', !s.frame ? '—' : s.vals.v ? '{' + s.vals.v.join(', ') + '}' : '? (basura)');
+  if (s.cmp) rows += w('loc', 'compara: a, b', `→ v[${s.cmp[0]}], → v[${s.cmp[1]}]`);
+  $('#watch').innerHTML = rows;
+  let ex = `<h3>${s.title}</h3>${s.expl}`;
+  if (ask) ex += `<div class="q"><p class="qh">Antes de ejecutar la línea ${nx.line}:</p><p>${esc(nx.q.text)}</p><div class="opts">${nx.q.opts.map((o, i) => `<button type="button" data-o="${i}">${esc(o)}</button>`).join('')}</div><p class="fb" id="fb"></p></div>`;
+  $('#expl').innerHTML = ex;
+  $('#calc').innerHTML = s.calc;
+  const lines = s.out.map(esc);
+  if (s.fresh && lines.length) lines[lines.length - 1] = `<span class="last">${lines[lines.length - 1]}</span>`;
+  const con = $('#con'); con.innerHTML = lines.join('\n') || '<span style="opacity:.5">(todavía no se imprime nada)</span>'; con.scrollTop = con.scrollHeight;
+  $('#pill').innerHTML = !s.frame ? 'main terminó' : s.cmp ? 'qsort → compara()' : s.qs ? 'llamando a qsort' : s.vals.f ? `f → ${SB(s.vals.f).label}` : 'f = ? (basura)';
+  $('#scrub').value = k; $('#stepn').textContent = `Paso ${k + 1} de ${steps.length}`;
+  $('#bPrev').disabled = k === 0; $('#bNext').disabled = k === steps.length - 1;
+  const sc = $('#score'); sc.hidden = !predict; sc.textContent = `Aciertos: ${score.ok} de ${score.n}`;
+  if (gl) gl.sync();
+}
+$('#expl').addEventListener('click', e => {
+  const b = e.target.closest('button[data-o]'); if (!b || !askNext()) return;
+  const q = steps[k + 1].q, ok = +b.dataset.o === q.ans, fb = $('#fb');
+  if (!tried[k + 1]) { tried[k + 1] = true; score.n++; if (ok) score.ok++; }
+  if (ok) {
+    answered[k + 1] = true; fb.className = 'fb ok'; fb.textContent = '✓ ' + q.why;
+    b.closest('.opts').querySelectorAll('button').forEach(x => x.disabled = true);
+    const n = k + 1; qTimer = setTimeout(() => { if (k === n - 1) go(n); }, reduce ? 0 : 1400);
+  } else { fb.className = 'fb no'; fb.textContent = 'No es esa opción. ' + (q.hint || 'Vuelve a leer la línea con borde punteado.'); b.disabled = true; }
+});
+function go(n) { k = Math.max(0, Math.min(steps.length - 1, n)); render(); }
+function stop() { playing = false; clearTimeout(timer); clearTimeout(qTimer); $('#bPlay').textContent = '▶ Reproducir'; }
+const nag = () => { const fb = $('#fb'); if (fb) { fb.className = 'fb no'; fb.textContent = 'Primero elige una respuesta.'; } };
+function tick() {
+  if (!playing) return;
+  if (askNext() || k >= steps.length - 1) { stop(); return; }
+  go(k + 1);
+  if (askNext() || k >= steps.length - 1) { stop(); return; }
+  timer = setTimeout(tick, 2000);
+}
+$('#bPlay').onclick = () => {
+  if (playing) { stop(); return; }
+  if (askNext()) { nag(); return; }
+  if (k >= steps.length - 1) { answered = {}; tried = {}; score = {ok: 0, n: 0}; go(0); if (askNext()) { nag(); return; } }
+  playing = true; $('#bPlay').textContent = '❚❚ Pausa'; timer = setTimeout(tick, 400);
+};
+$('#bNext').onclick = () => { stop(); if (askNext()) nag(); else go(k + 1); };
+$('#bPrev').onclick = () => { stop(); go(k - 1); };
+$('#bReset').onclick = () => { stop(); answered = {}; tried = {}; score = {ok: 0, n: 0}; if (gl) gl.reset(); go(0); };
+$('#scrub').max = steps.length - 1;
+$('#scrub').oninput = e => { stop(); go(+e.target.value); };
+$('#tBytes').onchange = e => { showBytes = e.target.checked; };
+$('#tPred').onchange = e => { predict = e.target.checked; if (!predict) clearTimeout(qTimer); render(); };
+addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.target.closest('input[type=range],textarea')) return;
+  if (e.key === 'ArrowRight') $('#bNext').click();
+  else if (e.key === 'ArrowLeft') $('#bPrev').click();
+  else if (e.key === ' ' && !e.target.closest('button,a,input,label')) { e.preventDefault(); $('#bPlay').click(); }
+});
+
+/* ---------- Tema ---------- */
+const root = document.documentElement;
+try { const t = localStorage.getItem('punteros-tema'); if (t === 'dark' || t === 'light') root.dataset.tema = t; } catch (e) {}
+const isDark = () => root.dataset.tema ? root.dataset.tema === 'dark' : root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+const themeBtn = $('#theme');
+const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>';
+const syncTheme = () => { const d = isDark(); root.dataset.mode = d ? 'dark' : 'light'; root.style.setProperty('color-scheme', d ? 'dark' : 'light', 'important'); themeBtn.innerHTML = d ? SUN : MOON; themeBtn.setAttribute('aria-label', d ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'); if (gl) gl.recolor(); };
+themeBtn.onclick = () => { const t = isDark() ? 'light' : 'dark'; root.dataset.tema = t; try { localStorage.setItem('punteros-tema', t); } catch (e) {} };
+new MutationObserver(syncTheme).observe(root, {attributes: true, attributeFilter: ['data-theme', 'data-tema']});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme);
+syncTheme(); render();
+}
+
+</script>
+</body>
+</html>

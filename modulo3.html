@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apuntadores en memoria</title>
+<script>try{var t=localStorage.getItem('punteros-tema'),r=document.documentElement;r.dataset.mode=(t?t==='dark':(r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches))?'dark':'light'}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: aula de programación, claro y preciso
+   IDEA un depurador con volcado hexadecimal: el código a un lado, la memoria real al otro
+   PICTURE el marco de main() en 3D: 48 bytes en filas de 16, flecha del apuntador y saltos de 4 bytes
+   COLOUR blanco o noche #0e1116; azul arreglo, rojo apuntador, verde entero, ámbar aritmética
+   TYPE Figtree 800 + Figtree; JetBrains Mono para código y direcciones
+   LAYOUT laptop: título, [código | memoria], controles, [explicación | cálculo | consola]; teléfono: título, memoria, controles, código, resto */
+:root{color-scheme:light dark;--bg:var(--ld0);--ink:var(--ld1);--mute:var(--ld2);--panel:var(--ld3);--line:var(--ld4);--scene:var(--ld5);--arr:var(--ld6);--ptr:var(--ld7);--int:var(--ld8);--hop:var(--ld9);--pad:var(--ld10);--cur:var(--ld11)}
+:root{--ld0:#ffffff;--ld1:#14171c;--ld2:#5b6270;--ld3:#f4f6f9;--ld4:#dfe3ea;--ld5:#eef2f8;--ld6:#0a5cff;--ld7:#e6261f;--ld8:#00a05a;--ld9:#e09d00;--ld10:#c3c8d0;--ld11:#fff1c2;--ld12:#8a2bb8;--ld13:#9a5b00;--ld14:#0b7a7a}
+:root[data-mode=dark]{--ld0:#0e1116;--ld1:#e8eaee;--ld2:#9aa3b2;--ld3:#161b23;--ld4:#262d38;--ld5:#111723;--ld6:#4f8bff;--ld7:#ff5d52;--ld8:#2fc77f;--ld9:#ffb400;--ld10:#3b424e;--ld11:#3a3112;--ld12:#d58cff;--ld13:#f0b45b;--ld14:#5fd4d4}
+.crumbs{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;padding:12px 56px 0 0;font-size:15px}
+.crumbs a,.pager a{color:var(--ink);font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.crumbs a:hover,.pager a:hover{text-decoration:underline}
+.crumbs span{color:var(--mute)}
+.pager{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:4px;padding:8px 0 32px}
+.pager .nx{margin-left:auto}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+:root[data-tema=light]{color-scheme:light}
+:root[data-tema=dark]{color-scheme:dark}
+.themebtn{position:fixed;top:12px;right:12px;z-index:30;width:44px;height:44px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--panel);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.themebtn svg{width:22px;height:22px}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;overflow-x:clip}
+code,pre,.mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+code{font-size:.92em;overflow-wrap:anywhere}
+.wrap{max-width:1320px;margin:0 auto;padding:0 max(3vw,16px)}
+header{padding-right:56px;display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 24px;padding-block:6px 16px}
+h1{margin:0;font-weight:800;font-size:clamp(30px,4vw,44px);line-height:1.05;letter-spacing:-.02em;text-wrap:balance}
+.lead{margin:6px 0 0;color:var(--mute);max-width:68ch}
+.hdr-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tag{font-size:14px;color:var(--mute)}
+button,.btn{font:600 15px Figtree,system-ui,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;min-height:44px;padding:0 14px;cursor:pointer}
+button:hover{border-color:var(--mute)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--arr);outline-offset:2px}
+button.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stage{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.25fr);gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.code{display:flex;flex-direction:column}
+.code h2,.card h2{font-size:15px;font-weight:600;margin:0;color:var(--mute)}
+.code .hd{display:flex;justify-content:space-between;gap:8px;padding:12px 14px 6px}
+.src{font-size:13px;line-height:1.7;padding:4px 0 10px;overflow-x:auto}
+.ln{display:grid;grid-template-columns:3em minmax(0,1fr);white-space:pre-wrap;padding-right:12px;border-left:4px solid transparent}
+.ln .n{color:var(--mute);text-align:right;padding-right:12px;user-select:none}
+.ln.cur{background:var(--cur);border-left-color:var(--hop)}
+.k{color:var(--ld12)}.s{color:var(--ld13)}.c{color:var(--mute);font-style:italic}.num{color:var(--ld14)}
+.vp{color:var(--ptr);font-weight:600}.vi{color:var(--int);font-weight:600}.va{color:var(--arr);font-weight:600}
+.watch{border-top:1px solid var(--line);padding:10px 14px 14px;display:grid;gap:6px;margin-top:auto}
+.w{display:grid;grid-template-columns:12px auto minmax(0,1fr);gap:8px;align-items:center;font-size:14px}
+.w i{width:12px;height:12px;border-radius:3px}
+.w span{font-family:"JetBrains Mono",monospace;font-size:13.5px;text-align:right;overflow-wrap:anywhere}
+.fig{position:relative;min-height:470px;border-radius:14px;overflow:hidden;background:var(--scene);border:1px solid var(--line);touch-action:pan-y;cursor:grab}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;font:600 13px "JetBrains Mono",monospace;line-height:1;will-change:transform}
+.lb.nm{color:var(--ink);background:color-mix(in srgb,var(--scene) 80%,transparent);padding:3px 5px;border-radius:5px}
+.lb.nm.oob{color:var(--ptr)}
+.lb.val{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);font-size:14px}
+.lb.val.dim{color:var(--ink);text-shadow:none;opacity:.75}
+.lb.by{font-size:13px}
+.lb.row{color:var(--mute);font-weight:400}
+.lb.col{color:var(--mute);font-weight:400}
+.lb.hopl{color:var(--hop);font-size:13px;background:color-mix(in srgb,var(--scene) 85%,transparent);padding:2px 4px;border-radius:4px}
+.lb.hopl.bad{color:var(--ptr)}
+.badge{position:absolute;left:12px;top:12px;right:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;pointer-events:none}
+.expr{font:600 14px "JetBrains Mono",monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.expr b{color:var(--hop)}
+.expr.bad b{color:var(--ptr)}
+.hint{margin-left:auto;font-size:13px;color:var(--mute);padding-top:6px}
+.legend{position:absolute;left:12px;bottom:10px;right:12px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute);pointer-events:none}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--mute)}
+.bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding-block:14px}
+.bar .grow{flex:1 1 200px;display:flex;align-items:center;gap:10px}
+input[type=range]{flex:1;accent-color:var(--hop);height:44px}
+.stepn{font-size:14px;color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tg{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;cursor:pointer;background:var(--bg)}
+.tg input{width:18px;height:18px;accent-color:var(--hop)}
+.score{font-size:14px;color:var(--mute);white-space:nowrap}
+.bottom{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:16px;padding-bottom:28px}
+.bottom .card{padding:14px 16px}
+#expl h3{margin:4px 0 6px;font-size:22px;line-height:1.15;font-weight:800;letter-spacing:-.01em}
+#expl p{margin:0 0 8px;max-width:66ch}
+.calc{font:14px/1.75 "JetBrains Mono",monospace;margin-top:6px;overflow-wrap:anywhere}
+.calc b{color:var(--hop)}
+.con{margin:6px 0 0;background:#0b0e13;color:#d6dbe3;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.6;min-height:150px;max-height:260px;overflow:auto;white-space:pre}
+.con .last{color:#ffd166}
+.q{margin-top:10px;padding:12px;border:2px solid var(--hop);border-radius:12px;background:var(--bg)}
+.q p{margin:0 0 8px;font-weight:600}
+.q .opts{display:flex;flex-wrap:wrap;gap:8px}
+.q .opts button{font-family:"JetBrains Mono",monospace}
+.q .fb{margin:8px 0 0;font-weight:400}
+.q .fb.ok{color:var(--int)}.q .fb.no{color:var(--ptr)}
+.note{font-size:13px;color:var(--mute);margin:8px 0 0}
+@media(max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}.fig{order:-1;min-height:400px}.bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.bottom .conc{grid-column:1/-1}}
+@media(max-width:600px){.fig{min-height:360px}.bottom{grid-template-columns:minmax(0,1fr)}.hint{display:none}h1{font-size:30px}}
+@media(max-width:900px){.wrap{display:flex;flex-direction:column}.stage{display:contents}.crumbs{order:0}header{order:1}.fig{order:2}.bar{order:3}.code{order:4;margin-bottom:16px}.bottom{order:5}.pager{order:6}}
+</style>
+</head>
+<body>
+<button id="theme" class="themebtn" type="button" aria-label="Cambiar a tema oscuro" title="Cambiar tema"></button>
+<div class="wrap">
+<nav class="crumbs" aria-label="Navegación"><a href="index2.html">← Apuntadores en C</a><span>Módulo 3 de 10</span></nav>
+<header>
+  <div>
+    <h1>Apuntadores en memoria</h1>
+    <p class="lead">Módulo 3 · Arreglos y aritmética de apuntadores. Avanza línea por línea y mira qué pasa dentro de la RAM mientras corre <code>fentanilo10.c</code>.</p>
+  </div>
+</header>
+
+<section class="stage">
+  <div class="card code">
+    <div class="hd"><h2>fentanilo10.c (versión simplificada)</h2><span class="tag" id="lineTag">línea 3</span></div>
+    <div class="src mono" id="src"></div>
+    <div class="watch" id="watch"></div>
+  </div>
+  <div class="fig" id="fig">
+    <div class="labels" id="labels"></div>
+    <div class="badge"><div class="expr" id="expr" hidden></div><div class="hint">Arrastra para girar · rueda para acercar · doble clic para centrar</div></div>
+    <div class="legend">
+      <span><i style="background:var(--arr)"></i>arreglo</span>
+      <span><i style="background:var(--ptr)"></i>apuntador</span>
+      <span><i style="background:var(--int)"></i>entero</span>
+      <span><i style="background:var(--hop)"></i>aritmética</span>
+      <span><i style="background:var(--pad)"></i>basura / ajeno</span>
+    </div>
+  </div>
+</section>
+
+<div class="bar">
+  <button id="bReset" type="button" title="Reiniciar">⟲ Reiniciar</button>
+  <button id="bPrev" type="button" title="Paso anterior (←)">◀ Atrás</button>
+  <button id="bPlay" type="button" class="pri" title="Reproducir">▶ Reproducir</button>
+  <button id="bNext" type="button" title="Paso siguiente (→)">Adelante ▶</button>
+  <div class="grow"><input id="scrub" type="range" min="0" value="0" aria-label="Paso"><span class="stepn" id="stepn"></span></div>
+  <label class="tg"><input id="tBytes" type="checkbox">Ver bytes</label>
+  <label class="tg"><input id="tPred" type="checkbox">Modo predice</label>
+  <span class="score" id="score" hidden></span>
+</div>
+
+<section class="bottom">
+  <div class="card" id="explCard"><h2>Qué está pasando</h2><div id="expl"></div></div>
+  <div class="card"><h2>El cálculo</h2><div class="calc" id="calc"></div></div>
+  <div class="card conc"><h2>Consola</h2><pre class="con" id="con"></pre>
+    <p class="note">Direcciones de ejemplo: en tu equipo serán otras y cambian en cada ejecución (ASLR). El original usa <code>%X</code>; aquí se usa <code>%p</code>, que imprime la dirección completa de 64 bits.</p></div>
+</section>
+<nav class="pager" aria-label="Módulos"><a href="modulo2.html">← Módulo 2 · Declarar y desreferenciar</a><a class="nx" href="modulo4.html">Módulo 4 · Cadenas de caracteres →</a></nav>
+</div>
+
+<div id="probes" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <i data-c="arr" style="color:var(--arr)"></i><i data-c="ptr" style="color:var(--ptr)"></i><i data-c="int" style="color:var(--int)"></i><i data-c="hop" style="color:var(--hop)"></i><i data-c="pad" style="color:var(--pad)"></i><i data-c="scene" style="color:var(--scene)"></i><i data-c="line" style="color:var(--line)"></i><i data-c="ink" style="color:var(--ink)"></i>
+</div>
+
+<script src="js/three.min.js"></script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const A0 = 0x7ffd5e3c1a10, ARR = A0 + 16;
+const VALS = [4, 6, 69, 42, 67, 13], JUNK = 21845;
+const hex = n => '0x' + n.toString(16);
+const sh = n => '0x…' + n.toString(16).slice(-4);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- Programa ---------- */
+const CODE = [
+ '#include <stdio.h>',
+ '',
+ 'int main(void)',
+ '{',
+ '    int chernobyl[6] = {4, 6, 69, 42, 67, 13};',
+ '    int indice = 3;',
+ '    int *p = chernobyl;   // p guarda la dirección de chernobyl[0]',
+ '',
+ '    for(indice = 0; indice < 6; indice++)',
+ '    {',
+ '        printf("o %p - %d\\n", (void*)(chernobyl + indice), *(chernobyl + indice));',
+ '        printf("p %p - %d\\n", (void*)(p + indice), *(p + indice));',
+ '    }',
+ '',
+ '    // Fuera del arreglo: comportamiento indefinido',
+ '    printf("\\nSaliendo del arreglo %p - %d\\n", (void*)(p + indice + 1), *(p + indice + 1));',
+ '    return 0;',
+ '}'
+];
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const TOK = /(\/\/.*$)|("(?:[^"\\]|\\.)*")|(#include|<stdio\.h>)|\b(int|return|for|void|char)\b|\b(chernobyl|indice|p)\b|\b(\d+)\b/g;
+function hl(line) {
+  let out = '', last = 0, m;
+  TOK.lastIndex = 0;
+  while ((m = TOK.exec(line))) {
+    out += esc(line.slice(last, m.index));
+    const t = esc(m[0]);
+    if (m[1]) out += `<span class="c">${t}</span>`;
+    else if (m[2]) out += `<span class="s">${t}</span>`;
+    else if (m[3] || m[4]) out += `<span class="k">${t}</span>`;
+    else if (m[5]) out += `<span class="${m[5] === 'p' ? 'vp' : m[5] === 'indice' ? 'vi' : 'va'}">${t}</span>`;
+    else out += `<span class="num">${t}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(line.slice(last));
+}
+$('#src').innerHTML = CODE.map((l, i) => `<div class="ln" data-l="${i + 1}"><span class="n">${i + 1}</span><span>${hl(l) || ' '}</span></div>`).join('');
+
+/* ---------- Pasos de ejecución ---------- */
+const steps = [];
+const rot = (a, n) => a.slice(n % a.length).concat(a.slice(0, n % a.length));
+let cur = {line: 3, frame: true, p: false, ind: null, arr: false, j7: false, tmp: null, out: [], q: null, fresh: false};
+function push(o, outLine) {
+  const s = Object.assign({}, cur, {tmp: null, q: null, fresh: false}, o);
+  s.out = outLine ? cur.out.concat([outLine]) : cur.out;
+  s.fresh = !!outLine;
+  steps.push(s); cur = s;
+}
+const P = `<code class="vp">p</code>`, I = `<code class="vi">indice</code>`, C = `<code class="va">chernobyl</code>`;
+push({line: 3, title: 'Arranca main()',
+  expl: `<p>Al ejecutarse <code>main()</code>, el sistema le aparta un bloque de la <b>pila</b> (stack): su <b>marco</b>. Ahí van a vivir ${P}, ${I} y ${C}.</p><p>Por ahora esas casillas tienen <b>basura</b> (en gris): lo que haya quedado ahí de antes. En C, una variable sin inicializar no vale 0.</p>`,
+  calc: `Marco de main (ejemplo):<br>48 bytes, de ${hex(A0)}<br>a ${hex(A0 + 47)}<br><br>Cada fila = 16 bytes,<br>como en un volcado hexadecimal.`});
+push({line: 5, arr: true, title: 'Se inicializa el arreglo',
+  expl: `<p>Se llenan los 6 enteros del arreglo. Su lugar ya estaba apartado en el marco: son <b>contiguos</b>, pegados sin huecos. Cada <code>int</code> ocupa 4 bytes, así que el arreglo completo mide 24 bytes.</p><p>Activa <b>Ver bytes</b> para mirar los 4 bytes de cada entero: el byte menos significativo va primero (little-endian).</p>`,
+  calc: `sizeof(int) = 4 bytes<br>sizeof(chernobyl) = 6 × 4 = 24 bytes<br>&chernobyl[0] = ${hex(ARR)}<br>&chernobyl[5] = ${hex(ARR + 20)}`});
+push({line: 6, ind: 3, title: 'Un entero común',
+  expl: `<p>${I} es una variable normal: guarda directamente un valor, el 3. Vive en su propia casilla de 4 bytes, justo antes del arreglo.</p>`,
+  calc: `&indice = ${hex(A0 + 12)}<br>indice = 3`});
+push({line: 7, p: true, title: 'p guarda una dirección',
+  expl: `<p>${P} es un <b>apuntador</b>: en vez de un número cualquiera, guarda una <b>dirección</b>. El nombre del arreglo equivale a la dirección de su primer elemento, así que ${P} queda apuntando a <code>chernobyl[0]</code> (flecha roja).</p><p>En una computadora de 64 bits todo apuntador ocupa 8 bytes, apunte a lo que apunte.</p>`,
+  calc: `p = chernobyl = &chernobyl[0]<br>p = ${hex(ARR)}<br>&p = ${hex(A0)}<br>Bytes de p (little-endian):<br>20 1a 3c 5e fd 7f 00 00`});
+for (let i = 0; i < 6; i++) {
+  const ad = ARR + 4 * i;
+  push({line: 9, ind: i, title: i ? `indice++ → ${i}` : 'Empieza el ciclo',
+    expl: i ? `<p><code>indice++</code>: ahora ${I} vale ${i}. ¿${i} &lt; 6? Sí, otra vuelta.</p>`
+            : `<p>Se ejecuta <code>indice = 0</code>: el 3 anterior se sobrescribe en la misma casilla. ¿0 &lt; 6? Sí, se entra al ciclo.</p>`,
+    calc: `indice = ${i}<br>${i} &lt; 6 → verdadero`});
+  const ex1 = i === 0
+    ? `<p><code>chernobyl + indice</code> no mueve nada en memoria: <b>calcula</b> una dirección. Con ${I} = 0 es la dirección de inicio, y el <code>*</code> va ahí y lee el entero.</p><p>Fíjate que ${C} no tiene una casilla propia que guarde una dirección: su nombre <i>es</i> la dirección.</p>`
+    : i === 1
+    ? `<p>Aquí está la clave: sumar 1 a una dirección de <code>int</code> avanza <b>4 bytes</b>, no 1. C multiplica ${I} por <code>sizeof(int)</code> por ti. Cada salto ámbar es un entero completo.</p>`
+    : `<p>Ahora son ${i} saltos de 4 bytes: ${i} × 4 = ${4 * i} bytes después del inicio. El <code>*</code> va a esa dirección y lee el entero que encuentra.</p>`;
+  push({line: 11, tmp: {base: 'name', k: i}, title: `Dirección de chernobyl + ${i}`, expl: ex1,
+    calc: `chernobyl + indice<br>= ${sh(ARR)} + ${i} × 4<br>= <b>${hex(ad)}</b><br><br>*(chernobyl + indice) = <b>{V}</b>`,
+    q: {expr: '*(chernobyl + indice)', ans: String(VALS[i]), opts: rot([VALS[i], VALS[(i + 1) % 6], i].map(String), i)}},
+    `o ${hex(ad)} - ${VALS[i]}`);
+  push({line: 12, tmp: {base: 'p', k: i}, title: 'Lo mismo, usando p',
+    expl: i === 0
+      ? `<p>Ahora con ${P}. La flecha roja <b>no se movió</b>: ${P} sigue valiendo ${sh(ARR)}. <code>p + indice</code> es un cálculo temporal que llega a la misma casilla.</p>`
+      : `<p>Mismo lugar por otro camino. Estas cuatro expresiones son idénticas: <code>chernobyl[${i}]</code>, <code>*(chernobyl + ${i})</code>, <code>*(p + ${i})</code> y <code>p[${i}]</code>.</p>`,
+    calc: `p + indice<br>= ${sh(ARR)} + ${i} × 4<br>= <b>${hex(ad)}</b><br><br>*(p + indice) = <b>${VALS[i]}</b>`},
+    `p ${hex(ad)} - ${VALS[i]}`);
+}
+push({line: 9, ind: 6, title: 'Termina el ciclo',
+  expl: `<p><code>indice++</code> → 6. ¿6 &lt; 6? No: el ciclo termina. Importante: ${I} se queda valiendo <b>6</b>, y eso afecta la siguiente línea.</p>`,
+  calc: `indice = 6<br>6 &lt; 6 → falso`});
+push({line: 16, tmp: {base: 'p', k: 7}, j7: true, title: '¡Fuera del arreglo!',
+  expl: `<p><code>p + indice + 1</code> = <code>p + 7</code>: ¡<b>dos</b> enteros más allá del último! El último válido es <code>p + 5</code>.</p><p>C no revisa límites: calcula la dirección y lee lo que haya. Es <b>comportamiento indefinido</b>: aquí salió 21845, pero en otra corrida puede salir otro número o el programa puede caerse.</p><p>Detalle fino: el estándar solo permite <i>calcular</i> hasta <code>p + 6</code> (uno después del final, sin leerlo). Formar <code>p + 7</code> ya es indefinido.</p>`,
+  calc: `p + indice + 1<br>= ${sh(ARR)} + 7 × 4<br>= <b>${hex(ARR + 28)}</b><br>último válido: p + 5 = ${sh(ARR + 20)}<br><br>*(p + 7) = <b>{V}</b> (basura)`,
+  q: {expr: '*(p + indice + 1)', ans: 'No se puede saber', opts: ['13', 'No se puede saber', '0']}},
+  `\nSaliendo del arreglo ${hex(ARR + 28)} - ${JUNK}`);
+push({line: 17, frame: false, p: false, ind: null, arr: false, j7: false, title: 'main termina',
+  expl: `<p><code>return 0</code>: el marco de <code>main</code> se libera. Los bytes no se borran; simplemente dejan de pertenecer al programa y la pila los reutilizará en la siguiente llamada a una función.</p><p>Por eso un apuntador que conservara alguna de estas direcciones quedaría <b>colgante</b> (dangling).</p>`,
+  calc: `return 0<br>→ el sistema operativo recibe 0:<br>el programa terminó bien.`});
+
+/* ---------- Estado de la interfaz ---------- */
+let k = 0, playing = false, timer = null, showBytes = false, predict = false;
+const answered = {}, tried = {};
+let score = {ok: 0, n: 0};
+const pending = () => predict && steps[k].q && !answered[k];
+
+/* ---------- Variables en memoria ---------- */
+const VARS = [
+  {id: 'p', name: 'p', off: 0, size: 8, kind: 'ptr'},
+  {id: 'pad', name: 'relleno', off: 8, size: 4, kind: 'pad'},
+  {id: 'ind', name: 'indice', off: 12, size: 4, kind: 'int'},
+  ...[0, 1, 2, 3, 4, 5].map(j => ({id: 'a' + j, name: 'chernobyl[' + j + ']', short: '[' + j + ']', off: 16 + 4 * j, size: 4, kind: 'arr', j})),
+  {id: 'a6', name: '[6] ajeno', short: '[6]', off: 40, size: 4, kind: 'out', j: 6},
+  {id: 'a7', name: '[7] ajeno', short: '[7]', off: 44, size: 4, kind: 'out', j: 7}
+];
+const INTS = VARS.filter(v => v.j !== undefined);
+function known(v, s) {
+  if (!s.frame) return false;
+  if (v.kind === 'ptr') return s.p;
+  if (v.kind === 'int') return s.ind !== null;
+  if (v.kind === 'arr') return s.arr;
+  if (v.id === 'a7') return s.j7 && !pendingAt(s);
+  return false;
+}
+const pendingAt = s => s === steps[k] && pending();
+const hidden = (v, s) => pendingAt(s) && s.tmp && v.j === s.tmp.k;
+function valText(v, s) {
+  if (!known(v, s) || hidden(v, s)) return '?';
+  if (v.kind === 'ptr') return sh(ARR);
+  if (v.kind === 'int') return String(s.ind);
+  if (v.id === 'a7') return String(JUNK);
+  return String(VALS[v.j]);
+}
+function bytesOf(v, s) {
+  if (!known(v, s) || hidden(v, s)) return Array(v.size).fill('??');
+  let n = v.kind === 'ptr' ? ARR : v.kind === 'int' ? s.ind : v.id === 'a7' ? JUNK : VALS[v.j];
+  const b = [];
+  for (let i = 0; i < v.size; i++) b.push((Math.floor(n / 256 ** i) % 256).toString(16).padStart(2, '0'));
+  return b;
+}
+
+/* ---------- Escena 3D ---------- */
+const fig = $('#fig'), labelsEl = $('#labels');
+const BW = 0.55, BOX = 0.5, BH = 0.32, BD = 0.9, RZ = 2.5;
+const bx = c => (c - 7.5) * BW;
+const rz = r => (r - 1) * RZ;
+let gl = null;
+try {
+  const rnd = new THREE.WebGLRenderer({antialias: true});
+  rnd.setPixelRatio(Math.min(devicePixelRatio, 2));
+  fig.prepend(rnd.domElement);
+  gl = {rnd};
+} catch (e) {
+  fig.insertAdjacentHTML('afterbegin', '<div class="nogl">No se pudo iniciar la escena 3D (WebGL o la biblioteca three.js no cargó). La explicación y la consola siguen funcionando abajo.</div>');
+}
+const col = {};
+function readColors() {
+  document.querySelectorAll('#probes i').forEach(el => {
+    col[el.dataset.c] = new THREE.Color(getComputedStyle(el).color);
+  });
+}
+if (gl) {
+  readColors();
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8890a0, 0.75));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.75);
+  dl.position.set(-4, 10, 7); scene.add(dl);
+  const tray = new THREE.Mesh(new THREE.BoxGeometry(16 * BW + 1.4, 0.06, 3 * RZ + 0.4), new THREE.MeshStandardMaterial({transparent: true, opacity: 1, roughness: 1}));
+  tray.position.y = -BH / 2 - 0.08; scene.add(tray);
+  const trayEdge = new THREE.LineSegments(new THREE.EdgesGeometry(tray.geometry), new THREE.LineBasicMaterial({transparent: true}));
+  trayEdge.position.copy(tray.position); scene.add(trayEdge);
+  const matPtr = new THREE.MeshStandardMaterial({roughness: .5}), matHop = new THREE.MeshStandardMaterial({roughness: .5}), matBad = new THREE.MeshStandardMaterial({roughness: .5});
+  const outEdgeMat = new THREE.LineBasicMaterial();
+  const arrFrameMat = new THREE.LineBasicMaterial();
+  const labels = [];
+  const mkLabel = (cls, pos, txt) => {
+    const el = document.createElement('div'); el.className = 'lb ' + cls; el.textContent = txt || '';
+    labelsEl.appendChild(el); const L = {el, pos, cls, show: true}; labels.push(L); return L;
+  };
+  VARS.forEach(v => {
+    v.r = Math.floor(v.off / 16); v.c0 = v.off % 16; v.z = rz(v.r);
+    v.cx = (bx(v.c0) + bx(v.c0 + v.size - 1)) / 2;
+    v.y = 0; v.yT = 0; v.glow = 0; v.glowT = 0;
+    v.mats = []; v.meshes = [];
+    for (let b = 0; b < v.size; b++) {
+      const m = new THREE.MeshStandardMaterial({roughness: .55, metalness: .05});
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(BOX, BH, BD), m);
+      mesh.position.set(bx(v.c0 + b), 0, v.z); scene.add(mesh);
+      v.mats.push(m); v.meshes.push(mesh);
+    }
+    const w = v.size * BW + 0.02;
+    if (v.kind === 'out') {
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w, BH + .04, BD + .06)), outEdgeMat);
+      e.position.set(v.cx, 0, v.z); scene.add(e); v.edge = e;
+    }
+    v.lName = mkLabel('nm' + (v.kind === 'out' ? ' oob' : ''), new THREE.Vector3(v.cx, -BH / 2, v.z + BD / 2 + .12), v.name);
+    v.lVal = mkLabel('val', new THREE.Vector3(v.cx, BH / 2, v.z), '?');
+    v.lBytes = [];
+    for (let b = 0; b < v.size; b++) v.lBytes.push(mkLabel('val by', new THREE.Vector3(bx(v.c0 + b), BH / 2, v.z), '??'));
+  });
+  // marco azul que agrupa el arreglo
+  [[16, 16], [32, 8]].forEach(([off, n]) => {
+    const r = Math.floor(off / 16), c = off % 16, w = n * BW + .12;
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w, .02, BD + .3)), arrFrameMat);
+    e.position.set((bx(c) + bx(c + n - 1)) / 2, -BH / 2 - .03, rz(r)); scene.add(e);
+  });
+  const rowL = [0, 1, 2].map(r => mkLabel('row', new THREE.Vector3(bx(0) - BW * .8, 0, rz(r)), ''));
+  const colL = [], colB = [];
+  for (let c = 0; c < 16; c += 4) colL.push(mkLabel('col', new THREE.Vector3((bx(c) + bx(c + 3)) / 2, 0, rz(0) - BD / 2 - 1.05), '+' + c.toString(16)));
+  for (let c = 0; c < 16; c++) colB.push(mkLabel('col', new THREE.Vector3(bx(c), 0, rz(0) - BD / 2 - 1.05), '+' + c.toString(16)));
+  const hopLabels = [];
+  for (let h = 0; h < 7; h++) hopLabels.push(mkLabel('hopl', new THREE.Vector3(), '+4 B'));
+
+  /* arcos */
+  const top = (v, lift) => new THREE.Vector3(v.cx, BH / 2 + (lift || 0) + .02, v.z);
+  function arc(from, to, h, prog, mat, rad) {
+    const g = new THREE.Group();
+    if (prog <= 0.001) return g;
+    const mid = from.clone().add(to).multiplyScalar(.5); mid.y = Math.max(from.y, to.y) + h;
+    const cv = new THREE.QuadraticBezierCurve3(from, mid, to);
+    const pts = []; const N = 28;
+    for (let i = 0; i <= N; i++) pts.push(cv.getPoint(prog * i / N));
+    const path = new THREE.CatmullRomCurve3(pts);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(path, 32, rad, 7, false), mat));
+    const end = cv.getPoint(prog), tg = cv.getTangent(prog).normalize();
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(rad * 3, rad * 7, 12), mat);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tg);
+    cone.position.copy(end).addScaledVector(tg, -rad * 3.5);
+    g.add(cone); g.userData.mid = cv.getPoint(.5);
+    return g;
+  }
+  const dispose = g => { if (!g) return; g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); scene.remove(g); };
+  const pA = {on: false, prog: 0, g: null};
+  const hops = {key: '', n: 0, prog: 0, gs: [], base: 'name'};
+  const LIFT = .24;
+
+  function recolor() {
+    readColors();
+    scene.background = col.scene.clone();
+    tray.material.color.copy(col.scene).lerp(col.ink, .06);
+    trayEdge.material.color.copy(col.line);
+    matPtr.color.copy(col.ptr); matHop.color.copy(col.hop); matBad.color.copy(col.ptr);
+    outEdgeMat.color.copy(col.ptr); arrFrameMat.color.copy(col.arr);
+    paintVars();
+  }
+  function paintVars() {
+    const s = steps[k];
+    VARS.forEach(v => {
+      const kn = known(v, s);
+      const base = {ptr: col.ptr, int: col.int, arr: col.arr, pad: col.pad, out: col.pad}[v.kind].clone();
+      if (!kn && v.kind !== 'pad' && v.kind !== 'out') base.lerp(col.pad, .78);
+      const em = v.glowT > 0 ? (v.kind === 'out' ? col.ptr : col.hop) : null;
+      v.mats.forEach(m => { m.color.copy(base); m.emissive.copy(em || new THREE.Color(0)); m.emissiveIntensity = em ? .35 : 0; });
+    });
+  }
+
+  /* cámara */
+  const elFor = () => fig.clientWidth / fig.clientHeight < 1.25 ? 1.1 : 0.9;
+  let az = -0.14, el = 0.9, zoom = 1, dist = 14;
+  const target = new THREE.Vector3(-0.35, 0, 0.1);
+  function fit() {
+    const W = fig.clientWidth, H = fig.clientHeight;
+    gl.rnd.setSize(W, H, false); camera.aspect = W / H;
+    const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    el = elFor(); const nar = W < 600; target.x = nar ? -0.95 : -0.35; const halfW = 16 * BW / 2 + (nar ? 2.6 : 1.7), halfH = (3 * RZ / 2 + .9) * Math.sin(el) + 1.3;
+    dist = Math.max(halfW / (t * camera.aspect), halfH / t) * .9 + 1;
+    camera.updateProjectionMatrix();
+  }
+  const ro = new ResizeObserver(() => fit()); ro.observe(fig);
+  fit();
+  let drag = null;
+  gl.rnd.domElement.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, az, el, type: e.pointerType}; fig.style.cursor = 'grabbing'; });
+  addEventListener('pointermove', e => {
+    if (!drag) return;
+    az = Math.max(-1.1, Math.min(1.1, drag.az - (e.clientX - drag.x) * .006));
+    if (drag.type === 'mouse') el = Math.max(.25, Math.min(1.35, drag.el + (e.clientY - drag.y) * .005));
+  });
+  addEventListener('pointerup', () => { drag = null; fig.style.cursor = ''; });
+  addEventListener('pointercancel', () => { drag = null; fig.style.cursor = ''; });
+  gl.rnd.domElement.addEventListener('wheel', e => { e.preventDefault(); zoom = Math.max(.45, Math.min(1.6, zoom * (1 + Math.sign(e.deltaY) * .08))); }, {passive: false});
+  gl.rnd.domElement.addEventListener('dblclick', () => { az = -0.14; el = elFor(); zoom = 1; });
+
+  /* sincronizar con el paso */
+  gl.sync = () => {
+    const s = steps[k];
+    const tgt = s.tmp ? INTS[s.tmp.k] : null;
+    VARS.forEach(v => { v.yT = (v === tgt) ? LIFT : 0; v.glowT = v === tgt ? 1 : 0; });
+    paintVars();
+    tray.material.opacity = s.frame ? 1 : .35; trayEdge.material.opacity = s.frame ? 1 : .35;
+    const wantP = s.p && s.frame;
+    if (wantP && !pA.on) { pA.on = true; pA.prog = reduce ? 1 : 0; }
+    if (!wantP && pA.on) { pA.on = false; dispose(pA.g); pA.g = null; }
+    if (pA.on && pA.g) { dispose(pA.g); pA.g = null; }
+    const key = s.tmp ? s.tmp.base + s.tmp.k + ':' + k : '';
+    if (key !== hops.key) {
+      hops.gs.forEach(dispose); hops.gs = []; hops.key = key;
+      hops.n = s.tmp ? s.tmp.k : 0; hops.base = s.tmp ? s.tmp.base : 'name'; hops.prog = reduce ? hops.n : 0;
+    }
+    VARS.forEach(v => {
+      v.lVal.el.textContent = valText(v, s);
+      v.lVal.el.classList.toggle('dim', !known(v, s));
+      const b = bytesOf(v, s);
+      v.lBytes.forEach((L, i) => { L.el.textContent = b[i]; L.el.classList.toggle('dim', !known(v, s)); });
+    });
+  };
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    // cámara
+    const d = dist * zoom;
+    camera.position.set(target.x + d * Math.cos(el) * Math.sin(az), target.y + d * Math.sin(el), target.z + d * Math.cos(el) * Math.cos(az));
+    camera.lookAt(target);
+    // elevación de la casilla destino
+    VARS.forEach(v => {
+      v.y += (v.yT - v.y) * (reduce ? 1 : Math.min(1, dt * 10));
+      v.meshes.forEach(m => m.position.y = v.y);
+      if (v.edge) v.edge.position.y = v.y;
+    });
+    // flecha de p
+    if (pA.on && (pA.prog < 1 || !pA.g)) {
+      pA.prog = Math.min(1, pA.prog + dt * 1.6);
+      dispose(pA.g);
+      const pf = top(VARS[0]); pf.x += 1.1;
+      pA.g = arc(pf, top(INTS[0], INTS[0].yT), 1.6, pA.prog, matPtr, .055); scene.add(pA.g);
+    }
+    // saltos de aritmética
+    if (hops.n && (hops.prog < hops.n || hops.gs.length === 0)) {
+      hops.prog = Math.min(hops.n, hops.prog + dt * 3.2);
+      hops.gs.forEach(dispose); hops.gs = [];
+      for (let j = 0; j < hops.n; j++) {
+        const pr = Math.max(0, Math.min(1, hops.prog - j));
+        const a = INTS[j], b = INTS[j + 1];
+        const g = arc(top(a, j === 0 ? a.yT : 0), top(b, j + 1 === hops.n ? LIFT : 0), a.r === b.r ? .75 : 1.1, pr, j + 1 > 5 ? matBad : matHop, .04);
+        scene.add(g); hops.gs.push(g);
+      }
+    }
+    // etiquetas
+    const W = fig.clientWidth, H = fig.clientHeight;
+    const p1 = new THREE.Vector3(bx(0), 0, 0).project(camera), p2 = new THREE.Vector3(bx(1), 0, 0).project(camera);
+    const bytePx = Math.abs(p2.x - p1.x) * W / 2;
+    const s = steps[k];
+    VARS.forEach(v => {
+      v.lVal.show = !showBytes; v.lBytes.forEach(L => L.show = showBytes && bytePx >= 21);
+      v.lName.el.textContent = v.short && bytePx * 4 < 104 ? v.short : v.name;
+      v.lName.pos.y = -BH / 2 + v.y; v.lVal.pos.y = BH / 2 + v.y; v.lBytes.forEach(L => L.pos.y = BH / 2 + v.y);
+    });
+    rowL.forEach((L, r) => { L.el.textContent = W > 760 ? hex(A0 + 16 * r) : sh(A0 + 16 * r); });
+    colL.forEach(L => L.show = !showBytes); colB.forEach(L => L.show = showBytes && bytePx >= 21);
+    hopLabels.forEach((L, j) => {
+      const g = hops.gs[j];
+      L.show = !!(g && g.userData.mid && hops.prog >= j + 1 && bytePx * 4 >= 58 && (j === 0 || j === hops.n - 1));
+      if (L.show) { L.pos.copy(g.userData.mid); L.pos.y += .22; L.el.classList.toggle('bad', j + 1 > 5); }
+    });
+    const v3 = new THREE.Vector3();
+    labels.forEach(L => {
+      if (!L.show) { if (L.el.style.display !== 'none') L.el.style.display = 'none'; return; }
+      v3.copy(L.pos).project(camera);
+      if (v3.z > 1) { L.el.style.display = 'none'; return; }
+      const x = (v3.x + 1) / 2 * W, y = (1 - v3.y) / 2 * H;
+      L.el.style.display = '';
+      const ax = L.cls === 'row' ? '-100%' : '-50%', ay = L.cls.startsWith('nm') ? '0%' : '-50%';
+      L.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(${ax},${ay})`;
+    });
+    gl.rnd.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+  recolor();
+  gl.recolor = recolor;
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Render de paneles ---------- */
+function render() {
+  const s = steps[k], pend = pending();
+  document.querySelectorAll('.ln').forEach(l => l.classList.toggle('cur', +l.dataset.l === s.line));
+  $('#lineTag').textContent = 'línea ' + s.line;
+  const sw = (c, n, v) => `<div class="w"><i style="background:var(--${c})"></i><code>${n}</code><span>${v}</span></div>`;
+  $('#watch').innerHTML =
+    sw('ptr', 'p', s.p ? hex(ARR) : (s.frame ? '? (basura)' : '—')) +
+    sw('int', 'indice', s.ind !== null ? s.ind : (s.frame ? '? (basura)' : '—')) +
+    sw('arr', 'chernobyl', s.arr ? '{' + VALS.join(', ') + '}' : (s.frame ? '? (basura)' : '—'));
+  const val = pend ? '?' : (s.line === 16 ? JUNK : s.tmp ? VALS[s.tmp.k] : '');
+  let ex = `<h3>${s.title}</h3>${s.expl}`;
+  if (pend) {
+    ex += `<div class="q"><p>Antes de seguir: ¿qué imprime <code>${s.q.expr}</code>?</p><div class="opts">${s.q.opts.map(o => `<button type="button" data-o="${o}">${o}</button>`).join('')}</div><p class="fb" id="fb"></p></div>`;
+  } else if (predict && s.q && answered[k]) {
+    ex += `<p class="note" style="color:var(--int)">✓ Respondida.</p>`;
+  }
+  $('#expl').innerHTML = ex;
+  $('#calc').innerHTML = s.calc.replace('{V}', val);
+  const lines = s.out.map((l, i) => {
+    let t = l;
+    if (pend && i === s.out.length - 1) t = t.replace(/- \S+$/, '- ?');
+    return esc(t);
+  });
+  if (s.fresh && lines.length) lines[lines.length - 1] = `<span class="last">${lines[lines.length - 1]}</span>`;
+  const con = $('#con'); con.innerHTML = lines.join('\n') || '<span style="opacity:.5">(todavía no se imprime nada)</span>';
+  con.scrollTop = con.scrollHeight;
+  const ex2 = $('#expr');
+  if (s.tmp) {
+    const b = s.tmp.base === 'name' ? 'chernobyl' : 'p', kk = s.tmp.k;
+    const e = s.line === 16 ? 'p + indice + 1' : b + ' + indice';
+    ex2.hidden = false; ex2.classList.toggle('bad', kk > 5);
+    ex2.innerHTML = `${esc(e)} → <b>${hex(ARR + 4 * kk)}</b> (${kk} × 4 = ${4 * kk} bytes)`;
+  } else if (s.p && s.frame) {
+    ex2.hidden = false; ex2.classList.remove('bad'); ex2.innerHTML = `p = <b>${hex(ARR)}</b> → chernobyl[0]`;
+  } else ex2.hidden = true;
+  $('#scrub').value = k;
+  $('#stepn').textContent = `Paso ${k + 1} de ${steps.length}`;
+  $('#bPrev').disabled = k === 0; $('#bNext').disabled = k === steps.length - 1;
+  const sc = $('#score'); sc.hidden = !predict; sc.textContent = `Aciertos: ${score.ok} de ${score.n}`;
+  if (gl) gl.sync();
+}
+$('#expl').addEventListener('click', e => {
+  const b = e.target.closest('button[data-o]'); if (!b) return;
+  const s = steps[k], ok = b.dataset.o === s.q.ans;
+  if (!tried[k]) { tried[k] = true; score.n++; if (ok) score.ok++; }
+  if (ok) { answered[k] = true; render(); }
+  else {
+    let msg = 'No. Cuenta los saltos de 4 bytes desde chernobyl[0] y lee esa casilla.';
+    if (s.line === 16) msg = 'No: esa casilla no es del arreglo. Nadie garantiza qué hay ahí.';
+    else if (b.dataset.o === String(VALS[(s.tmp.k + 1) % 6])) msg = 'Ese es el entero siguiente. ¿Con indice = ' + s.tmp.k + ' cuántos saltos hay?';
+    else if (b.dataset.o === String(s.tmp.k)) msg = 'Ese es el valor de indice, no lo que hay en la dirección calculada.';
+    $('#fb').className = 'fb no'; $('#fb').textContent = msg; b.disabled = true;
+  }
+});
+function go(n) { k = Math.max(0, Math.min(steps.length - 1, n)); render(); }
+function stop() { playing = false; clearTimeout(timer); $('#bPlay').textContent = '▶ Reproducir'; }
+function tick() {
+  if (!playing) return;
+  if (pending()) { stop(); return; }
+  if (k >= steps.length - 1) { stop(); return; }
+  go(k + 1);
+  if (pending() || k >= steps.length - 1) { stop(); return; }
+  timer = setTimeout(tick, steps[k].tmp ? 2300 : 1700);
+}
+$('#bPlay').onclick = () => {
+  if (playing) { stop(); return; }
+  if (pending()) { const fb = $('#fb'); if (fb) { fb.className = 'fb no'; fb.textContent = 'Primero elige una respuesta.'; } return; }
+  if (k >= steps.length - 1) go(0);
+  playing = true; $('#bPlay').textContent = '❚❚ Pausa'; timer = setTimeout(tick, 400);
+};
+$('#bNext').onclick = () => { stop(); if (!pending()) go(k + 1); else $('#fb') && ($('#fb').className = 'fb no', $('#fb').textContent = 'Primero elige una respuesta.'); };
+$('#bPrev').onclick = () => { stop(); go(k - 1); };
+$('#bReset').onclick = () => { stop(); for (const x in answered) delete answered[x]; for (const x in tried) delete tried[x]; score = {ok: 0, n: 0}; go(0); };
+$('#scrub').max = steps.length - 1;
+$('#scrub').oninput = e => { stop(); go(+e.target.value); };
+$('#tBytes').onchange = e => { showBytes = e.target.checked; };
+$('#tPred').onchange = e => { predict = e.target.checked; render(); };
+addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.target.closest('input[type=range],textarea')) return;
+  if (e.key === 'ArrowRight') $('#bNext').click();
+  else if (e.key === 'ArrowLeft') $('#bPrev').click();
+  else if (e.key === ' ' && !e.target.closest('button,a,input,label')) { e.preventDefault(); $('#bPlay').click(); }
+});
+
+/* ---------- Tema ---------- */
+const root = document.documentElement;
+try { const t = localStorage.getItem('punteros-tema'); if (t === 'dark' || t === 'light') root.dataset.tema = t; } catch (e) {}
+const isDark = () => root.dataset.tema ? root.dataset.tema === 'dark' : root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+const themeBtn = $('#theme');
+const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>';
+const syncTheme = () => { const d = isDark(); root.dataset.mode = d ? 'dark' : 'light'; root.style.setProperty('color-scheme', d ? 'dark' : 'light', 'important'); themeBtn.innerHTML = d ? SUN : MOON; themeBtn.setAttribute('aria-label', d ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'); if (gl) gl.recolor(); };
+themeBtn.onclick = () => { const t = isDark() ? 'light' : 'dark'; root.dataset.tema = t; try { localStorage.setItem('punteros-tema', t); } catch (e) {} };
+new MutationObserver(syncTheme).observe(root, {attributes: true, attributeFilter: ['data-theme', 'data-tema']});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme);
+syncTheme();
+render();
+}
+</script>
+</body>
+</html>

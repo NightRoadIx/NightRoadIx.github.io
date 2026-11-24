@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apuntadores a apuntadores</title>
+<script>try{var t=localStorage.getItem('punteros-tema'),r=document.documentElement;r.dataset.mode=(t?t==='dark':(r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches))?'dark':'light'}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: aula de programación, claro y preciso
+   IDEA el mismo depurador con volcado hexadecimal: la pila arriba (cadena c ← pc ← ppc ← pppc) y el montón abajo (matriz con filas de distinto tamaño)
+   PICTURE flechas encadenadas entre apuntadores; un bloque de apuntadores en el montón y dos filas de distinto largo; flechas grises cuando quedan colgantes
+   COLOUR blanco o noche #0e1116; violeta char, rojo apuntador, verde int, ámbar lo que se lee, gris liberado
+   TYPE Figtree 800 + Figtree; JetBrains Mono para código y direcciones
+   LAYOUT laptop: título, [código | memoria], controles, [explicación | cálculo | consola]; teléfono: título, memoria, controles, código, resto */
+:root{--ptr:#e6261f;--bg:#ffffff;--ink:#14171c;--mute:#5b6270;--panel:#f4f6f9;--line:#dfe3ea;--scene:#eef2f8;--chr:#8a2bb8;--sht:#0b8a8a;--int:#00a05a;--dbl:#0a5cff;--hop:#e09d00;--pad:#c3c8d0;--cur:#fff1c2;--kw:#8a2bb8;--str:#9a5b00;--num:#0b7a7a}
+:root[data-mode=dark]{--ptr:#ff5d52;--bg:#0e1116;--ink:#e8eaee;--mute:#9aa3b2;--panel:#161b23;--line:#262d38;--scene:#111723;--chr:#c37bff;--sht:#2fc7c7;--int:#2fc77f;--dbl:#4f8bff;--hop:#ffb400;--pad:#3b424e;--cur:#3a3112;--kw:#d58cff;--str:#f0b45b;--num:#5fd4d4}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;overflow-x:clip}
+code,pre,.mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+code{font-size:.92em;overflow-wrap:anywhere}
+.wrap{max-width:1320px;margin:0 auto;padding:0 max(3vw,16px)}
+.themebtn{position:fixed;top:12px;right:12px;z-index:30;width:44px;height:44px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--panel);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.themebtn svg{width:22px;height:22px}
+.crumbs{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;padding:12px 56px 0 0;font-size:15px}
+.crumbs a,.pager a{color:var(--ink);font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.crumbs a:hover,.pager a:hover{text-decoration:underline}
+.crumbs span{color:var(--mute)}
+.pager{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:4px;padding:8px 0 32px}
+.pager .nx{margin-left:auto}
+header{padding:6px 56px 16px 0}
+h1{margin:0;font-weight:800;font-size:clamp(30px,4vw,44px);line-height:1.05;letter-spacing:-.02em;text-wrap:balance}
+.lead{margin:6px 0 0;color:var(--mute);max-width:72ch}
+button{font:600 15px Figtree,system-ui,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;min-height:44px;padding:0 14px;cursor:pointer}
+button:hover{border-color:var(--mute)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--dbl);outline-offset:2px}
+button.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stage{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.25fr);gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.code{display:flex;flex-direction:column}
+.card h2{font-size:15px;font-weight:600;margin:0;color:var(--mute)}
+.code .hd{display:flex;justify-content:space-between;gap:8px;padding:12px 14px 6px}
+.src{font-size:13px;line-height:1.7;padding:4px 0 10px;overflow-x:auto}
+.ln{display:grid;grid-template-columns:3em minmax(0,1fr);white-space:pre-wrap;padding-right:12px;border-left:4px solid transparent}
+.ln .n{color:var(--mute);text-align:right;padding-right:12px;user-select:none}
+.ln.cur{background:var(--cur);border-left-color:var(--hop)}
+.ln.nxt{outline:2px dashed var(--hop);outline-offset:-2px}
+.k{color:var(--kw)}.s{color:var(--str)}.c{color:var(--mute);font-style:italic}.num{color:var(--num)}
+.v-chr{color:var(--chr);font-weight:600}.v-sht{color:var(--sht);font-weight:600}.v-int{color:var(--int);font-weight:600}.v-dbl{color:var(--dbl);font-weight:600}.v-ptr{color:var(--ptr);font-weight:600}
+.lb.tag.bad{border-color:var(--ptr)}
+.fn{color:var(--dbl);font-weight:600}
+.lb.zone{font:800 15px Figtree,system-ui,sans-serif;color:var(--ink)}
+.watch{border-top:1px solid var(--line);padding:10px 14px 14px;display:grid;gap:6px;margin-top:auto}
+.w{display:grid;grid-template-columns:12px auto minmax(0,1fr);gap:8px;align-items:center;font-size:14px}
+.w i{width:12px;height:12px;border-radius:3px}
+.w span{font-family:"JetBrains Mono",monospace;font-size:13.5px;text-align:right;overflow-wrap:anywhere}
+.fig{position:relative;min-height:540px;border-radius:14px;overflow:hidden;background:var(--scene);border:1px solid var(--line);touch-action:pan-y;cursor:grab}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;font:600 13px "JetBrains Mono",monospace;line-height:1;will-change:transform}
+.lb.nm{color:var(--ink);background:color-mix(in srgb,var(--scene) 80%,transparent);padding:3px 5px;border-radius:5px}
+.lb.nm .t{color:var(--mute);font-weight:400}
+.lb.pd{color:var(--mute);font-weight:400}
+.lb.val{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);font-size:14px}
+.lb.val.dim{color:var(--ink);text-shadow:none;opacity:.7}
+.lb.by{font-size:13px}
+.lb.row,.lb.col{color:var(--mute);font-weight:400}
+.lb.tag{font-size:14px;color:var(--ink);background:var(--bg);border:2px solid var(--hop);padding:5px 8px;border-radius:8px}
+.badge{position:absolute;left:12px;top:12px;right:12px;display:flex;flex-wrap:wrap;gap:8px;pointer-events:none}
+.pill{font:600 14px "JetBrains Mono",monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.legend{position:absolute;left:12px;bottom:10px;right:12px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute);pointer-events:none}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.legend .hint{margin-left:auto}
+.nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--mute)}
+.bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding-block:14px}
+.bar .grow{flex:1 1 200px;display:flex;align-items:center;gap:10px}
+input[type=range]{flex:1;accent-color:var(--hop);height:44px}
+.stepn{font-size:14px;color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tg{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;cursor:pointer;background:var(--bg)}
+.tg input{width:18px;height:18px;accent-color:var(--hop)}
+.score{font-size:14px;color:var(--mute);white-space:nowrap}
+.bottom{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:16px;padding-bottom:28px}
+.bottom .card{padding:14px 16px}
+#expl h3{margin:4px 0 6px;font-size:22px;line-height:1.15;font-weight:800;letter-spacing:-.01em}
+#expl p{margin:0 0 8px;max-width:66ch}
+.calc{font:14px/1.75 "JetBrains Mono",monospace;margin-top:6px;overflow-wrap:anywhere}
+.calc b{color:var(--hop)}
+.con{margin:6px 0 0;background:#0b0e13;color:#d6dbe3;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.6;min-height:120px;max-height:240px;overflow:auto;white-space:pre}
+.con .last{color:#ffd166}
+.q{margin-top:10px;padding:12px;border:2px solid var(--hop);border-radius:12px;background:var(--bg)}
+.q .qh{margin:0 0 4px;font-size:13px;color:var(--mute)}
+.q p{margin:0 0 8px;font-weight:600}
+.q .opts{display:flex;flex-wrap:wrap;gap:8px}
+.q .opts button{font-family:"JetBrains Mono",monospace}
+.q .fb{margin:8px 0 0;font-weight:400}
+.q .fb.ok{color:var(--int)}.q .fb.no{color:var(--ptr)}
+.note{font-size:13px;color:var(--mute);margin:8px 0 0}
+@media(max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}.fig{order:-1;min-height:560px}.bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.bottom .conc{grid-column:1/-1}}
+@media(max-width:600px){.fig{min-height:520px}.bottom{grid-template-columns:minmax(0,1fr)}.legend .hint{display:none}h1{font-size:30px}}
+@media(max-width:900px){.wrap{display:flex;flex-direction:column}.stage{display:contents}.crumbs{order:0}header{order:1}.fig{order:2}.bar{order:3}.code{order:4;margin-bottom:16px}.bottom{order:5}.pager{order:6}}
+</style>
+</head>
+<body>
+<button id="theme" class="themebtn" type="button" aria-label="Cambiar a tema oscuro" title="Cambiar tema"></button>
+<div class="wrap">
+<nav class="crumbs" aria-label="Navegación"><a href="index2.html">← Apuntadores en C</a><span>Módulo 7 de 10</span></nav>
+<header>
+  <h1>Apuntadores a apuntadores</h1>
+  <p class="lead">Módulo 7 · Un apuntador también vive en memoria, así que otro apuntador puede guardar su dirección. Aquí ves la cadena <code>pppc → ppc → pc → c</code> y una matriz <code>int **</code> con filas de distinto tamaño en el montón. Basado en <code>fentanilo13.c</code> y <code>PUNT4.CPP</code>.</p>
+</header>
+
+<section class="stage">
+  <div class="card code">
+    <div class="hd"><h2>dobles.c</h2><span class="stepn" id="lineTag">línea 3</span></div>
+    <div class="src mono" id="src"></div>
+    <div class="watch" id="watch"></div>
+  </div>
+  <div class="fig" id="fig">
+    <div class="labels" id="labels"></div>
+    <div class="badge"><div class="pill" id="pill"></div></div>
+    <div class="legend">
+      <span><i style="background:var(--chr)"></i>char</span>
+      <span><i style="background:var(--ptr)"></i>apuntador</span>
+      <span><i style="background:var(--int)"></i>int</span>
+      <span><i style="background:var(--hop)"></i>lo que se lee</span>
+      <span><i style="background:var(--pad)"></i>basura / hueco</span>
+      <span class="hint">Arrastra para girar · rueda para acercar</span>
+    </div>
+  </div>
+</section>
+
+<div class="bar">
+  <button id="bReset" type="button">⟲ Reiniciar</button>
+  <button id="bPrev" type="button" title="Paso anterior (←)">◀ Atrás</button>
+  <button id="bPlay" type="button" class="pri">▶ Reproducir</button>
+  <button id="bNext" type="button" title="Paso siguiente (→)">Adelante ▶</button>
+  <div class="grow"><input id="scrub" type="range" min="0" value="0" aria-label="Paso"><span class="stepn" id="stepn"></span></div>
+  <label class="tg"><input id="tBytes" type="checkbox">Ver bytes</label>
+  <label class="tg"><input id="tPred" type="checkbox">Modo predice</label>
+  <span class="score" id="score" hidden></span>
+</div>
+
+<section class="bottom">
+  <div class="card"><h2>Qué está pasando</h2><div id="expl"></div></div>
+  <div class="card"><h2>El cálculo</h2><div class="calc" id="calc"></div></div>
+  <div class="card conc"><h2>Consola</h2><pre class="con" id="con"></pre>
+    <p class="note">Direcciones de ejemplo: en tu equipo serán otras y pueden cambiar en cada ejecución. El orden de las variables lo decide el compilador; aquí se muestra uno típico. Por simplicidad no se dibuja el control que glibc guarda junto a cada bloque del montón (módulo 5); con bloques tan pequeños, cada uno ocupa 32 bytes (0x20) en total, por eso están a esa distancia.</p></div>
+</section>
+<nav class="pager" aria-label="Módulos"><a href="modulo6.html">← Módulo 6 · El apuntador genérico</a><a class="nx" href="modulo8.html">Módulo 8 · Apuntadores y funciones →</a></nav>
+</div>
+
+<div id="probes" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <i data-c="chr" style="color:var(--chr)"></i><i data-c="mute" style="color:var(--mute)"></i><i data-c="ptr" style="color:var(--ptr)"></i><i data-c="sht" style="color:var(--sht)"></i><i data-c="int" style="color:var(--int)"></i><i data-c="dbl" style="color:var(--dbl)"></i><i data-c="hop" style="color:var(--hop)"></i><i data-c="pad" style="color:var(--pad)"></i><i data-c="scene" style="color:var(--scene)"></i><i data-c="line" style="color:var(--line)"></i><i data-c="ink" style="color:var(--ink)"></i>
+</div>
+
+<script src="js/three.min.js"></script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const B = 0x7ffd5e3c1a10, H0 = 0x55a4c1f2b2a0;
+const BLK = {A: H0, F0: H0 + 0x20, F1: H0 + 0x40};
+const hex = n => '0x' + n.toString(16);
+const sh = n => '0x…' + n.toString(16).slice(-4);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/* ---------- Programa ---------- */
+const CODE = [
+ '#include <stdio.h>',
+ '#include <stdlib.h>',
+ '',
+ 'int main(void)',
+ '{',
+ "    char    c    = 'z';",
+ '    char   *pc   = &c;        // dirección de c',
+ '    char  **ppc  = &pc;       // dirección de pc',
+ '    char ***pppc = &ppc;      // dirección de ppc',
+ '    printf("%c %c %c %c\\n", c, *pc, **ppc, ***pppc);',
+ '',
+ "    ***pppc = 'w';            // tres saltos: llega hasta c",
+ '    printf("c = %c\\n", c);',
+ '',
+ '    int **p = malloc(2 * sizeof(int *));   // 2 apuntadores a fila',
+ '    p[0] = malloc(3 * sizeof(int));         // fila 0: 3 enteros',
+ '    p[1] = malloc(1 * sizeof(int));         // fila 1: 1 entero',
+ '    p[0][0] = 4; p[0][1] = 5; p[0][2] = 6;',
+ '    p[1][0] = 9;',
+ '    printf("%d %d\\n", p[0][2], p[1][0]);',
+ '',
+ '    free(p[0]); free(p[1]);   // primero las filas...',
+ '    free(p);                   // ...después el arreglo de apuntadores',
+ '    return 0;',
+ '}'
+];
+const VCLS = {c: 'v-chr', pc: 'v-ptr', ppc: 'v-ptr', pppc: 'v-ptr', p: 'v-ptr'};
+const TOK = /(\/\/.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)')|(#include|<stdio\.h>|<stdlib\.h>)|\b(int|char|return|void|sizeof)\b|\b(pppc|ppc|pc|c|p)\b|\b(malloc|free)\b|\b(\d+)\b/g;
+function hl(line) {
+  let out = '', last = 0, m; TOK.lastIndex = 0;
+  while ((m = TOK.exec(line))) {
+    out += esc(line.slice(last, m.index));
+    const t = esc(m[0]);
+    if (m[1]) out += `<span class="c">${t}</span>`;
+    else if (m[2]) out += `<span class="s">${t}</span>`;
+    else if (m[3] || m[4]) out += `<span class="k">${t}</span>`;
+    else if (m[5]) out += `<span class="${VCLS[m[5]]}">${t}</span>`;
+    else if (m[6]) out += `<span class="fn">${t}</span>`;
+    else out += `<span class="num">${t}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(line.slice(last));
+}
+$('#src').innerHTML = CODE.map((l, i) => `<div class="ln" data-l="${i + 1}"><span class="n">${i + 1}</span><span>${hl(l) || ' '}</span></div>`).join('');
+
+/* ---------- Casillas ---------- */
+const SL = [
+  {id: 'c', label: 'c', type: 'char', zone: 'S', row: 0, c0: 0, size: 1, kind: 'chr'},
+  {id: 'h1', label: 'hueco', type: '', zone: 'S', row: 0, c0: 1, size: 7, kind: 'pad'},
+  {id: 'pc', label: 'pc', type: 'char *', zone: 'S', row: 0, c0: 8, size: 8, kind: 'ptr'},
+  {id: 'ppc', label: 'ppc', type: 'char **', zone: 'S', row: 1, c0: 0, size: 8, kind: 'ptr'},
+  {id: 'pppc', label: 'pppc', type: 'char ***', zone: 'S', row: 1, c0: 8, size: 8, kind: 'ptr'},
+  {id: 'p', label: 'p', type: 'int **', zone: 'S', row: 2, c0: 0, size: 8, kind: 'ptr'},
+  {id: 'h2', label: 'otros datos', type: '', zone: 'S', row: 2, c0: 8, size: 8, kind: 'pad'},
+  {id: 'p0', label: 'p[0]', type: 'int *', zone: 'H', row: 0, c0: 0, size: 8, kind: 'ptr', blk: 'A'},
+  {id: 'p1', label: 'p[1]', type: 'int *', zone: 'H', row: 0, c0: 8, size: 8, kind: 'ptr', blk: 'A'},
+  {id: 'f00', label: '[0]', type: '', zone: 'H', row: 1, c0: 0, size: 4, kind: 'int', blk: 'F0'},
+  {id: 'f01', label: '[1]', type: '', zone: 'H', row: 1, c0: 4, size: 4, kind: 'int', blk: 'F0'},
+  {id: 'f02', label: '[2]', type: '', zone: 'H', row: 1, c0: 8, size: 4, kind: 'int', blk: 'F0'},
+  {id: 'f10', label: '[0]', type: '', zone: 'H', row: 2, c0: 0, size: 4, kind: 'int', blk: 'F1'}
+];
+const SB = id => SL.find(v => v.id === id);
+const addr = id => { const v = SB(id); return v.zone === 'S' ? B + v.row * 16 + v.c0 : BLK[v.blk] + v.c0; };
+const le = (n, k) => { const b = []; for (let i = 0; i < k; i++) b.push((Math.floor(n / 256 ** i) % 256).toString(16).padStart(2, '0')); return b; };
+const alive = (v, s) => v.zone === 'S' ? s.frame : s.blk[v.blk] === 'used';
+const valOf = (v, s) => !alive(v, s) || v.kind === 'pad' ? null : s.vals[v.id];
+const showVal = (v, val) => val === null || val === undefined ? '?' : v.kind === 'chr' ? `'${val}'` : v.kind === 'ptr' ? sh(addr(val)) : String(val);
+function bytesOf(v, val) {
+  if (val === null || val === undefined) return Array(v.size).fill('??');
+  if (v.kind === 'chr') return [val.charCodeAt(0).toString(16)];
+  if (v.kind === 'ptr') return le(addr(val), 8);
+  return le(val, v.size);
+}
+
+/* ---------- Pasos ---------- */
+const C = id => `<code class="${VCLS[id] || 'v-int'}">${id}</code>`;
+const steps = [];
+let cur = {line: 4, frame: true, vals: {}, blk: {A: 'none', F0: 'none', F1: 'none'}, out: []};
+function push(o, outLine) {
+  const s = Object.assign({}, cur, {glow: [], rd: null, tag: '', q: null}, o);
+  s.vals = Object.assign({}, cur.vals, o.vals || {});
+  s.blk = Object.assign({}, cur.blk, o.blk || {});
+  s.out = outLine ? cur.out.concat([outLine]) : cur.out; s.fresh = !!outLine;
+  steps.push(s); cur = s;
+}
+push({line: 4, title: 'Apuntadores que apuntan a apuntadores',
+  expl: `<p>Primero, una cadena: ${C('pppc')} apuntará a ${C('ppc')}, que apuntará a ${C('pc')}, que apuntará a ${C('c')}. Después, una matriz en el montón con filas de distinto tamaño, como en <code>fentanilo13.c</code>.</p>`,
+  calc: `pila:   ${hex(B)}…<br>montón: ${hex(H0)}…`});
+push({line: 6, vals: {c: 'z'}, glow: ['c'], title: 'Un char', expl: `<p>${C('c')} ocupa 1 byte y guarda <code>'z'</code> (<code>0x7a</code>).</p>`, calc: `&c = ${hex(addr('c'))}`});
+push({line: 7, vals: {pc: 'c'}, glow: ['pc'], title: 'pc = &c',
+  expl: `<p>Como en el módulo 2: ${C('pc')} es <code>char *</code> y guarda la dirección de ${C('c')}. Primera flecha.</p>`,
+  calc: `pc = &c = <b>${hex(addr('c'))}</b>`});
+push({line: 8, vals: {ppc: 'pc'}, glow: ['ppc'], title: 'ppc = &pc',
+  expl: `<p>${C('ppc')} es <code>char **</code>: un <b>apuntador a un apuntador</b> a char. Guarda la dirección de ${C('pc')}, no la de c: su flecha llega a las casillas de pc.</p>`,
+  calc: `ppc = &pc = <b>${hex(addr('pc'))}</b>`,
+  q: {text: '¿Qué dirección guardará ppc?', opts: [`la de c (${sh(addr('c'))})`, `la de pc (${sh(addr('pc'))})`, "el carácter 'z'"], ans: 1, why: 'ppc = &pc: guarda la dirección de pc.', hint: 'Lee el lado derecho: ¿de quién es la dirección que se toma con &?'}});
+push({line: 9, vals: {pppc: 'ppc'}, glow: ['pppc'], title: 'pppc = &ppc',
+  expl: `<p>Un nivel más: ${C('pppc')} es <code>char ***</code> y guarda la dirección de ${C('ppc')}. Se pueden encadenar tantos niveles como se quiera, aunque en la práctica rara vez se pasa de dos.</p>`,
+  calc: `pppc = &ppc = <b>${hex(addr('ppc'))}</b>`});
+push({line: 10, glow: ['c'], rd: 'c', tag: "***pppc: 3 saltos → 'z'", title: 'Cada * sigue una flecha',
+  expl: `<p><code>*pppc</code> es lo que guarda ppc: la dirección de pc.<br><code>**pppc</code> es lo que guarda pc: la dirección de c.<br><code>***pppc</code> es lo que guarda c: <code>'z'</code>.</p><p>Las cuatro expresiones del printf llegan a la misma casilla, por caminos de distinto largo.</p>`,
+  calc: `*pppc   = ${sh(addr('pc'))} (&pc)<br>**pppc  = ${sh(addr('c'))} (&c)<br>***pppc = <b>'z'</b>`,
+  q: {text: '¿Cuántas flechas sigue ***pppc para llegar a c?', opts: ['1', '2', '3'], ans: 2, why: 'Un * por flecha: pppc → ppc → pc → c.', hint: 'Cuenta los asteriscos.'}}, 'z z z z');
+push({line: 12, vals: {c: 'w'}, glow: ['c'], rd: 'c', tag: "***pppc = 'w'", title: 'Escribir a tres saltos de distancia',
+  expl: `<p>Se siguen las tres flechas y se escribe al final: cambia ${C('c')}. Ninguno de los apuntadores de la cadena cambió.</p>`,
+  calc: `***pppc = 'w'<br>c = <b>'w'</b> (0x77)`,
+  q: {text: "¿Qué variable cambiará con ***pppc = 'w'?", opts: ['pppc', 'pc', 'c'], ans: 2, why: 'Al final de las tres flechas está c.', hint: '¿A dónde llegas si sigues las tres flechas?'}});
+push({line: 13, title: 'c cambió', expl: `<p>${C('c')} ahora vale <code>'w'</code>, aunque la línea anterior nunca la nombró.</p>`, calc: `c = 'w'`}, 'c = w');
+push({line: 15, vals: {p: 'p0'}, blk: {A: 'used'}, glow: ['p'], title: 'Un bloque de apuntadores',
+  expl: `<p>Segunda parte. ${C('p')} es <code>int **</code>. <code>malloc</code> aparta en el montón espacio para <b>2 apuntadores</b> (2 × 8 = 16 bytes): uno por fila de la matriz. Todavía tienen basura.</p>`,
+  calc: `malloc(2 * sizeof(int *))<br>= malloc(16)<br>→ p = <b>${hex(BLK.A)}</b>`});
+push({line: 16, vals: {p0: 'f00'}, blk: {F0: 'used'}, glow: ['p0'], title: 'La fila 0',
+  expl: `<p><code>p[0]</code> es la primera casilla del bloque de apuntadores. Ahí se guarda la dirección de un nuevo bloque de 3 enteros (12 bytes): la fila 0.</p>`,
+  calc: `malloc(3 * sizeof(int)) = malloc(12)<br>→ p[0] = <b>${hex(BLK.F0)}</b>`,
+  q: {text: '¿Qué guardará p[0] después de esta línea?', opts: ['El número 3', 'La dirección de un bloque de 3 enteros', 'La dirección de p'], ans: 1, why: 'malloc devuelve una dirección, y se guarda en p[0].', hint: '¿Qué devuelve malloc?'}});
+push({line: 17, vals: {p1: 'f10'}, blk: {F1: 'used'}, glow: ['p1'], title: 'La fila 1, más corta',
+  expl: `<p>La fila 1 tiene solo 1 entero. Cada fila puede medir distinto, cosa que no se puede con un arreglo normal <code>int a[2][3]</code>, donde todas las filas son iguales, van pegadas en memoria y no hay bloque de apuntadores. En <code>fentanilo13.c</code> el usuario decide cuántos elementos lleva cada fila.</p>`,
+  calc: `malloc(1 * sizeof(int)) = malloc(4)<br>→ p[1] = <b>${hex(BLK.F1)}</b>`});
+push({line: 18, vals: {f00: 4, f01: 5, f02: 6}, glow: ['f00', 'f01', 'f02'], title: 'Llenar la fila 0',
+  expl: `<p><code>p[0][1]</code> da dos saltos: primero de ${C('p')} al bloque de apuntadores, donde lee <code>p[0]</code>; luego de esa dirección a la fila 0, y avanza 1 entero.</p>`,
+  calc: `p[i][j] = *(*(p + i) + j)<br>p[0] = ${sh(BLK.F0)}<br>p[0][1] en ${sh(BLK.F0 + 4)}`});
+push({line: 19, vals: {f10: 9}, glow: ['f10'], title: 'Llenar la fila 1', expl: `<p>La fila 1 tiene un solo lugar: <code>p[1][0]</code>. Escribir en <code>p[1][1]</code> sería salirse del bloque (comportamiento indefinido).</p>`, calc: `p[1][0] en ${sh(BLK.F1)} = 9`});
+push({line: 20, glow: ['f02', 'f10'], rd: 'f02', tag: 'p[0][2]: 2 saltos → 6', title: 'Dos índices, dos flechas',
+  expl: `<p><code>p[0][2]</code>: de ${C('p')} al bloque de apuntadores (primer salto), de <code>p[0]</code> a la fila 0 (segundo salto), y 2 enteros adelante: 6. <code>p[1][0]</code> hace lo mismo por la fila 1: 9.</p>`,
+  calc: `p[0][2] = <b>6</b><br>p[1][0] = <b>9</b>`,
+  q: {text: '¿Cuántas flechas sigue p[0][2]?', opts: ['1', '2', '3'], ans: 1, why: 'Una por cada índice: p → p[0] → fila 0.', hint: 'Aquí, con int **, cada [ ] equivale a un *.'}}, '6 9');
+push({line: 22, blk: {F0: 'freed', F1: 'freed'}, title: 'Primero las filas',
+  expl: `<p>Se liberan las dos filas. <code>p[0]</code> y <code>p[1]</code> siguen guardando sus direcciones: quedaron <b>colgantes</b> (flechas grises).</p>`,
+  calc: `free(${sh(BLK.F0)})<br>free(${sh(BLK.F1)})`});
+push({line: 23, blk: {A: 'freed'}, title: 'Después el bloque de apuntadores',
+  expl: `<p>Ahora sí se libera el bloque de apuntadores. Si se hubiera liberado primero, <code>p[0]</code> y <code>p[1]</code> ya no serían nuestros y no habría forma segura de leer las direcciones de las filas: se fugarían. <code>free(p)</code> no libera las filas por su cuenta.</p>`,
+  calc: `free(${sh(BLK.A)})<br>p queda colgante`,
+  q: {text: '¿Por qué se liberaron primero las filas?', opts: ['El orden no importa', 'Si se libera p primero, ya no se pueden leer las direcciones de las filas', 'free(p) libera también las filas'], ans: 1, why: 'Las direcciones de las filas viven dentro del bloque de p.', hint: '¿Dónde están guardadas las direcciones de las filas?'}});
+push({line: 24, frame: false, title: 'main termina',
+  expl: `<p>Resumen: <code>char **</code> e <code>int **</code> guardan la dirección de <b>otro apuntador</b>. Con apuntadores, cada <code>*</code> o cada <code>[ ]</code> sigue una flecha. Con <code>int **</code> se arman matrices con filas de distinto largo: un bloque de apuntadores y un bloque por fila; al liberar, primero las filas y al final el bloque de apuntadores.</p>`,
+  calc: `return 0 → terminó bien`});
+
+/* ---------- Estado ---------- */
+let k = 0, playing = false, timer = null, qTimer = null, showBytes = false, predict = false;
+let answered = {}, tried = {}, score = {ok: 0, n: 0};
+const askNext = () => predict && k + 1 < steps.length && steps[k + 1].q && !answered[k + 1];
+
+/* ---------- Escena 3D ---------- */
+const fig = $('#fig'), labelsEl = $('#labels');
+const BW = 0.55, BOX = 0.5, BH = 0.32, BD = 0.9;
+const bx = c => (c - 7.5) * BW;
+const ZR = {S: [-5.6, -3.5, -1.4], H: [1.7, 3.6, 5.5]};
+const zOf = v => ZR[v.zone][v.row];
+let gl = null;
+try {
+  const rnd = new THREE.WebGLRenderer({antialias: true});
+  rnd.setPixelRatio(Math.min(devicePixelRatio, 2));
+  fig.prepend(rnd.domElement); gl = {rnd};
+} catch (e) {
+  fig.insertAdjacentHTML('afterbegin', '<div class="nogl">No se pudo iniciar la escena 3D (WebGL o la biblioteca three.js no cargó). La explicación y la consola siguen funcionando abajo.</div>');
+}
+const col = {};
+const readColors = () => document.querySelectorAll('#probes i').forEach(el => { col[el.dataset.c] = new THREE.Color(getComputedStyle(el).color); });
+
+if (gl) {
+  readColors();
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8890a0, 0.75));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.75); dl.position.set(-4, 10, 7); scene.add(dl);
+  const trayMat = new THREE.MeshStandardMaterial({roughness: 1}), edgeMat = new THREE.LineBasicMaterial();
+  const mkTray = (z0, z1) => {
+    const g = new THREE.BoxGeometry(16 * BW + 1.2, .06, z1 - z0);
+    const m = new THREE.Mesh(g, trayMat); m.position.set(0, -BH / 2 - .08, (z0 + z1) / 2); scene.add(m);
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(g), edgeMat); e.position.copy(m.position); scene.add(e);
+  };
+  mkTray(ZR.S[0] - .8, ZR.S[2] + .9); mkTray(ZR.H[0] - .8, ZR.H[2] + .9);
+  const hopMat = new THREE.MeshStandardMaterial({roughness: .5}), ptrMat = new THREE.MeshStandardMaterial({roughness: .5}), dangMat = new THREE.MeshStandardMaterial({roughness: .5});
+  const labels = [];
+  const mkLabel = (cls, pos, html, anchor) => {
+    const el = document.createElement('div'); el.className = 'lb ' + cls; el.innerHTML = html || '';
+    labelsEl.appendChild(el); const Lb = {el, pos, cls, show: true, anchor: anchor || 'c'}; labels.push(Lb); return Lb;
+  };
+  const tname = v => v.type ? `<span class="t">${v.type}</span>${v.type.endsWith('*') ? '' : ' '}${v.label}` : v.label;
+  SL.forEach(v => {
+    v.z = zOf(v); v.cx = (bx(v.c0) + bx(v.c0 + v.size - 1)) / 2; v.y = 0; v.yT = 0; v.op = 1; v.opT = 1; v.mats = []; v.meshes = [];
+    for (let b = 0; b < v.size; b++) {
+      const m = new THREE.MeshStandardMaterial({roughness: .55, metalness: .05, transparent: true});
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(BOX, BH, BD), m);
+      mesh.position.set(bx(v.c0 + b), 0, v.z); scene.add(mesh); v.mats.push(m); v.meshes.push(mesh);
+    }
+    v.lName = mkLabel(v.kind === 'pad' ? 'pd' : 'nm', new THREE.Vector3(v.cx, -BH / 2, v.z + BD / 2 + .12), tname(v), 't');
+    v.lVal = v.kind === 'pad' ? null : mkLabel('val', new THREE.Vector3(v.cx, BH / 2, v.z), '?');
+    v.lBytes = [];
+    for (let b = 0; b < v.size; b++) v.lBytes.push(mkLabel('val by', new THREE.Vector3(bx(v.c0 + b), BH / 2, v.z), '??'));
+  });
+  const rowL = [];
+  ZR.S.forEach((z, r) => rowL.push({L: mkLabel('row', new THREE.Vector3(bx(0) - BW * .75, 0, z), '', 'r'), a: B + 16 * r}));
+  [['A', 'bloque de p'], ['F0', 'fila 0'], ['F1', 'fila 1']].forEach(([b, n], r) => rowL.push({L: mkLabel('row', new THREE.Vector3(bx(0) - BW * .75, 0, ZR.H[r]), '', 'r'), a: BLK[b], blk: b}));
+  const zoneS = mkLabel('zone', new THREE.Vector3(bx(15) + BW * .5, -BH / 2, ZR.S[0] - .8), 'Pila', 'br');
+  const zoneH = mkLabel('zone', new THREE.Vector3(bx(15) + BW * .5, -BH / 2, ZR.H[0] - .8), 'Montón', 'br');
+  const tagL = mkLabel('tag', new THREE.Vector3(), '', 'b');
+
+  const brace = new THREE.Group(); scene.add(brace);
+  let braceFor = null;
+  function buildBrace(v) {
+    brace.children.slice().forEach(o => { o.geometry.dispose(); brace.remove(o); });
+    braceFor = v; if (!v) return;
+    const w = Math.max(.4, v.size * BW - .08), y = .62;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, .06, .06), hopMat); bar.position.set(v.cx, y, 0); brace.add(bar);
+    [-1, 1].forEach(sgn => { const t = new THREE.Mesh(new THREE.BoxGeometry(.06, .22, .06), hopMat); t.position.set(v.cx + sgn * w / 2, y - .08, 0); brace.add(t); });
+    brace.position.z = v.z;
+  }
+  const top = (x, z, y) => new THREE.Vector3(x, (y || 0) + BH / 2 + .03, z);
+  function arc(from, to, h, prog, mat, rad) {
+    const g = new THREE.Group(); if (prog <= .001) return g;
+    const mid = from.clone().add(to).multiplyScalar(.5); mid.y = Math.max(from.y, to.y) + h;
+    const cv = new THREE.QuadraticBezierCurve3(from, mid, to);
+    const pts = []; for (let i = 0; i <= 28; i++) pts.push(cv.getPoint(prog * i / 28));
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 36, rad, 7, false), mat));
+    const end = cv.getPoint(prog), tg = cv.getTangent(prog).normalize();
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(rad * 3, rad * 7, 12), mat);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tg); cone.position.copy(end).addScaledVector(tg, -rad * 3.5);
+    g.add(cone); return g;
+  }
+  const dispose = g => { if (!g) return; g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); scene.remove(g); };
+  const PTRS = SL.filter(v => v.kind === 'ptr');
+  const AR = {}; PTRS.forEach(v => AR[v.id] = {key: '', prog: 0, g: null, to: null, dang: false});
+
+  function paint() {
+    const s = steps[k];
+    SL.forEach(v => {
+      let c, op = 1;
+      const st = v.zone === 'H' ? s.blk[v.blk] : (s.frame ? 'used' : 'gone');
+      if (v.kind === 'pad') c = col.pad.clone();
+      else {
+        c = ({chr: col.chr, ptr: col.ptr, int: col.int})[v.kind].clone();
+        if (st === 'none') c = col.pad.clone();
+        else if (st !== 'used' || s.vals[v.id] === undefined || s.vals[v.id] === null) c.lerp(col.pad, .78);
+      }
+      if (v.zone === 'H') op = st === 'none' ? .3 : st === 'freed' ? .55 : 1;
+      if (v.zone === 'S' && !s.frame) op = .5;
+      v.opT = op;
+      const gw = s.glow.includes(v.id);
+      v.mats.forEach(m => { m.color.copy(c); m.emissive.copy(gw ? col.hop : new THREE.Color(0)); m.emissiveIntensity = gw ? .3 : 0; });
+    });
+  }
+  function recolor() {
+    readColors(); scene.background = col.scene.clone();
+    trayMat.color.copy(col.scene).lerp(col.ink, .06); edgeMat.color.copy(col.line); hopMat.color.copy(col.hop); ptrMat.color.copy(col.ptr); dangMat.color.copy(col.mute);
+    paint();
+  }
+  let az = -0.16, el = 1.0, zoom = 1, dist = 16;
+  const target = new THREE.Vector3(-.35, 0, .6);
+  const elFor = () => fig.clientWidth / fig.clientHeight < 1.25 ? 1.12 : 1.0;
+  function fit() {
+    const W = fig.clientWidth, H = fig.clientHeight;
+    gl.rnd.setSize(W, H, false); camera.aspect = W / H;
+    el = elFor(); const nar = W < 600; target.x = nar ? -.95 : -.35;
+    const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const halfW = 16 * BW / 2 + (nar ? 2.6 : 1.9), halfH = 7.2 * Math.sin(el) + 2.2;
+    dist = Math.max(halfW / (t * camera.aspect), halfH / t) + 1;
+    camera.updateProjectionMatrix();
+  }
+  const ro = new ResizeObserver(fit); ro.observe(fig); fit();
+  let drag = null;
+  gl.rnd.domElement.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, az, el, type: e.pointerType}; fig.style.cursor = 'grabbing'; });
+  addEventListener('pointermove', e => {
+    if (!drag) return;
+    az = Math.max(-1.1, Math.min(1.1, drag.az - (e.clientX - drag.x) * .006));
+    if (drag.type === 'mouse') el = Math.max(.3, Math.min(1.4, drag.el + (e.clientY - drag.y) * .005));
+  });
+  addEventListener('pointerup', () => { drag = null; fig.style.cursor = ''; });
+  addEventListener('pointercancel', () => { drag = null; fig.style.cursor = ''; });
+  gl.rnd.domElement.addEventListener('wheel', e => { e.preventDefault(); zoom = Math.max(.45, Math.min(1.6, zoom * (1 + Math.sign(e.deltaY) * .08))); }, {passive: false});
+  gl.rnd.domElement.addEventListener('dblclick', () => { az = -0.16; el = elFor(); zoom = 1; });
+
+  let prevBlk = null;
+  gl.sync = () => {
+    const s = steps[k];
+    SL.forEach(v => {
+      v.yT = s.glow.includes(v.id) ? .2 : 0;
+      if (v.zone === 'H') { const st = s.blk[v.blk], was = prevBlk ? prevBlk[v.blk] : 'none'; if (st === 'used' && was !== 'used' && !reduce) v.y = -.6; if (st !== 'used') v.yT = -.08; }
+    });
+    prevBlk = s.blk;
+    paint();
+    const rv = s.rd ? SB(s.rd) : null;
+    if (rv !== braceFor) buildBrace(rv);
+    tagL.el.innerHTML = esc(s.tag || '');
+    PTRS.forEach(v => {
+      const A = AR[v.id], to = alive(v, s) ? s.vals[v.id] || null : null;
+      const dang = !!(to && SB(to).zone === 'H' && s.blk[SB(to).blk] !== 'used');
+      const key = to ? to + (dang ? 'd' : '') : '';
+      if (key !== A.key) { const same = A.to === to && to; A.key = key; A.to = to; A.dang = dang; dispose(A.g); A.g = null; A.prog = !to ? 0 : (same || reduce ? 1 : 0); }
+    });
+    SL.forEach(v => {
+      const val = valOf(v, s), kn = val !== null && val !== undefined;
+      if (v.lVal) { v.lVal.el.textContent = showVal(v, val); v.lVal.el.classList.toggle('dim', !kn); }
+      const b = bytesOf(v, kn ? val : null);
+      v.lBytes.forEach((Lb, i) => { Lb.el.textContent = b[i]; Lb.el.classList.toggle('dim', !kn); });
+    });
+  };
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    const d = dist * zoom;
+    camera.position.set(target.x + d * Math.cos(el) * Math.sin(az), target.y + d * Math.sin(el), target.z + d * Math.cos(el) * Math.cos(az));
+    camera.lookAt(target);
+    const f = reduce ? 1 : Math.min(1, dt * 9);
+    let moving = false;
+    SL.forEach(v => {
+      const dy = (v.yT - v.y) * f; if (Math.abs(dy) > 1e-4) moving = true; v.y += dy; v.op += (v.opT - v.op) * f;
+      v.meshes.forEach(m => m.position.y = v.y); v.mats.forEach(m => { m.opacity = v.op; m.depthWrite = v.op > .9; });
+    });
+    if (braceFor) brace.position.y = braceFor.y + BH / 2;
+    PTRS.forEach(v => {
+      const A = AR[v.id];
+      if (!A.to) return;
+      if (A.prog < 1 || !A.g || moving) {
+        A.prog = Math.min(1, A.prog + dt * 1.5);
+        dispose(A.g);
+        const dst = SB(A.to), tx = bx(dst.c0);
+        const from = top(v.cx + Math.max(-1.1, Math.min(1.1, tx - v.cx)), v.z, v.y), to = top(tx, dst.z, dst.y);
+        const dz = Math.abs(dst.z - v.z);
+        A.g = arc(from, to, 1.1 + dz * .22, A.prog, A.dang ? dangMat : ptrMat, .05); scene.add(A.g);
+      }
+    });
+    const W = fig.clientWidth, H = fig.clientHeight;
+    const p1 = new THREE.Vector3(bx(0), 0, 0).project(camera), p2 = new THREE.Vector3(bx(1), 0, 0).project(camera);
+    const bytePx = Math.abs(p2.x - p1.x) * W / 2;
+    const s = steps[k];
+    SL.forEach(v => {
+      const live = v.zone === 'S' || s.blk[v.blk] !== 'none';
+      if (v.lVal) { v.lVal.show = !showBytes && live; v.lVal.pos.y = BH / 2 + v.y; }
+      v.lBytes.forEach(Lb => { Lb.show = showBytes && live && bytePx >= 21; Lb.pos.y = BH / 2 + v.y; });
+      v.lName.show = live && (v.kind !== 'pad' || bytePx >= 30);
+      if (v.type && v.kind !== 'pad') { const html = bytePx < 28 ? v.label : tname(v); if (v.lName.el.innerHTML !== html) v.lName.el.innerHTML = html; }
+    });
+    rowL.forEach(({L, a, blk}) => { L.el.textContent = W > 760 ? hex(a) : sh(a); L.show = !blk || s.blk[blk] !== 'none'; });
+    tagL.show = !!(braceFor && s.tag);
+    if (tagL.show) tagL.pos.set(braceFor.cx, braceFor.y + BH / 2 + .9, braceFor.z);
+    const v3 = new THREE.Vector3();
+    labels.forEach(Lb => {
+      if (!Lb.show) { if (Lb.el.style.display !== 'none') Lb.el.style.display = 'none'; return; }
+      v3.copy(Lb.pos).project(camera);
+      if (v3.z > 1) { Lb.el.style.display = 'none'; return; }
+      let x = (v3.x + 1) / 2 * W; const y = (1 - v3.y) / 2 * H;
+      if (Lb === tagL) { const hw = Lb.el.offsetWidth / 2 + 8; x = Math.max(hw, Math.min(W - hw, x)); }
+      Lb.el.style.display = '';
+      const tr = {c: '-50%,-50%', t: '-50%,0', r: '-100%,-50%', b: '-50%,-100%', bl: '0,-100%', br: '-100%,-100%'}[Lb.anchor];
+      Lb.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(${tr})`;
+    });
+    gl.rnd.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+  gl.recolor = recolor; gl.reset = () => { prevBlk = null; };
+  recolor();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Paneles ---------- */
+function render() {
+  const s = steps[k], ask = askNext(), nx = ask ? steps[k + 1] : null;
+  document.querySelectorAll('.ln').forEach(l => { l.classList.toggle('cur', +l.dataset.l === s.line); l.classList.toggle('nxt', !!nx && +l.dataset.l === nx.line); });
+  $('#lineTag').textContent = 'línea ' + s.line;
+  const w = id => {
+    const v = SB(id), val = valOf(v, s), st = v.zone === 'H' ? s.blk[v.blk] : null;
+    const txt = v.zone === 'S' && !s.frame ? '—' : st === 'none' ? '—' : st === 'freed' ? 'liberado' : val === null || val === undefined ? '? (basura)' : showVal(v, val) + (v.kind === 'ptr' ? ' → ' + ({f00: 'fila 0', f10: 'fila 1', p0: 'bloque de p'}[val] || SB(val).label) : '');
+    return `<div class="w"><i style="background:var(--${v.kind})"></i><code>${v.type}${v.type.endsWith('*') ? '' : ' '}${v.label}</code><span>${txt}</span></div>`;
+  };
+  $('#watch').innerHTML = ['c', 'pc', 'ppc', 'pppc', 'p', 'p0', 'p1'].map(w).join('');
+  let ex = `<h3>${s.title}</h3>${s.expl}`;
+  if (ask) ex += `<div class="q"><p class="qh">Antes de ejecutar la línea ${nx.line}:</p><p>${esc(nx.q.text)}</p><div class="opts">${nx.q.opts.map((o, i) => `<button type="button" data-o="${i}">${esc(o)}</button>`).join('')}</div><p class="fb" id="fb"></p></div>`;
+  $('#expl').innerHTML = ex;
+  $('#calc').innerHTML = s.calc;
+  const lines = s.out.map(esc);
+  if (s.fresh && lines.length) lines[lines.length - 1] = `<span class="last">${lines[lines.length - 1]}</span>`;
+  const con = $('#con'); con.innerHTML = lines.join('\n') || '<span style="opacity:.5">(todavía no se imprime nada)</span>'; con.scrollTop = con.scrollHeight;
+  const blkUsed = Object.values(s.blk).filter(x => x === 'used').length;
+  $('#pill').innerHTML = !s.frame ? 'main terminó' : `c = '${s.vals.c || '?'}' · bloques en el montón: ${blkUsed}`;
+  $('#scrub').value = k; $('#stepn').textContent = `Paso ${k + 1} de ${steps.length}`;
+  $('#bPrev').disabled = k === 0; $('#bNext').disabled = k === steps.length - 1;
+  const sc = $('#score'); sc.hidden = !predict; sc.textContent = `Aciertos: ${score.ok} de ${score.n}`;
+  if (gl) gl.sync();
+}
+$('#expl').addEventListener('click', e => {
+  const b = e.target.closest('button[data-o]'); if (!b || !askNext()) return;
+  const q = steps[k + 1].q, ok = +b.dataset.o === q.ans, fb = $('#fb');
+  if (!tried[k + 1]) { tried[k + 1] = true; score.n++; if (ok) score.ok++; }
+  if (ok) {
+    answered[k + 1] = true; fb.className = 'fb ok'; fb.textContent = '✓ ' + q.why;
+    b.closest('.opts').querySelectorAll('button').forEach(x => x.disabled = true);
+    const n = k + 1; qTimer = setTimeout(() => { if (k === n - 1) go(n); }, reduce ? 0 : 1400);
+  } else { fb.className = 'fb no'; fb.textContent = 'No es esa opción. ' + (q.hint || 'Vuelve a leer la línea con borde punteado.'); b.disabled = true; }
+});
+function go(n) { k = Math.max(0, Math.min(steps.length - 1, n)); render(); }
+function stop() { playing = false; clearTimeout(timer); clearTimeout(qTimer); $('#bPlay').textContent = '▶ Reproducir'; }
+const nag = () => { const fb = $('#fb'); if (fb) { fb.className = 'fb no'; fb.textContent = 'Primero elige una respuesta.'; } };
+function tick() {
+  if (!playing) return;
+  if (askNext() || k >= steps.length - 1) { stop(); return; }
+  go(k + 1);
+  if (askNext() || k >= steps.length - 1) { stop(); return; }
+  timer = setTimeout(tick, 2000);
+}
+$('#bPlay').onclick = () => {
+  if (playing) { stop(); return; }
+  if (askNext()) { nag(); return; }
+  if (k >= steps.length - 1) { answered = {}; tried = {}; score = {ok: 0, n: 0}; go(0); if (askNext()) { nag(); return; } }
+  playing = true; $('#bPlay').textContent = '❚❚ Pausa'; timer = setTimeout(tick, 400);
+};
+$('#bNext').onclick = () => { stop(); if (askNext()) nag(); else go(k + 1); };
+$('#bPrev').onclick = () => { stop(); go(k - 1); };
+$('#bReset').onclick = () => { stop(); answered = {}; tried = {}; score = {ok: 0, n: 0}; if (gl) gl.reset(); go(0); };
+$('#scrub').max = steps.length - 1;
+$('#scrub').oninput = e => { stop(); go(+e.target.value); };
+$('#tBytes').onchange = e => { showBytes = e.target.checked; };
+$('#tPred').onchange = e => { predict = e.target.checked; if (!predict) clearTimeout(qTimer); render(); };
+addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.target.closest('input[type=range],textarea')) return;
+  if (e.key === 'ArrowRight') $('#bNext').click();
+  else if (e.key === 'ArrowLeft') $('#bPrev').click();
+  else if (e.key === ' ' && !e.target.closest('button,a,input,label')) { e.preventDefault(); $('#bPlay').click(); }
+});
+
+/* ---------- Tema ---------- */
+const root = document.documentElement;
+try { const t = localStorage.getItem('punteros-tema'); if (t === 'dark' || t === 'light') root.dataset.tema = t; } catch (e) {}
+const isDark = () => root.dataset.tema ? root.dataset.tema === 'dark' : root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+const themeBtn = $('#theme');
+const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>';
+const syncTheme = () => { const d = isDark(); root.dataset.mode = d ? 'dark' : 'light'; root.style.setProperty('color-scheme', d ? 'dark' : 'light', 'important'); themeBtn.innerHTML = d ? SUN : MOON; themeBtn.setAttribute('aria-label', d ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'); if (gl) gl.recolor(); };
+themeBtn.onclick = () => { const t = isDark() ? 'light' : 'dark'; root.dataset.tema = t; try { localStorage.setItem('punteros-tema', t); } catch (e) {} };
+new MutationObserver(syncTheme).observe(root, {attributes: true, attributeFilter: ['data-theme', 'data-tema']});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme);
+syncTheme(); render();
+}
+
+</script>
+</body>
+</html>

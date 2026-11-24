@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El apuntador genérico</title>
+<script>try{var t=localStorage.getItem('punteros-tema'),r=document.documentElement;r.dataset.mode=(t?t==='dark':(r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches))?'dark':'light'}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: aula de programación, claro y preciso
+   IDEA el mismo depurador con volcado hexadecimal: dos filas de 16 bytes con un int, un double, un char y un void *
+   PICTURE la flecha de g saltando entre variables de distinto tipo y la llave ámbar que muestra cuántos bytes lee cada cast; en rojo, el cast equivocado
+   COLOUR blanco o noche #0e1116; verde int, azul double, violeta char, rojo apuntador, ámbar lo que lee el *
+   TYPE Figtree 800 + Figtree; JetBrains Mono para código y direcciones
+   LAYOUT laptop: título, [código | memoria], controles, [explicación | cálculo | consola]; teléfono: título, memoria, controles, código, resto */
+:root{--ptr:#e6261f;--bg:#ffffff;--ink:#14171c;--mute:#5b6270;--panel:#f4f6f9;--line:#dfe3ea;--scene:#eef2f8;--chr:#8a2bb8;--sht:#0b8a8a;--int:#00a05a;--dbl:#0a5cff;--hop:#e09d00;--pad:#c3c8d0;--cur:#fff1c2;--kw:#8a2bb8;--str:#9a5b00;--num:#0b7a7a}
+:root[data-mode=dark]{--ptr:#ff5d52;--bg:#0e1116;--ink:#e8eaee;--mute:#9aa3b2;--panel:#161b23;--line:#262d38;--scene:#111723;--chr:#c37bff;--sht:#2fc7c7;--int:#2fc77f;--dbl:#4f8bff;--hop:#ffb400;--pad:#3b424e;--cur:#3a3112;--kw:#d58cff;--str:#f0b45b;--num:#5fd4d4}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;overflow-x:clip}
+code,pre,.mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+code{font-size:.92em;overflow-wrap:anywhere}
+.wrap{max-width:1320px;margin:0 auto;padding:0 max(3vw,16px)}
+.themebtn{position:fixed;top:12px;right:12px;z-index:30;width:44px;height:44px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--panel);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.themebtn svg{width:22px;height:22px}
+.crumbs{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;padding:12px 56px 0 0;font-size:15px}
+.crumbs a,.pager a{color:var(--ink);font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.crumbs a:hover,.pager a:hover{text-decoration:underline}
+.crumbs span{color:var(--mute)}
+.pager{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:4px;padding:8px 0 32px}
+.pager .nx{margin-left:auto}
+header{padding:6px 56px 16px 0}
+h1{margin:0;font-weight:800;font-size:clamp(30px,4vw,44px);line-height:1.05;letter-spacing:-.02em;text-wrap:balance}
+.lead{margin:6px 0 0;color:var(--mute);max-width:72ch}
+button{font:600 15px Figtree,system-ui,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;min-height:44px;padding:0 14px;cursor:pointer}
+button:hover{border-color:var(--mute)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--dbl);outline-offset:2px}
+button.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stage{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.25fr);gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.code{display:flex;flex-direction:column}
+.card h2{font-size:15px;font-weight:600;margin:0;color:var(--mute)}
+.code .hd{display:flex;justify-content:space-between;gap:8px;padding:12px 14px 6px}
+.src{font-size:13px;line-height:1.7;padding:4px 0 10px;overflow-x:auto}
+.ln{display:grid;grid-template-columns:3em minmax(0,1fr);white-space:pre-wrap;padding-right:12px;border-left:4px solid transparent}
+.ln .n{color:var(--mute);text-align:right;padding-right:12px;user-select:none}
+.ln.cur{background:var(--cur);border-left-color:var(--hop)}
+.ln.nxt{outline:2px dashed var(--hop);outline-offset:-2px}
+.k{color:var(--kw)}.s{color:var(--str)}.c{color:var(--mute);font-style:italic}.num{color:var(--num)}
+.v-chr{color:var(--chr);font-weight:600}.v-sht{color:var(--sht);font-weight:600}.v-int{color:var(--int);font-weight:600}.v-dbl{color:var(--dbl);font-weight:600}.v-ptr{color:var(--ptr);font-weight:600}
+.lb.tag.bad{border-color:var(--ptr)}
+.watch{border-top:1px solid var(--line);padding:10px 14px 14px;display:grid;gap:6px;margin-top:auto}
+.w{display:grid;grid-template-columns:12px auto minmax(0,1fr);gap:8px;align-items:center;font-size:14px}
+.w i{width:12px;height:12px;border-radius:3px}
+.w span{font-family:"JetBrains Mono",monospace;font-size:13.5px;text-align:right;overflow-wrap:anywhere}
+.fig{position:relative;min-height:430px;border-radius:14px;overflow:hidden;background:var(--scene);border:1px solid var(--line);touch-action:pan-y;cursor:grab}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;font:600 13px "JetBrains Mono",monospace;line-height:1;will-change:transform}
+.lb.nm{color:var(--ink);background:color-mix(in srgb,var(--scene) 80%,transparent);padding:3px 5px;border-radius:5px}
+.lb.nm .t{color:var(--mute);font-weight:400}
+.lb.pd{color:var(--mute);font-weight:400}
+.lb.val{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);font-size:14px}
+.lb.val.dim{color:var(--ink);text-shadow:none;opacity:.7}
+.lb.by{font-size:13px}
+.lb.row,.lb.col{color:var(--mute);font-weight:400}
+.lb.tag{font-size:14px;color:var(--ink);background:var(--bg);border:2px solid var(--hop);padding:5px 8px;border-radius:8px}
+.badge{position:absolute;left:12px;top:12px;right:12px;display:flex;flex-wrap:wrap;gap:8px;pointer-events:none}
+.pill{font:600 14px "JetBrains Mono",monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.legend{position:absolute;left:12px;bottom:10px;right:12px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute);pointer-events:none}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.legend .hint{margin-left:auto}
+.nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--mute)}
+.bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding-block:14px}
+.bar .grow{flex:1 1 200px;display:flex;align-items:center;gap:10px}
+input[type=range]{flex:1;accent-color:var(--hop);height:44px}
+.stepn{font-size:14px;color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tg{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;cursor:pointer;background:var(--bg)}
+.tg input{width:18px;height:18px;accent-color:var(--hop)}
+.score{font-size:14px;color:var(--mute);white-space:nowrap}
+.bottom{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:16px;padding-bottom:28px}
+.bottom .card{padding:14px 16px}
+#expl h3{margin:4px 0 6px;font-size:22px;line-height:1.15;font-weight:800;letter-spacing:-.01em}
+#expl p{margin:0 0 8px;max-width:66ch}
+.calc{font:14px/1.75 "JetBrains Mono",monospace;margin-top:6px;overflow-wrap:anywhere}
+.calc b{color:var(--hop)}
+.con{margin:6px 0 0;background:#0b0e13;color:#d6dbe3;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.6;min-height:120px;max-height:240px;overflow:auto;white-space:pre}
+.con .last{color:#ffd166}
+.q{margin-top:10px;padding:12px;border:2px solid var(--hop);border-radius:12px;background:var(--bg)}
+.q .qh{margin:0 0 4px;font-size:13px;color:var(--mute)}
+.q p{margin:0 0 8px;font-weight:600}
+.q .opts{display:flex;flex-wrap:wrap;gap:8px}
+.q .opts button{font-family:"JetBrains Mono",monospace}
+.q .fb{margin:8px 0 0;font-weight:400}
+.q .fb.ok{color:var(--int)}.q .fb.no{color:var(--ptr)}
+.note{font-size:13px;color:var(--mute);margin:8px 0 0}
+@media(max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}.fig{order:-1;min-height:400px}.bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.bottom .conc{grid-column:1/-1}}
+@media(max-width:600px){.fig{min-height:380px}.bottom{grid-template-columns:minmax(0,1fr)}.legend .hint{display:none}h1{font-size:30px}}
+@media(max-width:900px){.wrap{display:flex;flex-direction:column}.stage{display:contents}.crumbs{order:0}header{order:1}.fig{order:2}.bar{order:3}.code{order:4;margin-bottom:16px}.bottom{order:5}.pager{order:6}}
+</style>
+</head>
+<body>
+<button id="theme" class="themebtn" type="button" aria-label="Cambiar a tema oscuro" title="Cambiar tema"></button>
+<div class="wrap">
+<nav class="crumbs" aria-label="Navegación"><a href="index2.html">← Apuntadores en C</a><span>Módulo 6 de 10</span></nav>
+<header>
+  <h1>El apuntador genérico</h1>
+  <p class="lead">Módulo 6 · <code>void *</code> guarda cualquier dirección, pero no dice qué hay ahí. Aquí ves por qué <code>*g</code> no compila, cómo el cast decide cuántos bytes se leen y qué pasa con un cast equivocado. Basado en <code>PUNT3.CPP</code>.</p>
+</header>
+
+<section class="stage">
+  <div class="card code">
+    <div class="hd"><h2>generico.c</h2><span class="stepn" id="lineTag">línea 3</span></div>
+    <div class="src mono" id="src"></div>
+    <div class="watch" id="watch"></div>
+  </div>
+  <div class="fig" id="fig">
+    <div class="labels" id="labels"></div>
+    <div class="badge"><div class="pill" id="pill"></div></div>
+    <div class="legend">
+      <span><i style="background:var(--int)"></i>int</span>
+      <span><i style="background:var(--dbl)"></i>double</span>
+      <span><i style="background:var(--chr)"></i>char</span>
+      <span><i style="background:var(--ptr)"></i>void *</span>
+      <span><i style="background:var(--hop)"></i>bytes que lee el *</span>
+      <span><i style="background:var(--pad)"></i>basura / hueco</span>
+      <span class="hint">Arrastra para girar · rueda para acercar</span>
+    </div>
+  </div>
+</section>
+
+<div class="bar">
+  <button id="bReset" type="button">⟲ Reiniciar</button>
+  <button id="bPrev" type="button" title="Paso anterior (←)">◀ Atrás</button>
+  <button id="bPlay" type="button" class="pri">▶ Reproducir</button>
+  <button id="bNext" type="button" title="Paso siguiente (→)">Adelante ▶</button>
+  <div class="grow"><input id="scrub" type="range" min="0" value="0" aria-label="Paso"><span class="stepn" id="stepn"></span></div>
+  <label class="tg"><input id="tBytes" type="checkbox">Ver bytes</label>
+  <label class="tg"><input id="tPred" type="checkbox">Modo predice</label>
+  <span class="score" id="score" hidden></span>
+</div>
+
+<section class="bottom">
+  <div class="card"><h2>Qué está pasando</h2><div id="expl"></div></div>
+  <div class="card"><h2>El cálculo</h2><div class="calc" id="calc"></div></div>
+  <div class="card conc"><h2>Consola</h2><pre class="con" id="con"></pre>
+    <p class="note">Direcciones de ejemplo: en tu equipo serán otras y pueden cambiar en cada ejecución. El orden de las variables lo decide el compilador; aquí se muestra uno típico. Leer una variable con un tipo que no es el suyo es comportamiento indefinido; el 0 del final es lo que suele salir, no algo garantizado.</p></div>
+</section>
+<nav class="pager" aria-label="Módulos"><a href="modulo5.html">← Módulo 5 · Pila y montón</a><a class="nx" href="modulo7.html">Módulo 7 · Apuntadores a apuntadores →</a></nav>
+</div>
+
+<div id="probes" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <i data-c="chr" style="color:var(--chr)"></i><i data-c="ptr" style="color:var(--ptr)"></i><i data-c="sht" style="color:var(--sht)"></i><i data-c="int" style="color:var(--int)"></i><i data-c="dbl" style="color:var(--dbl)"></i><i data-c="hop" style="color:var(--hop)"></i><i data-c="pad" style="color:var(--pad)"></i><i data-c="scene" style="color:var(--scene)"></i><i data-c="line" style="color:var(--line)"></i><i data-c="ink" style="color:var(--ink)"></i>
+</div>
+
+<script src="js/three.min.js"></script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const B = 0x7ffd5e3c1a10;
+const hex = n => '0x' + n.toString(16);
+const sh = n => '0x…' + n.toString(16).slice(-4);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/* ---------- Programa ---------- */
+const CODE = [
+ '#include <stdio.h>',
+ '',
+ 'int main(void)',
+ '{',
+ '    int    n = 7;',
+ '    double x = 2.5;',
+ "    char   c = 'Z';",
+ '    void  *g;                   // apuntador genérico: no tiene tipo',
+ '    // printf("%d\\n", *g);      // ERROR: no compila',
+ '',
+ '    g = &n;                      // puede guardar la dirección de un int...',
+ '    printf("%d\\n", *(int *)g);',
+ '',
+ '    g = &x;                      // ...la de un double...',
+ '    printf("%.1f\\n", *(double *)g);',
+ '',
+ '    g = &c;                      // ...o la de un char',
+ '    printf("%c\\n", *(char *)g);',
+ '',
+ '    g = &x;',
+ '    printf("%d\\n", *(int *)g);   // cast equivocado',
+ '    return 0;',
+ '}'
+];
+const VCLS = {n: 'v-int', x: 'v-dbl', c: 'v-chr', g: 'v-ptr'};
+const TOK = /(\/\/.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)')|(#include|<stdio\.h>)|\b(int|char|double|return|void)\b|\b(n|x|c|g)\b|\b(\d+(?:\.\d+)?)\b/g;
+function hl(line) {
+  let out = '', last = 0, m; TOK.lastIndex = 0;
+  while ((m = TOK.exec(line))) {
+    out += esc(line.slice(last, m.index));
+    const t = esc(m[0]);
+    if (m[1]) out += `<span class="c">${t}</span>`;
+    else if (m[2]) out += `<span class="s">${t}</span>`;
+    else if (m[3] || m[4]) out += `<span class="k">${t}</span>`;
+    else if (m[5]) out += `<span class="${VCLS[m[5]]}">${t}</span>`;
+    else out += `<span class="num">${t}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(line.slice(last));
+}
+$('#src').innerHTML = CODE.map((l, i) => `<div class="ln" data-l="${i + 1}"><span class="n">${i + 1}</span><span>${hl(l) || ' '}</span></div>`).join('');
+
+/* ---------- Variables ---------- */
+const VARS = [
+  {id: 'n', type: 'int', c0: 0, size: 4, kind: 'int'},
+  {id: 'hueco', type: '', c0: 4, size: 4, kind: 'pad'},
+  {id: 'x', type: 'double', c0: 8, size: 8, kind: 'dbl'},
+  {id: 'c', type: 'char', c0: 16, size: 1, kind: 'chr'},
+  {id: 'hueco2', type: '', c0: 17, size: 7, kind: 'pad'},
+  {id: 'g', type: 'void *', c0: 24, size: 8, kind: 'ptr'}
+];
+const VB = id => VARS.find(v => v.id === id);
+const addr = id => B + VB(id).c0;
+const le = (n, k) => { const b = []; for (let i = 0; i < k; i++) b.push((Math.floor(n / 256 ** i) % 256).toString(16).padStart(2, '0')); return b; };
+function bytesOf(v, val) {
+  if (val === null || val === undefined) return Array(v.size).fill('??');
+  if (v.id === 'c') return [val.charCodeAt(0).toString(16)];
+  if (v.id === 'x') return ['00', '00', '00', '00', '00', '00', '04', '40'];
+  if (v.kind === 'ptr') return le(addr(val), 8);
+  return le(val, v.size);
+}
+const show = (id, val) => val === null || val === undefined ? '?' : id === 'c' ? `'${val}'` : VB(id).kind === 'ptr' ? sh(addr(val)) : String(val);
+
+/* ---------- Pasos ---------- */
+const C = id => `<code class="${VCLS[id]}">${id}</code>`;
+const AN = addr('n'), AX = addr('x'), AC = addr('c'), AG = addr('g');
+const steps = [];
+let cur = {line: 3, frame: true, vals: {n: null, x: null, c: null, g: null}, out: []};
+function push(o, outLine) {
+  const s = Object.assign({}, cur, {hl: null, rd: null, tag: '', bad: false, q: null}, o);
+  s.vals = Object.assign({}, cur.vals, o.vals || {});
+  s.out = outLine ? cur.out.concat([outLine]) : cur.out; s.fresh = !!outLine;
+  steps.push(s); cur = s;
+}
+push({line: 3, title: 'Tres tipos y un apuntador sin tipo',
+  expl: `<p>${C('n')} es <code>int</code>, ${C('x')} es <code>double</code> y ${C('c')} es <code>char</code>. Para apuntar a cada uno harían falta tres apuntadores distintos (<code>int *</code>, <code>double *</code>, <code>char *</code>)… o uno solo de tipo <code>void *</code>.</p>`,
+  calc: `marco de main:<br>${hex(B)} … ${sh(B + 31)}`});
+push({line: 5, vals: {n: 7}, hl: 'n', tag: 'n = 7', title: 'int: 4 bytes', expl: `<p>${C('n')} ocupa 4 bytes: <code>07 00 00 00</code>.</p>`, calc: `&n = ${hex(AN)}`});
+push({line: 6, vals: {x: 2.5}, hl: 'x', tag: 'x = 2.5', title: 'double: 8 bytes',
+  expl: `<p>${C('x')} ocupa 8 bytes. En punto flotante, 2.5 se guarda como <code>0x4004000000000000</code>: en «Ver bytes» lees <code>00 00 00 00 00 00 04 40</code>. Los bytes se guardan del menos al más significativo (little-endian), por eso el <code>0x40</code> va al final. Fíjate en los primeros 4: son puros ceros. Eso importará al final.</p>`,
+  calc: `&x = ${hex(AX)}<br>2.5 = 0x4004000000000000`});
+push({line: 7, vals: {c: 'Z'}, hl: 'c', tag: "c = 'Z'", title: 'char: 1 byte', expl: `<p>${C('c')} ocupa 1 byte: <code>'Z'</code> es 90, <code>0x5a</code>.</p>`, calc: `&c = ${hex(AC)}`});
+push({line: 8, hl: 'g', tag: 'void *g · 8 B', title: 'void *: una dirección sin tipo',
+  expl: `<p><code>void *</code> es un apuntador <b>genérico</b>: guarda una dirección, pero no dice qué hay ahí. Por eso puede apuntar a una variable de cualquier tipo, como explica <code>PUNT3.CPP</code>.</p><p>Mide lo mismo que cualquier otro apuntador: 8 bytes en x86-64 y ARM64.</p>`,
+  calc: `sizeof(g) = 8<br>g = ? (basura)<br>&g = ${hex(AG)}`});
+push({line: 9, hl: 'g', tag: '*g → ¿cuántos bytes?', bad: true, title: 'Lo que no se puede hacer',
+  expl: `<p>Si escribieras <code>*g</code>, el programa <b>no compilaría</b>. El compilador sabe a qué dirección ir, pero no cuántos bytes leer ni cómo interpretarlos: ¿4 como int?, ¿8 como double?, ¿1 como char?</p><p>Por eso esa línea está comentada. Para leer a través de un <code>void *</code> hay que decirle el tipo con un <b>cast</b>.</p>`,
+  calc: `*g → error de compilación<br>(desreferenciar void *)`});
+push({line: 11, vals: {g: 'n'}, hl: 'g', title: 'g = &n',
+  expl: `<p>${C('g')} recibe la dirección de ${C('n')}. Un <code>void *</code> acepta la dirección de cualquier variable sin necesidad de cast.</p>`,
+  calc: `g = &n<br>g = <b>${hex(AN)}</b>`});
+push({line: 12, hl: 'n', rd: {c0: 0, size: 4}, tag: '*(int *)g lee 4 bytes → 7', title: 'El cast pone el tipo',
+  expl: `<p><code>(int *)g</code> convierte la dirección sin tipo en un <code>int *</code>; luego el <code>*</code> ya sabe que debe leer <b>4 bytes</b> e interpretarlos como entero: 7.</p>`,
+  calc: `(int *)g = ${hex(AN)}<br>*(int *)g = <b>7</b> (4 bytes)`,
+  q: {text: '¿Cuántos bytes leerá *(int *)g?', opts: ['1', '4', '8'], ans: 1, why: 'El cast dice int, y un int mide 4 bytes.', hint: 'El cast dice el tipo; ¿cuánto mide ese tipo?'}}, '7');
+push({line: 14, vals: {g: 'x'}, hl: 'g', title: 'g = &x',
+  expl: `<p>La misma variable ${C('g')} ahora guarda la dirección de un <code>double</code>. Con un <code>int *</code> el compilador se quejaría (advertencia, o error en GCC 14 y posteriores); con <code>void *</code> es válido.</p>`,
+  calc: `g = &x<br>g = <b>${hex(AX)}</b>`});
+push({line: 15, hl: 'x', rd: {c0: 8, size: 8}, tag: '*(double *)g lee 8 bytes → 2.5', title: 'Mismo apuntador, otro cast',
+  expl: `<p>Ahora el cast es <code>(double *)</code>: el <code>*</code> lee <b>8 bytes</b> y los interpreta como punto flotante: 2.5.</p>`,
+  calc: `*(double *)g = <b>2.5</b> (8 bytes)`,
+  q: {text: '¿Cuántos bytes leerá *(double *)g?', opts: ['4', '8', '2'], ans: 1, why: 'Un double mide 8 bytes.', hint: 'Mira cuántas casillas ocupa x.'}}, '2.5');
+push({line: 17, vals: {g: 'c'}, hl: 'g', title: 'g = &c',
+  expl: `<p>Y ahora la dirección de un <code>char</code>. Un mismo <code>void *</code> pasó por tres tipos distintos.</p>`,
+  calc: `g = &c<br>g = <b>${hex(AC)}</b>`});
+push({line: 18, hl: 'c', rd: {c0: 16, size: 1}, tag: "*(char *)g lee 1 byte → 'Z'", title: 'Un byte',
+  expl: `<p>Con <code>(char *)</code> el <code>*</code> lee <b>1 byte</b>: <code>0x5a</code>, que con <code>%c</code> se muestra como <code>Z</code>.</p>`,
+  calc: `*(char *)g = <b>'Z'</b> (1 byte)`}, 'Z');
+push({line: 20, vals: {g: 'x'}, hl: 'g', title: 'De vuelta a x',
+  expl: `<p>${C('g')} vuelve a apuntar a ${C('x')}, que guarda 2.5. Hasta aquí, nada raro.</p>`,
+  calc: `g = <b>${hex(AX)}</b>`});
+push({line: 21, hl: 'x', rd: {c0: 8, size: 4}, bad: true, tag: '*(int *)g lee 4 de 8 bytes → 0', title: 'Cast equivocado',
+  expl: `<p>El cast dice <code>int</code>, pero ahí hay un <code>double</code>. El compilador no protesta: con <code>void *</code> confía en ti. El <code>*</code> lee solo los primeros 4 bytes de x, <code>00 00 00 00</code>, y los toma como entero: imprime <b>0</b>, no 2.5.</p><p>Leer una variable con un tipo que no es el suyo es <b>comportamiento indefinido</b>: aquí salió 0, pero no está garantizado. La responsabilidad de usar el tipo correcto es tuya.</p>`,
+  calc: `*(int *)g lee:<br>00 00 00 00 → <b>0</b><br>(los 4 bytes restantes,<br> 00 00 04 40, se ignoran)`,
+  q: {text: 'g apunta a x (2.5). ¿Qué hará *(int *)g?', opts: ['Imprime 2', 'Lee 4 bytes del double como si fueran un int', 'Error de compilación'], ans: 1, why: 'El cast manda: lee 4 bytes e interpreta su contenido como int, aunque no lo sea.', hint: 'Con un cast explícito, el compilador confía en ti y no revisa a qué apunta realmente.'}}, '0');
+push({line: 22, frame: false, vals: {n: null, x: null, c: null, g: null}, title: 'Cierre: para qué sirve void *',
+  expl: `<p><code>malloc</code> devuelve <code>void *</code> porque no sabe qué vas a guardar en el bloque; en <code>PUNT3.CPP</code> el resultado se guarda en <code>void *p</code>. En C, un <code>void *</code> se convierte automáticamente a cualquier apuntador a datos: <code>int *v = malloc(...)</code> no necesita cast. (El <code>(char *)</code> de <code>fentanilo11.c</code> es opcional en C, pero obligatorio en C++.)</p><p>Tampoco se puede hacer <code>g + 1</code> en C estándar: sin tipo, no se sabe cuánto avanzar.</p>`,
+  calc: `void * = dirección sin tipo<br>cast  = le pone el tipo<br>tipo  = cuántos bytes lee *`});
+
+/* ---------- Estado ---------- */
+let k = 0, playing = false, timer = null, qTimer = null, showBytes = false, predict = false;
+let answered = {}, tried = {}, score = {ok: 0, n: 0};
+const askNext = () => predict && k + 1 < steps.length && steps[k + 1].q && !answered[k + 1];
+
+/* ---------- Escena 3D ---------- */
+const fig = $('#fig'), labelsEl = $('#labels');
+const BW = 0.55, BOX = 0.5, BH = 0.32, BD = 0.9;
+const bx = c => (c % 16 - 7.5) * BW;
+const rz = c => Math.floor(c / 16) === 0 ? -1.3 : 1.3;
+let gl = null;
+try {
+  const rnd = new THREE.WebGLRenderer({antialias: true});
+  rnd.setPixelRatio(Math.min(devicePixelRatio, 2));
+  fig.prepend(rnd.domElement); gl = {rnd};
+} catch (e) {
+  fig.insertAdjacentHTML('afterbegin', '<div class="nogl">No se pudo iniciar la escena 3D (WebGL o la biblioteca three.js no cargó). La explicación y la consola siguen funcionando abajo.</div>');
+}
+const col = {};
+const readColors = () => document.querySelectorAll('#probes i').forEach(el => { col[el.dataset.c] = new THREE.Color(getComputedStyle(el).color); });
+
+if (gl) {
+  readColors();
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8890a0, 0.75));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.75); dl.position.set(-4, 10, 7); scene.add(dl);
+  const trayMat = new THREE.MeshStandardMaterial({roughness: 1}), edgeMat = new THREE.LineBasicMaterial();
+  const trayG = new THREE.BoxGeometry(16 * BW + 1.2, .06, 4.4);
+  const tray = new THREE.Mesh(trayG, trayMat); tray.position.y = -BH / 2 - .08; scene.add(tray);
+  const tEdge = new THREE.LineSegments(new THREE.EdgesGeometry(trayG), edgeMat); tEdge.position.copy(tray.position); scene.add(tEdge);
+  const hopMat = new THREE.MeshStandardMaterial({roughness: .5}), ptrMat = new THREE.MeshStandardMaterial({roughness: .5});
+  const labels = [];
+  const mkLabel = (cls, pos, html, anchor) => {
+    const el = document.createElement('div'); el.className = 'lb ' + cls; el.innerHTML = html || '';
+    labelsEl.appendChild(el); const Lb = {el, pos, cls, show: true, anchor: anchor || 'c'}; labels.push(Lb); return Lb;
+  };
+  VARS.forEach(v => {
+    v.z = rz(v.c0); v.cx = (bx(v.c0) + bx(v.c0 + v.size - 1)) / 2; v.y = 0; v.yT = 0; v.mats = []; v.meshes = [];
+    for (let b = 0; b < v.size; b++) {
+      const m = new THREE.MeshStandardMaterial({roughness: .55, metalness: .05});
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(BOX, BH, BD), m);
+      mesh.position.set(bx(v.c0 + b), 0, v.z); scene.add(mesh); v.mats.push(m); v.meshes.push(mesh);
+    }
+    if (v.id === 'hueco') v.lName = mkLabel('pd', new THREE.Vector3(v.cx, -BH / 2, v.z + BD / 2 + .12), 'hueco', 't');
+    else if (v.id === 'otros') v.lName = mkLabel('pd', new THREE.Vector3(v.cx, -BH / 2, v.z + BD / 2 + .15), 'otros datos', 't');
+    else v.lName = mkLabel('nm', new THREE.Vector3(v.cx, -BH / 2, v.z + BD / 2 + .12), `<span class="t">${v.type}</span>${v.type.endsWith('*') ? '' : ' '}${v.id}`, 't');
+    v.lVal = v.kind === 'pad' ? null : mkLabel('val', new THREE.Vector3(v.cx, BH / 2, v.z), '?');
+    v.lBytes = [];
+    for (let b = 0; b < v.size; b++) v.lBytes.push(mkLabel('val by', new THREE.Vector3(bx(v.c0 + b), BH / 2, v.z), '??'));
+  });
+  const rowL = [0, 16].map(c => mkLabel('row', new THREE.Vector3(bx(0) - BW * .75, 0, rz(c)), '', 'r'));
+  const colL = [];
+  for (let c = 0; c < 16; c++) colL.push(mkLabel('col', new THREE.Vector3(bx(c), 0, rz(0) - BD / 2 - .55), '+' + c.toString(16)));
+  const tagL = mkLabel('tag', new THREE.Vector3(), '', 'b');
+
+  /* llave ámbar: bytes que lee o escribe el * */
+  const brace = new THREE.Group(); scene.add(brace);
+  let braceKey = '', braceInfo = null;
+  function buildBrace(rd) {
+    brace.children.slice().forEach(o => { o.geometry.dispose(); brace.remove(o); });
+    braceInfo = rd; if (!rd) return;
+    const x0 = bx(rd.c0), x1 = bx(rd.c0 + rd.size - 1), w = Math.max(.4, x1 - x0 + BOX - .04), cx = (x0 + x1) / 2, y = .55;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, .06, .06), hopMat); bar.position.set(cx, y, 0); brace.add(bar);
+    [-1, 1].forEach(sgn => { const t = new THREE.Mesh(new THREE.BoxGeometry(.06, .22, .06), hopMat); t.position.set(cx + sgn * w / 2, y - .08, 0); brace.add(t); });
+    brace.position.z = rz(rd.c0); braceInfo.cx = cx;
+  }
+  /* flechas de apuntador */
+  const top = (x, z, y) => new THREE.Vector3(x, (y || 0) + BH / 2 + .03, z);
+  function arc(from, to, h, prog, mat, rad) {
+    const g = new THREE.Group(); if (prog <= .001) return g;
+    const mid = from.clone().add(to).multiplyScalar(.5); mid.y = Math.max(from.y, to.y) + h;
+    const cv = new THREE.QuadraticBezierCurve3(from, mid, to);
+    const pts = []; for (let i = 0; i <= 28; i++) pts.push(cv.getPoint(prog * i / 28));
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 36, rad, 7, false), mat));
+    const end = cv.getPoint(prog), tg = cv.getTangent(prog).normalize();
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(rad * 3, rad * 7, 12), mat);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tg); cone.position.copy(end).addScaledVector(tg, -rad * 3.5);
+    g.add(cone); return g;
+  }
+  const dispose = g => { if (!g) return; g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); scene.remove(g); };
+  const ARROWS = {g: {to: null, prog: 0, g: null}};
+
+  function paint() {
+    const s = steps[k];
+    VARS.forEach(v => {
+      let c = (col[v.kind] || col.pad).clone();
+      if (v.kind !== 'pad' && (!s.frame || s.vals[v.id] === null)) c.lerp(col.pad, .78);
+      v.mats.forEach(m => { m.color.copy(c); m.emissive.copy(v.id === s.hl ? col.hop : new THREE.Color(0)); m.emissiveIntensity = v.id === s.hl ? .3 : 0; });
+    });
+  }
+  function recolor() {
+    readColors(); scene.background = col.scene.clone();
+    trayMat.color.copy(col.scene).lerp(col.ink, .06); edgeMat.color.copy(col.line); hopMat.color.copy(col.hop); ptrMat.color.copy(col.ptr);
+    paint();
+  }
+  let az = -0.24, el = .82, zoom = 1, dist = 12;
+  const target = new THREE.Vector3(-.3, .3, .45);
+  const elFor = () => fig.clientWidth / fig.clientHeight < 1.25 ? .98 : .82;
+  function fit() {
+    const W = fig.clientWidth, H = fig.clientHeight;
+    gl.rnd.setSize(W, H, false); camera.aspect = W / H;
+    el = elFor(); const nar = W < 600; target.x = nar ? -.9 : -.6;
+    const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const halfW = 16 * BW / 2 + (nar ? 2.4 : 1.8), halfH = 2.6 * Math.sin(el) + 1.9;
+    dist = Math.max(halfW / (t * camera.aspect), halfH / t) * .86 + 1;
+    camera.updateProjectionMatrix();
+  }
+  const ro = new ResizeObserver(fit); ro.observe(fig); fit();
+  let drag = null;
+  gl.rnd.domElement.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, az, el, type: e.pointerType}; fig.style.cursor = 'grabbing'; });
+  addEventListener('pointermove', e => {
+    if (!drag) return;
+    az = Math.max(-1.1, Math.min(1.1, drag.az - (e.clientX - drag.x) * .006));
+    if (drag.type === 'mouse') el = Math.max(.3, Math.min(1.4, drag.el + (e.clientY - drag.y) * .005));
+  });
+  addEventListener('pointerup', () => { drag = null; fig.style.cursor = ''; });
+  addEventListener('pointercancel', () => { drag = null; fig.style.cursor = ''; });
+  gl.rnd.domElement.addEventListener('wheel', e => { e.preventDefault(); zoom = Math.max(.45, Math.min(1.6, zoom * (1 + Math.sign(e.deltaY) * .08))); }, {passive: false});
+  gl.rnd.domElement.addEventListener('dblclick', () => { az = -0.24; el = elFor(); zoom = 1; });
+
+  gl.sync = () => {
+    const s = steps[k];
+    VARS.forEach(v => { v.yT = v.id === s.hl ? .22 : 0; });
+    paint();
+    const key = s.rd ? s.rd.c0 + ':' + s.rd.size : '';
+    if (key !== braceKey) { braceKey = key; buildBrace(s.rd ? {c0: s.rd.c0, size: s.rd.size} : null); }
+    tagL.el.innerHTML = esc(s.tag || ''); tagL.el.classList.toggle('bad', !!s.bad);
+    ['g'].forEach(id => {
+      const A = ARROWS[id], to = s.frame ? s.vals[id] : null;
+      if (to !== A.to) { A.to = to; dispose(A.g); A.g = null; A.prog = to && !reduce ? 0 : 1; }
+    });
+    VARS.forEach(v => {
+      const val = s.frame && v.kind !== 'pad' ? s.vals[v.id] : null, kn = val !== null && val !== undefined;
+      if (v.lVal) { v.lVal.el.textContent = show(v.id, val); v.lVal.el.classList.toggle('dim', !kn); }
+      const b = bytesOf(v, kn ? val : null);
+      v.lBytes.forEach((Lb, i) => { Lb.el.textContent = b[i]; Lb.el.classList.toggle('dim', !kn); });
+    });
+  };
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    const d = dist * zoom;
+    camera.position.set(target.x + d * Math.cos(el) * Math.sin(az), target.y + d * Math.sin(el), target.z + d * Math.cos(el) * Math.cos(az));
+    camera.lookAt(target);
+    const f = reduce ? 1 : Math.min(1, dt * 9);
+    let moving = false;
+    VARS.forEach(v => { const dy = (v.yT - v.y) * f; if (Math.abs(dy) > 1e-4) moving = true; v.y += dy; v.meshes.forEach(m => m.position.y = v.y); });
+    if (braceInfo) { const tv = VARS.find(v => braceInfo.c0 >= v.c0 && braceInfo.c0 < v.c0 + v.size); brace.position.y = (tv ? tv.y : 0) + BH / 2; }
+    ['g'].forEach(id => {
+      const A = ARROWS[id];
+      if (!A.to) return;
+      if (A.prog < 1 || !A.g || moving) {
+        A.prog = Math.min(1, A.prog + dt * 1.5);
+        dispose(A.g);
+        const src = VB(id), dst = VB(A.to);
+        const tx = bx(dst.c0), from = top(src.cx + Math.max(-1.1, Math.min(1.1, tx - src.cx)), src.z, src.y), to = top(tx, dst.z, dst.y);
+        A.g = arc(from, to, src.z === dst.z ? 1.7 : 2.2, A.prog, ptrMat, .055); scene.add(A.g);
+      }
+    });
+    const W = fig.clientWidth, H = fig.clientHeight;
+    const p1 = new THREE.Vector3(bx(0), 0, 0).project(camera), p2 = new THREE.Vector3(bx(1), 0, 0).project(camera);
+    const bytePx = Math.abs(p2.x - p1.x) * W / 2;
+    const s = steps[k];
+    VARS.forEach(v => {
+      if (v.lVal) { v.lVal.show = !showBytes; v.lVal.pos.y = BH / 2 + v.y; }
+      v.lBytes.forEach(Lb => { Lb.show = showBytes && bytePx >= 21; Lb.pos.y = BH / 2 + v.y; });
+      if (v.kind === 'pad') v.lName.show = bytePx >= 40;
+      if (v.type && v.lName.cls === 'nm') {
+        const small = bytePx < 28, html = small ? v.id : `<span class="t">${v.type}</span>${v.type.endsWith('*') ? '' : ' '}${v.id}`;
+        if (v.lName.el.innerHTML !== html) v.lName.el.innerHTML = html;
+        if (v.id === 'c') { v.lName.anchor = small ? 'tr' : 't'; v.lName.pos.x = small ? bx(0) + BW * .45 : v.cx; }
+      }
+    });
+    colL.forEach((Lb, c) => Lb.show = showBytes ? bytePx >= 22 : c % 4 === 0);
+    rowL.forEach((Lb, r) => Lb.el.textContent = W > 760 ? hex(B + 16 * r) : sh(B + 16 * r));
+    tagL.show = !!(braceInfo && s.tag) || !!(s.tag && s.hl);
+    if (tagL.show) {
+      const hv = VB(s.hl);
+      const x = braceInfo ? braceInfo.cx : hv.cx, z = braceInfo ? rz(braceInfo.c0) : hv.z;
+      tagL.pos.set(x, hv.y + BH / 2 + .75, z);
+    }
+    const v3 = new THREE.Vector3();
+    labels.forEach(Lb => {
+      if (!Lb.show) { if (Lb.el.style.display !== 'none') Lb.el.style.display = 'none'; return; }
+      v3.copy(Lb.pos).project(camera);
+      if (v3.z > 1) { Lb.el.style.display = 'none'; return; }
+      let x = (v3.x + 1) / 2 * W; const y = (1 - v3.y) / 2 * H;
+      if (Lb === tagL) { const hw = Lb.el.offsetWidth / 2 + 8; x = Math.max(hw, Math.min(W - hw, x)); }
+      Lb.el.style.display = '';
+      const tr = {c: '-50%,-50%', t: '-50%,0', tr: '-100%,0', r: '-100%,-50%', b: '-50%,-100%'}[Lb.anchor];
+      Lb.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(${tr})`;
+    });
+    gl.rnd.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+  gl.recolor = recolor;
+  recolor();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Paneles ---------- */
+function render() {
+  const s = steps[k], ask = askNext(), nx = ask ? steps[k + 1] : null;
+  document.querySelectorAll('.ln').forEach(l => { l.classList.toggle('cur', +l.dataset.l === s.line); l.classList.toggle('nxt', !!nx && +l.dataset.l === nx.line); });
+  $('#lineTag').textContent = 'línea ' + s.line;
+  const sw = (id) => { const v = VB(id), val = s.vals[id]; return `<div class="w"><i style="background:var(--${v.kind})"></i><code>${v.type}${v.type.endsWith('*') ? '' : ' '}${id}</code><span>${!s.frame ? '—' : show(id, val) + (val === null ? ' (basura)' : v.kind === 'ptr' ? ' → ' + val : '')}</span></div>`; };
+  $('#watch').innerHTML = ['n', 'x', 'c', 'g'].map(sw).join('');
+  let ex = `<h3>${s.title}</h3>${s.expl}`;
+  if (ask) ex += `<div class="q"><p class="qh">Antes de ejecutar la línea ${nx.line}:</p><p>${esc(nx.q.text)}</p><div class="opts">${nx.q.opts.map((o, i) => `<button type="button" data-o="${i}">${esc(o)}</button>`).join('')}</div><p class="fb" id="fb"></p></div>`;
+  $('#expl').innerHTML = ex;
+  $('#calc').innerHTML = s.calc;
+  const lines = s.out.map(esc);
+  if (s.fresh && lines.length) lines[lines.length - 1] = `<span class="last">${lines[lines.length - 1]}</span>`;
+  const con = $('#con'); con.innerHTML = lines.join('\n') || '<span style="opacity:.5">(todavía no se imprime nada)</span>'; con.scrollTop = con.scrollHeight;
+  $('#pill').innerHTML = !s.frame ? 'main terminó' : s.vals.g ? `g → ${s.vals.g} (${VB(s.vals.g).type})` : 'g = ? (basura)';
+  $('#scrub').value = k; $('#stepn').textContent = `Paso ${k + 1} de ${steps.length}`;
+  $('#bPrev').disabled = k === 0; $('#bNext').disabled = k === steps.length - 1;
+  const sc = $('#score'); sc.hidden = !predict; sc.textContent = `Aciertos: ${score.ok} de ${score.n}`;
+  if (gl) gl.sync();
+}
+$('#expl').addEventListener('click', e => {
+  const b = e.target.closest('button[data-o]'); if (!b || !askNext()) return;
+  const q = steps[k + 1].q, ok = +b.dataset.o === q.ans, fb = $('#fb');
+  if (!tried[k + 1]) { tried[k + 1] = true; score.n++; if (ok) score.ok++; }
+  if (ok) {
+    answered[k + 1] = true; fb.className = 'fb ok'; fb.textContent = '✓ ' + q.why;
+    b.closest('.opts').querySelectorAll('button').forEach(x => x.disabled = true);
+    const n = k + 1; qTimer = setTimeout(() => { if (k === n - 1) go(n); }, reduce ? 0 : 1400);
+  } else { fb.className = 'fb no'; fb.textContent = 'No es esa opción. ' + (q.hint || 'Vuelve a leer la línea con borde punteado.'); b.disabled = true; }
+});
+function go(n) { k = Math.max(0, Math.min(steps.length - 1, n)); render(); }
+function stop() { playing = false; clearTimeout(timer); clearTimeout(qTimer); $('#bPlay').textContent = '▶ Reproducir'; }
+const nag = () => { const fb = $('#fb'); if (fb) { fb.className = 'fb no'; fb.textContent = 'Primero elige una respuesta.'; } };
+function tick() {
+  if (!playing) return;
+  if (askNext() || k >= steps.length - 1) { stop(); return; }
+  go(k + 1);
+  if (askNext() || k >= steps.length - 1) { stop(); return; }
+  timer = setTimeout(tick, 2000);
+}
+$('#bPlay').onclick = () => {
+  if (playing) { stop(); return; }
+  if (askNext()) { nag(); return; }
+  if (k >= steps.length - 1) { answered = {}; tried = {}; score = {ok: 0, n: 0}; go(0); if (askNext()) { nag(); return; } }
+  playing = true; $('#bPlay').textContent = '❚❚ Pausa'; timer = setTimeout(tick, 400);
+};
+$('#bNext').onclick = () => { stop(); if (askNext()) nag(); else go(k + 1); };
+$('#bPrev').onclick = () => { stop(); go(k - 1); };
+$('#bReset').onclick = () => { stop(); answered = {}; tried = {}; score = {ok: 0, n: 0}; go(0); };
+$('#scrub').max = steps.length - 1;
+$('#scrub').oninput = e => { stop(); go(+e.target.value); };
+$('#tBytes').onchange = e => { showBytes = e.target.checked; };
+$('#tPred').onchange = e => { predict = e.target.checked; if (!predict) clearTimeout(qTimer); render(); };
+addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.target.closest('input[type=range],textarea')) return;
+  if (e.key === 'ArrowRight') $('#bNext').click();
+  else if (e.key === 'ArrowLeft') $('#bPrev').click();
+  else if (e.key === ' ' && !e.target.closest('button,a,input,label')) { e.preventDefault(); $('#bPlay').click(); }
+});
+
+/* ---------- Tema ---------- */
+const root = document.documentElement;
+try { const t = localStorage.getItem('punteros-tema'); if (t === 'dark' || t === 'light') root.dataset.tema = t; } catch (e) {}
+const isDark = () => root.dataset.tema ? root.dataset.tema === 'dark' : root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+const themeBtn = $('#theme');
+const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>';
+const syncTheme = () => { const d = isDark(); root.dataset.mode = d ? 'dark' : 'light'; root.style.setProperty('color-scheme', d ? 'dark' : 'light', 'important'); themeBtn.innerHTML = d ? SUN : MOON; themeBtn.setAttribute('aria-label', d ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'); if (gl) gl.recolor(); };
+themeBtn.onclick = () => { const t = isDark() ? 'light' : 'dark'; root.dataset.tema = t; try { localStorage.setItem('punteros-tema', t); } catch (e) {} };
+new MutationObserver(syncTheme).observe(root, {attributes: true, attributeFilter: ['data-theme', 'data-tema']});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme);
+syncTheme(); render();
+}
+
+
+</script>
+</body>
+</html>

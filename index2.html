@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apuntadores en C</title>
+<script>try{var t=localStorage.getItem('punteros-tema'),r=document.documentElement;r.dataset.mode=(t?t==='dark':(r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches))?'dark':'light'}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: portada de un curso, clara y directa
+   IDEA el mismo volcado de memoria de los módulos, como portada: una fila de casillas con un apuntador que salta
+   PICTURE franja ancha con casillas de un arreglo, el apuntador p y saltos de 4 bytes que recorren el arreglo
+   COLOUR blanco o noche #0e1116; rojo apuntador, azul arreglo, verde entero, ámbar aritmética
+   TYPE Figtree 800 + Figtree; JetBrains Mono para código y direcciones
+   LAYOUT título arriba, franja de memoria a todo lo ancho, cómo se usa en tres columnas, módulos en rejilla de dos; teléfono: todo en una columna */
+:root{--bg:#ffffff;--ink:#14171c;--mute:#5b6270;--panel:#f4f6f9;--line:#dfe3ea;--scene:#eef2f8;--arr:#0a5cff;--ptr:#e6261f;--int:#00a05a;--hop:#e09d00;--pad:#c3c8d0}
+:root[data-mode=dark]{--bg:#0e1116;--ink:#e8eaee;--mute:#9aa3b2;--panel:#161b23;--line:#262d38;--scene:#111723;--arr:#4f8bff;--ptr:#ff5d52;--int:#2fc77f;--hop:#ffb400;--pad:#3b424e}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;overflow-x:clip}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+code{font-size:.92em;overflow-wrap:anywhere}
+.wrap{max-width:1240px;margin:0 auto;padding:0 max(3vw,16px)}
+.themebtn{position:fixed;top:12px;right:12px;z-index:30;width:44px;height:44px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--panel);color:var(--ink);border:1px solid var(--line);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.themebtn svg{width:22px;height:22px}
+.themebtn:focus-visible,a:focus-visible{outline:3px solid var(--arr);outline-offset:2px}
+header{padding:28px 56px 8px 0}
+h1{margin:0;font-weight:800;font-size:clamp(34px,5vw,52px);line-height:1.05;letter-spacing:-.02em}
+.lead{margin:10px 0 0;font-size:18px;max-width:64ch}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:10px;font-weight:600;text-decoration:none;border:1px solid var(--line);color:var(--ink);background:var(--bg)}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:hover{border-color:var(--mute)}
+.strip{margin-top:24px;background:var(--scene);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.fig{position:relative;height:clamp(230px,26vw,280px);max-width:1240px;margin:0 auto}
+.fig svg{position:absolute;inset:0;width:100%;height:100%}
+.fig svg text{font-family:"JetBrains Mono",monospace;paint-order:stroke;stroke:var(--scene);stroke-width:4px}
+h2{font-size:clamp(24px,3vw,30px);line-height:1.1;letter-spacing:-.01em;margin:0 0 14px}
+section{padding-block:clamp(26px,4vw,44px)}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.how div{border-top:3px solid var(--ink);padding-top:10px}
+.how h3{margin:0 0 4px;font-size:18px}
+.how p{margin:0;color:var(--mute)}
+.keys{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:16px;font-size:15px}
+.keys span{display:inline-flex;align-items:center;gap:8px}
+.keys i{width:14px;height:14px;border-radius:3px;display:inline-block}
+.mods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.mod{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);text-decoration:none}
+.mod .n{grid-row:span 3;font:800 34px/1 Figtree,sans-serif;color:var(--mute);width:1.4em;text-align:center}
+.mod h3{margin:0;font-size:19px;line-height:1.25}
+.mod p{margin:0;color:var(--mute);font-size:15px}
+.mod .ex{font-size:14px;color:var(--mute)}
+.mod .st{font-size:14px;font-weight:600;color:var(--mute)}
+a.mod{border:2px solid var(--arr);background:var(--bg)}
+a.mod .n{color:var(--arr)}
+a.mod .st{color:var(--arr)}
+a.mod:hover{box-shadow:0 4px 14px color-mix(in srgb,var(--arr) 22%,transparent)}
+footer{border-top:1px solid var(--line);padding:18px 0 32px;color:var(--mute);font-size:14px}
+@media(max-width:820px){.how{grid-template-columns:minmax(0,1fr)}.mods{grid-template-columns:minmax(0,1fr)}}
+
+</style>
+</head>
+<body>
+<button id="theme" class="themebtn" type="button" aria-label="Cambiar a tema oscuro" title="Cambiar tema"></button>
+<div class="wrap">
+<header>
+  <h1>Apuntadores en C</h1>
+  <p class="lead">Un apuntador es una variable que guarda una <b>dirección de memoria</b>. Aquí lo vas a ver funcionar: cada módulo corre un programa corto línea por línea y te muestra, casilla por casilla, qué pasa dentro de la RAM.</p>
+  <div class="cta"><a class="btn pri" href="modulo1.html">Empezar: Módulo 1 →</a><a class="btn" href="#modulos">Ver todos los módulos</a></div>
+</header>
+</div>
+
+<div class="strip"><div class="fig" id="fig" role="img" aria-label="Un arreglo de enteros en memoria; el apuntador p guarda la dirección del primero y p + k avanza k enteros de 4 bytes"><svg id="svg"></svg></div></div>
+  <div class="keys" aria-label="Código de colores">
+    <span><i style="background:var(--ptr)"></i>apuntador</span>
+    <span><i style="background:var(--arr)"></i>arreglo o bloque en uso</span>
+    <span><i style="background:var(--int)"></i>entero</span>
+    <span><i style="background:var(--hop)"></i>aritmética o fuga</span>
+    <span><i style="background:var(--pad)"></i>basura, libre o ajeno</span>
+  </div>
+
+<div class="wrap">
+<section>
+
+  <h2>Qué se ve en cada módulo</h2>
+  <div class="how">
+    <div><h3>El código, paso a paso</h3><p>La línea que se ejecuta se resalta. Avanza o retrocede con los botones o con las flechas del teclado y la consola muestra lo que imprime el programa.</p></div>
+    <div><h3>La memoria en 3D</h3><p>Cada byte es una casilla con su dirección real (de ejemplo). Las flechas muestran a dónde apunta cada apuntador. Con «Ver bytes» se ven los bytes uno por uno.</p></div>
+    <div><h3>Modo predice</h3><p>Antes de ciertas líneas pregunta qué va a pasar. Contesta y luego se comprueba en la memoria. Lleva la cuenta de los aciertos.</p></div>
+  </div>
+
+</section>
+
+<section id="modulos">
+  <h2>Módulos</h2>
+  <div class="mods" id="mods"></div>
+</section>
+
+<footer>Material de apoyo sobre apuntadores en lenguaje C. Necesita un navegador actual con WebGL.</footer>
+</div>
+
+<script>
+{
+const $ = s => document.querySelector(s);
+const MODS = [
+  [1, 'La memoria como casillas', 'Tipos, tamaños, direcciones, sizeof y el operador &.', 'PUNT1.CPP, fentanilo01.c', 'modulo1.html'],
+  [2, 'Declarar y desreferenciar', 'Qué hacen * y &, y por qué importa el tipo del apuntador.', 'PUNT1.CPP', 'modulo2.html'],
+  [3, 'Arreglos y aritmética de apuntadores', 'Por qué p + 1 avanza 4 bytes y qué pasa al salirse del arreglo.', 'fentanilo10.c', 'modulo3.html'],
+  [4, 'Cadenas de caracteres', "El '\\0' final, el '\\n' que deja fgets y cómo cuenta strlen.", 'fentanilo11.c, PUNT6.CPP', 'modulo4.html'],
+  [5, 'Pila y montón', 'malloc, free, fugas de memoria y apuntadores colgantes.', 'fentanilo12.c, PUNT2.CPP', 'modulo5.html'],
+  [6, 'El apuntador genérico void *', 'Apuntar a cualquier tipo y convertir con casts.', 'PUNT3.CPP', 'modulo6.html'],
+  [7, 'Apuntadores a apuntadores', 'int **, char *** y matrices con filas de distinto tamaño.', 'fentanilo13.c, PUNT4.CPP', 'modulo7.html'],
+  [8, 'Apuntadores y funciones', 'Paso por valor contra paso por dirección, con los marcos de pila apareciendo.', 'fentanilo14.c, PUNT5.CPP, PUNT7.CPP', 'modulo8.html'],
+  [9, 'Apuntadores a funciones', 'Pasar una función como argumento, hasta qsort.', 'PUNT8.CPP, PUNT8A.CPP, PUNT8B.CPP', 'modulo9.html'],
+  [10, 'Estructuras y el operador <code>-&gt;</code>', 'Campos en memoria, relleno y acceso con apuntadores.', 'PUNT9.CPP', 'modulo10.html']
+];
+$('#mods').innerHTML = MODS.map(([n, t, d, ex, href]) => {
+  const inner = `<span class="n">${n}</span><h3>${t}</h3><p>${d}</p><span class="ex">Basado en <code>${ex}</code> · <span class="st">${href ? 'Disponible →' : 'Próximamente'}</span></span>`;
+  return href ? `<a class="mod" href="${href}">${inner}</a>` : `<div class="mod">${inner}</div>`;
+}).join('');
+
+/* franja de memoria */
+const fig = $('#fig'), svg = $('#svg');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const VALS = [4, 6, 69, 42, 67, 13, '?', '?'];
+let hop = 2;
+function draw() {
+  const W = fig.clientWidth, H = fig.clientHeight;
+  const N = W < 520 ? 6 : 8, m = Math.max(16, W * .04);
+  const cw = (W - 2 * m) / N, ch = Math.min(64, H * .26), y = H - ch - 44;
+  const k = Math.min(hop, N - 1, 5);
+  const cx = i => m + cw * i + cw / 2;
+  let out = '';
+  for (let i = 0; i < N; i++) {
+    const own = i < 6, x = m + cw * i;
+    const fill = !own ? 'var(--pad)' : i === k ? 'var(--hop)' : 'var(--arr)';
+    out += `<rect x="${x + 2}" y="${y}" width="${cw - 4}" height="${ch}" rx="6" fill="${fill}"/>`;
+    for (let b = 1; b < 4; b++) out += `<line x1="${x + 2 + (cw - 4) * b / 4}" y1="${y + 6}" x2="${x + 2 + (cw - 4) * b / 4}" y2="${y + ch - 6}" stroke="var(--scene)" stroke-opacity=".45"/>`;
+    out += `<text x="${cx(i)}" y="${y + ch / 2 + 6}" text-anchor="middle" font-size="17" font-weight="600" fill="${own ? '#fff' : 'var(--mute)'}" style="stroke:none">${VALS[i]}</text>`;
+    out += `<text x="${cx(i)}" y="${y + ch + 22}" text-anchor="middle" font-size="13" fill="var(--mute)">…${(0x1a20 + 4 * i).toString(16)}</text>`;
+  }
+  // apuntador p
+  const pw = Math.min(190, cw * 2 - 8), px = m + 2, py = 22, ph = 40;
+  out += `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="6" fill="var(--ptr)"/>`;
+  out += `<text x="${px + pw / 2}" y="${py + 26}" text-anchor="middle" font-size="15" font-weight="600" fill="#fff" style="stroke:none">p = 0x…1a20</text>`;
+  const sx = px + pw * .7, ex = cx(0);
+  out += `<path d="M${sx} ${py + ph} C ${sx} ${y - 30}, ${ex} ${y - 50}, ${ex} ${y - 8}" fill="none" stroke="var(--ptr)" stroke-width="3"/>`;
+  out += `<path d="M${ex - 6} ${y - 16} L${ex} ${y - 4} L${ex + 6} ${y - 16}Z" fill="var(--ptr)"/>`;
+  // saltos
+  for (let j = 0; j < k; j++) {
+    const a = cx(j), b = cx(j + 1), top = y - 34;
+    out += `<path class="hopanim" d="M${a} ${y - 4} Q ${(a + b) / 2} ${top} ${b} ${y - 4}" fill="none" stroke="var(--hop)" stroke-width="3"/>`;
+    if (cw > 70) out += `<text x="${(a + b) / 2}" y="${top + 2}" text-anchor="middle" font-size="13" font-weight="600" fill="var(--hop)">+4 B</text>`;
+  }
+  const lx = Math.min(W - m, Math.max(px + pw + 16, cx(k) - 40));
+  out += `<text x="${W - m}" y="${py + 26}" text-anchor="end" font-size="16" font-weight="600" fill="var(--ink)">*(p + ${k}) = ${VALS[k]}</text>`;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = out;
+}
+const ro = new ResizeObserver(draw); ro.observe(fig);
+if (!reduce) setInterval(() => { hop = (hop + 1) % 6; draw(); }, 1600);
+
+/* tema */
+const root = document.documentElement;
+try { const t = localStorage.getItem('punteros-tema'); if (t === 'dark' || t === 'light') root.dataset.tema = t; } catch (e) {}
+const isDark = () => root.dataset.tema ? root.dataset.tema === 'dark' : root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+const themeBtn = $('#theme');
+const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>';
+const syncTheme = () => { const d = isDark(); root.dataset.mode = d ? 'dark' : 'light'; root.style.setProperty('color-scheme', d ? 'dark' : 'light', 'important'); themeBtn.innerHTML = d ? SUN : MOON; themeBtn.setAttribute('aria-label', d ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'); };
+themeBtn.onclick = () => { const t = isDark() ? 'light' : 'dark'; root.dataset.tema = t; try { localStorage.setItem('punteros-tema', t); } catch (e) {} };
+new MutationObserver(syncTheme).observe(root, {attributes: true, attributeFilter: ['data-theme', 'data-tema']});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme);
+syncTheme();
+}
+</script>
+</body>
+</html>

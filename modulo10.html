@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estructuras y -&gt;</title>
+<script>try{var t=localStorage.getItem('punteros-tema'),r=document.documentElement;r.dataset.mode=(t?t==='dark':(r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches))?'dark':'light'}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: aula de programación, claro y preciso
+   IDEA el mismo depurador con volcado hexadecimal, con filas de 24 bytes: cada fila es una persona completa
+   PICTURE tres structs con nombre, relleno, edad, altura y peso; la flecha de p saltando 24 bytes por persona y la de ptr desde el marco de mostrar
+   COLOUR blanco o noche #0e1116; azul letras, gris relleno, verde enteros, rojo p, verde azulado ptr, ámbar el campo que se lee
+   TYPE Figtree 800 + Figtree; JetBrains Mono para código y direcciones
+   LAYOUT laptop: título, [código | memoria], controles, [explicación | cálculo | consola]; teléfono: título, memoria, controles, código, resto */
+:root{--cod:#6d4aff;--lib:#9a8fc2;--arr:#0a5cff;--nul:#14171c;--hdr:#8c94a3;--loc:#0b8a8a;--ptr:#e6261f;--bg:#ffffff;--ink:#14171c;--mute:#5b6270;--panel:#f4f6f9;--line:#dfe3ea;--scene:#eef2f8;--chr:#8a2bb8;--sht:#0b8a8a;--int:#00a05a;--dbl:#0a5cff;--hop:#e09d00;--pad:#c3c8d0;--cur:#fff1c2;--kw:#8a2bb8;--str:#9a5b00;--num:#0b7a7a}
+:root[data-mode=dark]{--cod:#9d86ff;--lib:#6f6696;--arr:#4f8bff;--nul:#e8eaee;--hdr:#59626f;--loc:#2fc7c7;--ptr:#ff5d52;--bg:#0e1116;--ink:#e8eaee;--mute:#9aa3b2;--panel:#161b23;--line:#262d38;--scene:#111723;--chr:#c37bff;--sht:#2fc7c7;--int:#2fc77f;--dbl:#4f8bff;--hop:#ffb400;--pad:#3b424e;--cur:#3a3112;--kw:#d58cff;--str:#f0b45b;--num:#5fd4d4}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;overflow-x:clip}
+code,pre,.mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+code{font-size:.92em;overflow-wrap:anywhere}
+.wrap{max-width:1320px;margin:0 auto;padding:0 max(3vw,16px)}
+.themebtn{position:fixed;top:12px;right:12px;z-index:30;width:44px;height:44px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--panel);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.themebtn svg{width:22px;height:22px}
+.crumbs{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;padding:12px 56px 0 0;font-size:15px}
+.crumbs a,.pager a{color:var(--ink);font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.crumbs a:hover,.pager a:hover{text-decoration:underline}
+.crumbs span{color:var(--mute)}
+.pager{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:4px;padding:8px 0 32px}
+.pager .nx{margin-left:auto}
+header{padding:6px 56px 16px 0}
+h1{margin:0;font-weight:800;font-size:clamp(30px,4vw,44px);line-height:1.05;letter-spacing:-.02em;text-wrap:balance}
+.lead{margin:6px 0 0;color:var(--mute);max-width:72ch}
+button{font:600 15px Figtree,system-ui,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;min-height:44px;padding:0 14px;cursor:pointer}
+button:hover{border-color:var(--mute)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--dbl);outline-offset:2px}
+button.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stage{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.25fr);gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.code{display:flex;flex-direction:column}
+.card h2{font-size:15px;font-weight:600;margin:0;color:var(--mute)}
+.code .hd{display:flex;justify-content:space-between;gap:8px;padding:12px 14px 6px}
+.src{font-size:13px;line-height:1.7;padding:4px 0 10px;overflow-x:auto}
+.ln{display:grid;grid-template-columns:3em minmax(0,1fr);white-space:pre-wrap;padding-right:12px;border-left:4px solid transparent}
+.ln .n{color:var(--mute);text-align:right;padding-right:12px;user-select:none}
+.ln.cur{background:var(--cur);border-left-color:var(--hop)}
+.ln.nxt{outline:2px dashed var(--hop);outline-offset:-2px}
+.k{color:var(--kw)}.s{color:var(--str)}.c{color:var(--mute);font-style:italic}.num{color:var(--num)}
+.v-chr{color:var(--chr);font-weight:600}.v-sht{color:var(--sht);font-weight:600}.v-int{color:var(--int);font-weight:600}.v-dbl{color:var(--dbl);font-weight:600}.v-ptr{color:var(--ptr);font-weight:600}
+.lb.tag.bad{border-color:var(--ptr)}
+.fn{color:var(--dbl);font-weight:600}
+.v-loc{color:var(--loc);font-weight:600}
+.v-cod{color:var(--cod);font-weight:600}
+.v-arr{color:var(--arr);font-weight:600}
+.lb.zone small{font-weight:400;color:var(--mute);font-size:13px}
+.lb.val.nulc{color:var(--bg);text-shadow:none}
+.lb.gap{font:400 13px Figtree,system-ui,sans-serif;color:var(--mute)}
+.lb.zone{font:800 15px Figtree,system-ui,sans-serif;color:var(--ink)}
+.watch{border-top:1px solid var(--line);padding:10px 14px 14px;display:grid;gap:6px;margin-top:auto}
+.w{display:grid;grid-template-columns:12px auto minmax(0,1fr);gap:8px;align-items:center;font-size:14px}
+.w i{width:12px;height:12px;border-radius:3px}
+.w span{font-family:"JetBrains Mono",monospace;font-size:13.5px;text-align:right;overflow-wrap:anywhere}
+.fig{position:relative;min-height:540px;border-radius:14px;overflow:hidden;background:var(--scene);border:1px solid var(--line);touch-action:pan-y;cursor:grab}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;font:600 13px "JetBrains Mono",monospace;line-height:1;will-change:transform}
+.lb.nm{color:var(--ink);background:color-mix(in srgb,var(--scene) 80%,transparent);padding:3px 5px;border-radius:5px}
+.lb.nm .t{color:var(--mute);font-weight:400}
+.lb.pd{color:var(--mute);font-weight:400}
+.lb.val{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);font-size:14px}
+.lb.val.dim{color:var(--ink);text-shadow:none;opacity:.7}
+.lb.by{font-size:13px}
+.lb.row,.lb.col{color:var(--mute);font-weight:400}
+.lb.tag{font-size:14px;color:var(--ink);background:var(--bg);border:2px solid var(--hop);padding:5px 8px;border-radius:8px}
+.badge{position:absolute;left:12px;top:12px;right:12px;display:flex;flex-wrap:wrap;gap:8px;pointer-events:none}
+.pill{font:600 14px "JetBrains Mono",monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.legend{position:absolute;left:12px;bottom:10px;right:12px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute);pointer-events:none}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.legend .hint{margin-left:auto}
+.nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--mute)}
+.bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding-block:14px}
+.bar .grow{flex:1 1 200px;display:flex;align-items:center;gap:10px}
+input[type=range]{flex:1;accent-color:var(--hop);height:44px}
+.stepn{font-size:14px;color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tg{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;cursor:pointer;background:var(--bg)}
+.tg input{width:18px;height:18px;accent-color:var(--hop)}
+.score{font-size:14px;color:var(--mute);white-space:nowrap}
+.bottom{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:16px;padding-bottom:28px}
+.bottom .card{padding:14px 16px}
+#expl h3{margin:4px 0 6px;font-size:22px;line-height:1.15;font-weight:800;letter-spacing:-.01em}
+#expl p{margin:0 0 8px;max-width:66ch}
+.calc{font:14px/1.75 "JetBrains Mono",monospace;margin-top:6px;overflow-wrap:anywhere}
+.calc b{color:var(--hop)}
+.con{margin:6px 0 0;background:#0b0e13;color:#d6dbe3;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.6;min-height:120px;max-height:240px;overflow:auto;white-space:pre}
+.con .last{color:#ffd166}
+.q{margin-top:10px;padding:12px;border:2px solid var(--hop);border-radius:12px;background:var(--bg)}
+.q .qh{margin:0 0 4px;font-size:13px;color:var(--mute)}
+.q p{margin:0 0 8px;font-weight:600}
+.q .opts{display:flex;flex-wrap:wrap;gap:8px}
+.q .opts button{font-family:"JetBrains Mono",monospace}
+.q .fb{margin:8px 0 0;font-weight:400}
+.q .fb.ok{color:var(--int)}.q .fb.no{color:var(--ptr)}
+.note{font-size:13px;color:var(--mute);margin:8px 0 0}
+@media(max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}.fig{order:-1;min-height:560px}.bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.bottom .conc{grid-column:1/-1}}
+@media(max-width:600px){.fig{min-height:520px}.bottom{grid-template-columns:minmax(0,1fr)}.legend .hint{display:none}h1{font-size:30px}}
+@media(max-width:900px){.wrap{display:flex;flex-direction:column}.stage{display:contents}.crumbs{order:0}header{order:1}.fig{order:2}.bar{order:3}.code{order:4;margin-bottom:16px}.bottom{order:5}.pager{order:6}}
+</style>
+</head>
+<body>
+<button id="theme" class="themebtn" type="button" aria-label="Cambiar a tema oscuro" title="Cambiar tema"></button>
+<div class="wrap">
+<nav class="crumbs" aria-label="Navegación"><a href="index2.html">← Apuntadores en C</a><span>Módulo 10 de 10</span></nav>
+<header>
+  <h1>Estructuras y el operador -&gt;</h1>
+  <p class="lead">Módulo 10 · Una <code>struct</code> es un bloque con sus campos en orden. Aquí ves el relleno que agrega el compilador, por qué <code>p-&gt;edad</code> es lo mismo que <code>(*p).edad</code> y cómo <code>p++</code> salta una estructura completa. Basado en <code>PUNT9.CPP</code>.</p>
+</header>
+
+<section class="stage">
+  <div class="card code">
+    <div class="hd"><h2>estructuras.c</h2><span class="stepn" id="lineTag">línea 3</span></div>
+    <div class="src mono" id="src"></div>
+    <div class="watch" id="watch"></div>
+  </div>
+  <div class="fig" id="fig">
+    <div class="labels" id="labels"></div>
+    <div class="badge"><div class="pill" id="pill"></div></div>
+    <div class="legend">
+      <span><i style="background:var(--arr)"></i>letra</span>
+      <span><i style="background:var(--int)"></i>int</span>
+      <span><i style="background:var(--ptr)"></i>p</span>
+      <span><i style="background:var(--loc)"></i>ptr (en mostrar)</span>
+      <span><i style="background:var(--hop)"></i>campo que se lee</span>
+      <span><i style="background:var(--pad)"></i>basura / hueco</span>
+      <span class="hint">Arrastra para girar · rueda para acercar</span>
+    </div>
+  </div>
+</section>
+
+<div class="bar">
+  <button id="bReset" type="button">⟲ Reiniciar</button>
+  <button id="bPrev" type="button" title="Paso anterior (←)">◀ Atrás</button>
+  <button id="bPlay" type="button" class="pri">▶ Reproducir</button>
+  <button id="bNext" type="button" title="Paso siguiente (→)">Adelante ▶</button>
+  <div class="grow"><input id="scrub" type="range" min="0" value="0" aria-label="Paso"><span class="stepn" id="stepn"></span></div>
+  <label class="tg"><input id="tBytes" type="checkbox">Ver bytes</label>
+  <label class="tg"><input id="tPred" type="checkbox">Modo predice</label>
+  <span class="score" id="score" hidden></span>
+</div>
+
+<section class="bottom">
+  <div class="card"><h2>Qué está pasando</h2><div id="expl"></div></div>
+  <div class="card"><h2>El cálculo</h2><div class="calc" id="calc"></div></div>
+  <div class="card conc"><h2>Consola</h2><pre class="con" id="con"></pre>
+    <p class="note">Direcciones de ejemplo: en tu equipo serán otras y pueden cambiar en cada ejecución. Nombres acortados respecto a PUNT9.CPP para que quepan en char nombre[10]. El relleno lo decide el compilador según la alineación de cada tipo; en x86-64 un int se alinea a 4 bytes. Por simplicidad no se dibuja la fila de regreso del marco de mostrar (módulo 8). En algunas consolas de Windows la ñ de «años» puede salir mal; ahí conviene configurar la consola en UTF-8.</p></div>
+</section>
+<nav class="pager" aria-label="Módulos"><a href="modulo9.html">← Módulo 9 · Apuntadores a funciones</a><a class="nx" href="index2.html">Volver al inicio →</a></nav>
+</div>
+
+<div id="probes" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <i data-c="chr" style="color:var(--chr)"></i><i data-c="cod" style="color:var(--cod)"></i><i data-c="lib" style="color:var(--lib)"></i><i data-c="arr" style="color:var(--arr)"></i><i data-c="nul" style="color:var(--nul)"></i><i data-c="hdr" style="color:var(--hdr)"></i><i data-c="loc" style="color:var(--loc)"></i><i data-c="mute" style="color:var(--mute)"></i><i data-c="ptr" style="color:var(--ptr)"></i><i data-c="sht" style="color:var(--sht)"></i><i data-c="int" style="color:var(--int)"></i><i data-c="dbl" style="color:var(--dbl)"></i><i data-c="hop" style="color:var(--hop)"></i><i data-c="pad" style="color:var(--pad)"></i><i data-c="scene" style="color:var(--scene)"></i><i data-c="line" style="color:var(--line)"></i><i data-c="ink" style="color:var(--ink)"></i>
+</div>
+
+<script src="js/three.min.js"></script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const hex = n => '0x' + n.toString(16);
+const sh = n => '0x…' + n.toString(16).slice(-4);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/* ---------- Programa ---------- */
+const CODE = [
+ '#include <stdio.h>',
+ '',
+ 'typedef struct {',
+ '    char nombre[10];',
+ '    int  edad;',
+ '    int  altura;',
+ '    int  peso;',
+ '} persona;',
+ '',
+ 'void mostrar(persona *ptr)',
+ '{',
+ '    printf("%s: %d años, %d cm\\n", ptr->nombre, ptr->edad, ptr->altura);',
+ '}',
+ '',
+ 'int main(void)',
+ '{',
+ '    persona e[3] = { {"Jose", 47, 182, 85},',
+ '                     {"Luis", 39, 170, 75},',
+ '                     {"Roberto", 18, 175, 80} };',
+ '    persona *p = e;',
+ '',
+ '    printf("sizeof(persona) = %zu\\n", sizeof(persona));',
+ '    (*p).edad = 48;            // lo mismo que p->edad = 48',
+ '    for(int i = 0; i < 3; i++, p++)',
+ '        mostrar(p);',
+ '    return 0;',
+ '}'
+];
+const TOK = /(\/\/.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(#include|<stdio\.h>)|\b(int|char|return|void|for|typedef|struct|sizeof)\b|\b(persona)\b|\b(mostrar|main)\b|\b(nombre|edad|altura|peso)\b|\b(p|ptr|e)\b|\b(\d+)\b/g;
+function hl(line) {
+  let out = '', last = 0, m; TOK.lastIndex = 0;
+  while ((m = TOK.exec(line))) {
+    out += esc(line.slice(last, m.index));
+    const t = esc(m[0]);
+    if (m[1]) out += `<span class="c">${t}</span>`;
+    else if (m[2]) out += `<span class="s">${t}</span>`;
+    else if (m[3] || m[4]) out += `<span class="k">${t}</span>`;
+    else if (m[5]) out += `<span class="v-cod">${t}</span>`;
+    else if (m[6]) out += `<span class="fn">${t}</span>`;
+    else if (m[7]) out += `<span class="v-int">${t}</span>`;
+    else if (m[8]) out += `<span class="${m[8] === 'e' ? 'v-arr' : m[8] === 'p' ? 'v-ptr' : 'v-loc'}">${t}</span>`;
+    else out += `<span class="num">${t}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(line.slice(last));
+}
+$('#src').innerHTML = CODE.map((l, i) => `<div class="ln" data-l="${i + 1}"><span class="n">${i + 1}</span><span>${hl(l) || ' '}</span></div>`).join('');
+
+/* ---------- Memoria ---------- */
+const E = 0x7ffd5e3c1a10, SZ = 24, PA = 0x7ffd5e3c1a08, FA = 0x7ffd5e3c19e0;
+const RZ = [-3.9, -2.0, -.1];
+const ROWS = {P: {a: PA, z: 2.0}, F: {a: FA, z: 4.0}};
+const FIELDS = [['nombre', 0, 10, 'str'], ['rel', 10, 2, 'pad'], ['edad', 12, 4, 'int'], ['altura', 16, 4, 'int'], ['peso', 20, 4, 'int']];
+const SL = [];
+for (let i = 0; i < 3; i++) FIELDS.forEach(([f, c0, size, kind]) => SL.push({id: f + i, f, i, label: f === 'rel' ? 'relleno' : f, z: RZ[i], c0, size, kind, fr: 'main'}));
+SL.push({id: 'p', label: 'p', type: 'persona *', z: ROWS.P.z, c0: 0, size: 8, kind: 'ptr', fr: 'main'});
+SL.push({id: 'ptr', label: 'ptr', type: 'persona *', z: ROWS.F.z, c0: 0, size: 8, kind: 'loc', fr: 'fn'});
+SL.push({id: 'fp', label: '', z: ROWS.F.z, c0: 8, size: 16, kind: 'pad', fr: 'fn'});
+SL.push({id: 'free', label: '', z: ROWS.F.z, c0: 0, size: 24, kind: 'pad', fr: 'free'});
+const SB = id => SL.find(v => v.id === id);
+const OFF = {nombre: 0, edad: 12, altura: 16, peso: 20};
+const ea = i => E + SZ * i;
+const le = (n, k) => { const b = []; for (let i = 0; i < k; i++) b.push((Math.floor(n / 256 ** i) % 256).toString(16).padStart(2, '0')); return b; };
+const visible = (v, s) => v.fr === 'main' || (v.fr === 'fn' ? s.fn !== null : s.fn === null);
+const PEOPLE = [{n: 'Jose', e: 47, a: 182, w: 85}, {n: 'Luis', e: 39, a: 170, w: 75}, {n: 'Roberto', e: 18, a: 175, w: 80}];
+const strBytes = n => { const b = []; for (let i = 0; i < 10; i++) b.push(i < n.length ? n.charCodeAt(i) : 0); return b; };
+
+/* ---------- Pasos ---------- */
+const C = (id, cls) => `<code class="${cls || 'v-int'}">${id}</code>`;
+const P = C('p', 'v-ptr'), PT = C('ptr', 'v-loc');
+const steps = [];
+let cur = {line: 15, frame: true, people: null, p: null, fn: null, out: []};
+function push(o, outLine) {
+  const s = Object.assign({}, cur, {glow: [], rd: null, tag: '', q: null}, o);
+  s.people = o.people || cur.people;
+  s.out = outLine ? cur.out.concat([outLine]) : cur.out; s.fresh = !!outLine;
+  steps.push(s); cur = s;
+}
+const clone = ps => ps.map(x => Object.assign({}, x));
+push({line: 15, title: 'Un arreglo de estructuras',
+  expl: `<p>Una <code>struct</code> junta varios datos en un solo bloque de memoria. Aquí, cada <code>persona</code> tiene un nombre y tres enteros, y ${C('e', 'v-arr')} es un arreglo de 3 personas: cada fila de la escena es una persona completa.</p>`,
+  calc: `&e[0] = ${hex(ea(0))}<br>&e[1] = ${hex(ea(1))}<br>&e[2] = ${hex(ea(2))}`});
+push({line: 17, people: clone(PEOPLE), glow: ['nombre0', 'edad0', 'altura0', 'peso0', 'nombre1', 'edad1', 'altura1', 'peso1', 'nombre2', 'edad2', 'altura2', 'peso2'], title: 'Se llenan los campos',
+  expl: `<p>Los campos van en el orden en que se declararon: primero las 10 casillas de <code>nombre</code>, luego <code>edad</code>, <code>altura</code> y <code>peso</code>. Las letras que sobran en cada nombre quedan en 0.</p><p>Fíjate en las 2 casillas grises entre <code>nombre</code> y <code>edad</code>: es <b>relleno</b>. El compilador las deja para que <code>edad</code> empiece en una dirección múltiplo de 4.</p>`,
+  calc: `nombre: +0 … +9 (10 B)<br>relleno: +10, +11<br>edad: +12, altura: +16, peso: +20`});
+push({line: 20, p: 0, glow: ['p'], title: 'p apunta a e[0]',
+  expl: `<p>${P} es un <code>persona *</code>: guarda la dirección de una persona completa. Como con cualquier arreglo, <code>e</code> equivale a <code>&e[0]</code>.</p>`,
+  calc: `p = e = &e[0]<br>p = <b>${hex(ea(0))}</b>`});
+push({line: 22, rd: [0, 0, 24], tag: 'sizeof(persona) = 24', title: 'El tamaño incluye el relleno',
+  expl: `<p>10 + 4 + 4 + 4 = 22, pero <code>sizeof(persona)</code> da <b>24</b>: cuenta los 2 bytes de relleno. Además, el tamaño total de una struct siempre es múltiplo de su alineación, para que en un arreglo cada persona también quede bien alineada.</p>`,
+  calc: `10 + 2 (relleno) + 4 + 4 + 4<br>= <b>24</b> bytes`,
+  q: {text: '¿Cuánto valdrá sizeof(persona)?', opts: ['22', '24', '10'], ans: 1, why: '10 + 4 + 4 + 4 = 22, más 2 bytes de relleno antes de edad.', hint: 'Mira las casillas grises entre nombre y edad.'}}, 'sizeof(persona) = 24');
+push({line: 23, people: (() => { const ps = clone(PEOPLE); ps[0].e = 48; return ps; })(), glow: ['edad0'], rd: [0, 12, 4], tag: 'p->edad: p + 12 bytes', title: '(*p).edad y p->edad',
+  expl: `<p><code>(*p).edad</code>: primero <code>*p</code> llega a la persona, luego <code>.edad</code> elige el campo. Como esto se usa tanto, C tiene un atajo: <code>p->edad</code>, «la edad de la persona a la que apunta p».</p><p>En memoria, <code>edad</code> está 12 bytes después del inicio de la estructura; el compilador suma ese desplazamiento por ti.</p>`,
+  calc: `p->edad es lo mismo que<br>*(int *)((char *)p + 12)<br>(el 12 lo calcula el compilador)<br>en ${hex(ea(0) + 12)}: 47 → <b>48</b>`,
+  q: {text: '¿En qué dirección está p->edad?', opts: [sh(ea(0) + 10), sh(ea(0) + 12), sh(ea(0) + 4)], ans: 1, why: 'edad empieza en +12: 10 de nombre y 2 de relleno.', hint: 'Cuenta 10 casillas de nombre y 2 de relleno.'}});
+const iter = (i) => {
+  push({line: 24, p: i, glow: ['p'], title: i ? `i++, p++ → e[${i}]` : 'Empieza el ciclo',
+    expl: i ? `<p><code>p++</code> avanza <b>una persona completa</b>: 24 bytes, lo que mide <code>sizeof(persona)</code>. Ahora ${P} apunta a <code>e[${i}]</code>.</p>` : `<p><code>i = 0</code> y ${P} apunta a <code>e[0]</code>.</p>`,
+    calc: `p = ${hex(ea(i))}${i ? `<br>= ${sh(ea(i - 1))} + 24` : ''}`,
+    q: i === 1 ? {text: '¿Cuántos bytes avanzará p con p++?', opts: ['1', '4', '24'], ans: 2, why: 'p es persona *: avanza sizeof(persona) = 24 bytes.', hint: 'Recuerda el módulo 3: +1 avanza el tamaño del tipo apuntado.'} : null});
+  push({line: 25, p: i, fn: i, glow: ['ptr'], title: `mostrar(p) con e[${i}]`,
+    expl: `<p>Se llama a ${C('mostrar', 'fn')} pasando ${P}. No se copian los 24 bytes de la persona, solo su dirección: ${PT} apunta a la misma estructura que ${P}.</p>`,
+    calc: `ptr = p = ${hex(ea(i))}`});
+  const pr = PEOPLE[i], edad = i === 0 ? 48 : pr.e;
+  push({line: 12, p: i, fn: i, glow: ['nombre' + i, 'edad' + i, 'altura' + i], rd: [i, 0, 20], tag: 'ptr->nombre, ptr->edad, ptr->altura', title: 'Leer campos con ->',
+    expl: `<p><code>ptr->nombre</code>, <code>ptr->edad</code> y <code>ptr->altura</code> siguen la flecha y leen cada campo en su desplazamiento: +0, +12 y +16. <code>peso</code> no se usa.</p>`,
+    calc: `ptr->nombre = "${pr.n}"<br>ptr->edad = ${edad}<br>ptr->altura = ${pr.a}`}, `${pr.n}: ${edad} años, ${pr.a} cm`);
+  push({line: 13, p: i, fn: null, title: 'mostrar termina', expl: `<p>El marco de mostrar desaparece; la persona sigue intacta en el arreglo de main.</p>`, calc: `regresa a main`});
+};
+iter(0); iter(1); iter(2);
+push({line: 24, p: 3, title: 'p queda justo después del arreglo',
+  expl: `<p>Tras el último <code>p++</code>, ${P} vale <code>e + 3</code>: la dirección justo después del arreglo. C permite <b>calcularla</b> (sirve para comparar), pero no leer lo que hay ahí. Como <code>i</code> llegó a 3, el ciclo termina.</p>`,
+  calc: `p = ${hex(ea(3))}<br>= e + 3 (fuera del arreglo)<br>i = 3 → 3 &lt; 3 falso`});
+push({line: 26, frame: false, title: 'Fin del sitio',
+  expl: `<p>Resumen: una struct es un bloque con sus campos en orden, a veces con relleno. <code>p->campo</code> es lo mismo que <code>(*p).campo</code>, y <code>p++</code> avanza una estructura completa.</p><p>Con esto se cierran los 10 módulos: casillas y direcciones, <code>*</code> y <code>&</code>, aritmética, cadenas, pila y montón, <code>void *</code>, dobles apuntadores, funciones, apuntadores a funciones y estructuras.</p>`,
+  calc: `return 0 → terminó bien`});
+
+/* ---------- Estado ---------- */
+let k = 0, playing = false, timer = null, qTimer = null, showBytes = false, predict = false;
+let answered = {}, tried = {}, score = {ok: 0, n: 0};
+const askNext = () => predict && k + 1 < steps.length && steps[k + 1].q && !answered[k + 1];
+function bytesOfSlot(v, s) {
+  if (v.kind === 'pad') return Array(v.size).fill('??');
+  if (v.id === 'p') return s.frame && s.p !== null ? le(ea(s.p), 8) : Array(8).fill('??');
+  if (v.id === 'ptr') return s.fn !== null ? le(ea(s.fn), 8) : Array(8).fill('??');
+  if (!s.frame || !s.people) return Array(v.size).fill('??');
+  const pr = s.people[v.i];
+  if (v.f === 'nombre') return strBytes(pr.n).map(c => c.toString(16).padStart(2, '0'));
+  return le({edad: pr.e, altura: pr.a, peso: pr.w}[v.f], 4);
+}
+function valText(v, s) {
+  if (v.id === 'p') return s.frame && s.p !== null ? sh(ea(s.p)) : '?';
+  if (v.id === 'ptr') return s.fn !== null ? sh(ea(s.fn)) : '?';
+  if (!s.frame || !s.people) return '?';
+  const pr = s.people[v.i];
+  return {edad: pr.e, altura: pr.a, peso: pr.w}[v.f] + '';
+}
+
+/* ---------- Escena 3D ---------- */
+const fig = $('#fig'), labelsEl = $('#labels');
+const BW = 0.55, BOX = 0.5, BH = 0.32, BD = 0.9;
+const bx = c => (c - 11.5) * BW;
+let gl = null;
+try {
+  const rnd = new THREE.WebGLRenderer({antialias: true});
+  rnd.setPixelRatio(Math.min(devicePixelRatio, 2));
+  fig.prepend(rnd.domElement); gl = {rnd};
+} catch (e) {
+  fig.insertAdjacentHTML('afterbegin', '<div class="nogl">No se pudo iniciar la escena 3D (WebGL o la biblioteca three.js no cargó). La explicación y la consola siguen funcionando abajo.</div>');
+}
+const col = {};
+const readColors = () => document.querySelectorAll('#probes i').forEach(el => { col[el.dataset.c] = new THREE.Color(getComputedStyle(el).color); });
+
+if (gl) {
+  readColors();
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8890a0, 0.75));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.75); dl.position.set(-4, 10, 7); scene.add(dl);
+  const trayMat = new THREE.MeshStandardMaterial({roughness: 1}), edgeMat = new THREE.LineBasicMaterial();
+  const trayG = new THREE.BoxGeometry(24 * BW + 1.2, .06, ROWS.F.z - RZ[0] + 2);
+  const tray = new THREE.Mesh(trayG, trayMat); tray.position.set(0, -BH / 2 - .08, (ROWS.F.z + RZ[0]) / 2); scene.add(tray);
+  const tEdge = new THREE.LineSegments(new THREE.EdgesGeometry(trayG), edgeMat); tEdge.position.copy(tray.position); scene.add(tEdge);
+  const hopMat = new THREE.MeshStandardMaterial({roughness: .5}), ptrMat = new THREE.MeshStandardMaterial({roughness: .5}), locMat = new THREE.MeshStandardMaterial({roughness: .5});
+  const labels = [];
+  const mkLabel = (cls, pos, html, anchor) => {
+    const el = document.createElement('div'); el.className = 'lb ' + cls; el.innerHTML = html || '';
+    labelsEl.appendChild(el); const Lb = {el, pos, cls, show: true, anchor: anchor || 'c'}; labels.push(Lb); return Lb;
+  };
+  const tname = v => v.type ? `<span class="t">${v.type}</span>${v.type.endsWith('*') ? '' : ' '}${v.label}` : v.label;
+  SL.forEach(v => {
+    v.cx = (bx(v.c0) + bx(v.c0 + v.size - 1)) / 2; v.y = 0; v.yT = 0; v.op = 1; v.opT = 1; v.mats = []; v.meshes = [];
+    for (let b = 0; b < v.size; b++) {
+      const m = new THREE.MeshStandardMaterial({roughness: .55, metalness: .05, transparent: true});
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(BOX, BH, BD), m);
+      mesh.position.set(bx(v.c0 + b), 0, v.z); scene.add(mesh); v.mats.push(m); v.meshes.push(mesh);
+    }
+    v.lName = v.label ? mkLabel(v.kind === 'pad' ? 'pd' : 'nm', new THREE.Vector3(v.cx, -BH / 2, v.z + BD / 2 + .12), tname(v), 't') : null;
+    v.lVal = v.kind === 'int' || v.kind === 'ptr' || v.kind === 'loc' ? mkLabel('val', new THREE.Vector3(v.cx, BH / 2, v.z), '?') : null;
+    v.lBytes = [];
+    for (let b = 0; b < v.size; b++) v.lBytes.push(mkLabel('val by', new THREE.Vector3(bx(v.c0 + b), BH / 2, v.z), '??'));
+  });
+  const rowL = [0, 1, 2].map(i => ({L: mkLabel('row', new THREE.Vector3(bx(0) - BW * .75, 0, RZ[i]), '', 'r'), a: ea(i), t: `e[${i}]`}));
+  rowL.push({L: mkLabel('row', new THREE.Vector3(bx(0) - BW * .75, 0, ROWS.P.z), '', 'r'), a: PA, t: ''});
+  rowL.push({L: mkLabel('row', new THREE.Vector3(bx(0) - BW * .75, 0, ROWS.F.z), '', 'r'), a: FA, t: '', fn: true});
+  const zMain = mkLabel('zone', new THREE.Vector3(bx(23) + BW * .5, -BH / 2, RZ[0] - .8), 'persona e[3] <small>· 3 × 24 B</small>', 'br');
+  const zFn = mkLabel('zone', new THREE.Vector3(bx(23) + BW * .5, -BH / 2, ROWS.F.z - .75), 'marco de mostrar()', 'br');
+  const tagL = mkLabel('tag', new THREE.Vector3(), '', 'b');
+
+  const brace = new THREE.Group(); scene.add(brace);
+  let braceKey = '', braceInfo = null;
+  function buildBrace(rd) {
+    brace.children.slice().forEach(o => { o.geometry.dispose(); brace.remove(o); });
+    braceInfo = null; if (!rd) return;
+    const [i, c0, size] = rd, x0 = bx(c0), x1 = bx(c0 + size - 1), w = x1 - x0 + BOX - .04, cx = (x0 + x1) / 2, y = .62;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, .06, .06), hopMat); bar.position.set(cx, y, 0); brace.add(bar);
+    [-1, 1].forEach(sgn => { const t = new THREE.Mesh(new THREE.BoxGeometry(.06, .22, .06), hopMat); t.position.set(cx + sgn * w / 2, y - .08, 0); brace.add(t); });
+    brace.position.z = RZ[i]; braceInfo = {cx, z: RZ[i], i};
+  }
+  const top = (x, z, y) => new THREE.Vector3(x, (y || 0) + BH / 2 + .03, z);
+  function arc(from, to, h, prog, mat, rad) {
+    const g = new THREE.Group(); if (prog <= .001) return g;
+    const mid = from.clone().add(to).multiplyScalar(.5); mid.y = Math.max(from.y, to.y) + h;
+    const cv = new THREE.QuadraticBezierCurve3(from, mid, to);
+    const pts = []; for (let i = 0; i <= 28; i++) pts.push(cv.getPoint(prog * i / 28));
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 36, rad, 7, false), mat));
+    const end = cv.getPoint(prog), tg = cv.getTangent(prog).normalize();
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(rad * 3, rad * 7, 12), mat);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tg); cone.position.copy(end).addScaledVector(tg, -rad * 3.5);
+    g.add(cone); return g;
+  }
+  const dispose = g => { if (!g) return; g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); scene.remove(g); };
+  const AR = {p: {key: '', prog: 0, g: null, to: null}, ptr: {key: '', prog: 0, g: null, to: null}};
+
+  function paint() {
+    const s = steps[k];
+    SL.forEach(v => {
+      const vis = visible(v, s); v.meshes.forEach(m => m.visible = vis);
+      v.opT = v.fr === 'free' ? .45 : (!s.frame && v.fr === 'main') ? .5 : 1;
+      const g = s.glow.includes(v.id);
+      v.mats.forEach((m, b) => {
+        let c;
+        if (v.kind === 'pad') c = col.pad.clone();
+        else if (v.kind === 'str') { const n = s.frame && s.people ? strBytes(s.people[v.i].n)[b] : null; c = n === null ? col.pad.clone() : (n === 0 ? col.nul : col.arr).clone(); }
+        else {
+          c = ({int: col.int, ptr: col.ptr, loc: col.loc})[v.kind].clone();
+          const kn = v.id === 'p' ? s.frame && s.p !== null : v.id === 'ptr' ? s.fn !== null : s.frame && !!s.people;
+          if (!kn) c.lerp(col.pad, .78);
+        }
+        m.color.copy(c); m.emissive.copy(g ? col.hop : new THREE.Color(0)); m.emissiveIntensity = g ? .3 : 0;
+      });
+    });
+  }
+  function recolor() {
+    readColors(); scene.background = col.scene.clone();
+    trayMat.color.copy(col.scene).lerp(col.ink, .06); edgeMat.color.copy(col.line); hopMat.color.copy(col.hop); ptrMat.color.copy(col.ptr); locMat.color.copy(col.loc);
+    paint();
+  }
+  let az = -0.14, el = 1.0, zoom = 1, dist = 18;
+  const target = new THREE.Vector3(-.3, 0, 0);
+  const elFor = () => fig.clientWidth / fig.clientHeight < 1.25 ? 1.1 : .98;
+  function fit() {
+    const W = fig.clientWidth, H = fig.clientHeight;
+    gl.rnd.setSize(W, H, false); camera.aspect = W / H;
+    el = elFor(); const nar = W < 600; target.x = nar ? -1.3 : -1.3;
+    const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const halfW = 24 * BW / 2 + (nar ? 3.0 : 3.4), halfH = 4.6 * Math.sin(el) + 2.0;
+    dist = Math.max(halfW / (t * camera.aspect), halfH / t) * .96 + 1;
+    camera.updateProjectionMatrix();
+  }
+  const ro = new ResizeObserver(fit); ro.observe(fig); fit();
+  let drag = null;
+  gl.rnd.domElement.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, az, el, type: e.pointerType}; fig.style.cursor = 'grabbing'; });
+  addEventListener('pointermove', e => {
+    if (!drag) return;
+    az = Math.max(-1.1, Math.min(1.1, drag.az - (e.clientX - drag.x) * .006));
+    if (drag.type === 'mouse') el = Math.max(.3, Math.min(1.4, drag.el + (e.clientY - drag.y) * .005));
+  });
+  addEventListener('pointerup', () => { drag = null; fig.style.cursor = ''; });
+  addEventListener('pointercancel', () => { drag = null; fig.style.cursor = ''; });
+  gl.rnd.domElement.addEventListener('wheel', e => { e.preventDefault(); zoom = Math.max(.45, Math.min(1.6, zoom * (1 + Math.sign(e.deltaY) * .08))); }, {passive: false});
+  gl.rnd.domElement.addEventListener('dblclick', () => { az = -0.14; el = elFor(); zoom = 1; });
+
+  let prevFn = null;
+  gl.sync = () => {
+    const s = steps[k];
+    if (s.fn !== null && prevFn === null && !reduce) ['ptr', 'fp'].forEach(id => SB(id).y = -.6);
+    prevFn = s.fn;
+    SL.forEach(v => { v.yT = s.glow.includes(v.id) ? .2 : 0; });
+    const key = s.rd ? s.rd.join(':') : '';
+    if (key !== braceKey) { braceKey = key; buildBrace(s.rd); }
+    paint();
+    tagL.el.innerHTML = esc(s.tag || '');
+    const want = {p: s.frame && s.p !== null && s.p < 3 ? s.p : null, ptr: s.fn !== null ? s.fn : null};
+    Object.keys(AR).forEach(id => {
+      const A = AR[id], to = want[id], kk = to === null ? '' : String(to);
+      if (kk !== A.key) { const had = A.to !== null; A.key = kk; A.to = to; dispose(A.g); A.g = null; A.prog = to === null ? 0 : (had || reduce ? 1 : 0); }
+    });
+    SL.forEach(v => {
+      if (v.lVal) { const t = valText(v, s); v.lVal.el.textContent = t; v.lVal.el.classList.toggle('dim', t === '?'); }
+      const b = bytesOfSlot(v, s);
+      v.lBytes.forEach((Lb, i) => {
+        Lb.hex = b[i];
+        if (v.kind === 'str') { const c = b[i] === '??' ? null : parseInt(b[i], 16); Lb.txt = c === null ? '?' : c === 0 ? '\\0' : String.fromCharCode(c); Lb.el.classList.toggle('nulc', c === 0); Lb.el.classList.toggle('dim', c === null); }
+        else { Lb.txt = b[i]; Lb.el.classList.toggle('dim', b[i] === '??'); }
+      });
+    });
+  };
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    const d = dist * zoom;
+    camera.position.set(target.x + d * Math.cos(el) * Math.sin(az), target.y + d * Math.sin(el), target.z + d * Math.cos(el) * Math.cos(az));
+    camera.lookAt(target);
+    const f = reduce ? 1 : Math.min(1, dt * 9);
+    let moving = false;
+    SL.forEach(v => {
+      const dy = (v.yT - v.y) * f; if (Math.abs(dy) > 1e-4) moving = true; v.y += dy; v.op += (v.opT - v.op) * f;
+      v.meshes.forEach(m => m.position.y = v.y); v.mats.forEach(m => { m.opacity = v.op; m.depthWrite = v.op > .9; });
+    });
+    if (braceInfo) brace.position.y = Math.max(SB('nombre' + braceInfo.i).y, SB('edad' + braceInfo.i).y) + BH / 2;
+    const s = steps[k];
+    Object.keys(AR).forEach(id => {
+      const A = AR[id];
+      if (A.to === null) return;
+      if (A.prog < 1 || !A.g || moving) {
+        A.prog = Math.min(1, A.prog + dt * 1.4);
+        dispose(A.g);
+        const src = SB(id), dst = SB('nombre' + A.to), tx = bx(0);
+        const from = top(src.cx - 1.1, src.z, src.y), to = top(tx, dst.z, dst.y);
+        A.g = arc(from, to, 1.2 + Math.abs(dst.z - src.z) * .25, A.prog, id === 'p' ? ptrMat : locMat, .05); scene.add(A.g);
+      }
+    });
+    const W = fig.clientWidth, H = fig.clientHeight;
+    const p1 = new THREE.Vector3(bx(0), 0, 0).project(camera), p2 = new THREE.Vector3(bx(1), 0, 0).project(camera);
+    const bytePx = Math.abs(p2.x - p1.x) * W / 2;
+    SL.forEach(v => {
+      const vis = visible(v, s);
+      if (v.lVal) { v.lVal.show = vis && !showBytes; v.lVal.pos.y = BH / 2 + v.y; }
+      v.lBytes.forEach(Lb => {
+        const str = v.kind === 'str';
+        Lb.show = vis && v.kind !== 'pad' && (showBytes ? bytePx >= 17 : str && bytePx >= 13);
+        const t = str && !showBytes ? Lb.txt : Lb.hex; if (t !== undefined && Lb.el.textContent !== t) Lb.el.textContent = t;
+        Lb.pos.y = BH / 2 + v.y;
+      });
+      if (v.lName) {
+        v.lName.show = vis && (v.i === undefined || (v.i === 0 && bytePx >= 18) || bytePx >= 30) && (v.kind !== 'pad' || bytePx >= 24);
+        if (v.type) { const html = bytePx < 24 ? v.label : tname(v); if (v.lName.el.innerHTML !== html) v.lName.el.innerHTML = html; }
+      }
+    });
+    rowL.forEach(({L: Lb, a, t, fn}) => { Lb.el.textContent = W < 600 ? (t || sh(a)) : (t ? t + ' ' : '') + (W > 1000 ? hex(a) : sh(a)); Lb.show = !fn || s.fn !== null; });
+    zMain.show = !(braceInfo && s.tag);
+    zFn.show = s.fn !== null;
+    tagL.show = !!(braceInfo && s.tag);
+    if (tagL.show) tagL.pos.set(braceInfo.cx, BH / 2 + 1.0, braceInfo.z - .2);
+    const v3 = new THREE.Vector3();
+    labels.forEach(Lb => {
+      if (!Lb.show) { if (Lb.el.style.display !== 'none') Lb.el.style.display = 'none'; return; }
+      v3.copy(Lb.pos).project(camera);
+      if (v3.z > 1) { Lb.el.style.display = 'none'; return; }
+      let x = (v3.x + 1) / 2 * W; const y = (1 - v3.y) / 2 * H;
+      if (Lb === tagL) { const hw = Lb.el.offsetWidth / 2 + 8; x = Math.max(hw, Math.min(W - hw, x)); }
+      Lb.el.style.display = '';
+      const tr = {c: '-50%,-50%', t: '-50%,0', r: '-100%,-50%', b: '-50%,-100%', br: '-100%,-100%'}[Lb.anchor];
+      Lb.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(${tr})`;
+    });
+    gl.rnd.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+  gl.recolor = recolor; gl.reset = () => { prevFn = null; };
+  recolor();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Paneles ---------- */
+function render() {
+  const s = steps[k], ask = askNext(), nx = ask ? steps[k + 1] : null;
+  document.querySelectorAll('.ln').forEach(l => { l.classList.toggle('cur', +l.dataset.l === s.line); l.classList.toggle('nxt', !!nx && +l.dataset.l === nx.line); });
+  $('#lineTag').textContent = 'línea ' + s.line;
+  const w = (kind, name, txt) => `<div class="w"><i style="background:var(--${kind})"></i><code>${name}</code><span>${txt}</span></div>`;
+  let rows = [0, 1, 2].map(i => w('arr', `e[${i}]`, !s.frame ? '—' : s.people ? `{"${s.people[i].n}", ${s.people[i].e}, ${s.people[i].a}, ${s.people[i].w}}` : '? (basura)')).join('');
+  rows += w('ptr', 'persona *p', !s.frame ? '—' : s.p === null ? '? (basura)' : s.p < 3 ? `${sh(ea(s.p))} → e[${s.p}]` : `${sh(ea(3))} (después del arreglo)`);
+  if (s.fn !== null) rows += w('loc', 'mostrar: ptr', `${sh(ea(s.fn))} → e[${s.fn}]`);
+  $('#watch').innerHTML = rows;
+  let ex = `<h3>${s.title}</h3>${s.expl}`;
+  if (ask) ex += `<div class="q"><p class="qh">Antes de ejecutar la línea ${nx.line}:</p><p>${esc(nx.q.text)}</p><div class="opts">${nx.q.opts.map((o, i) => `<button type="button" data-o="${i}">${esc(o)}</button>`).join('')}</div><p class="fb" id="fb"></p></div>`;
+  $('#expl').innerHTML = ex;
+  $('#calc').innerHTML = s.calc;
+  const lines = s.out.map(esc);
+  if (s.fresh && lines.length) lines[lines.length - 1] = `<span class="last">${lines[lines.length - 1]}</span>`;
+  const con = $('#con'); con.innerHTML = lines.join('\n') || '<span style="opacity:.5">(todavía no se imprime nada)</span>'; con.scrollTop = con.scrollHeight;
+  $('#pill').innerHTML = !s.frame ? 'main terminó' : s.p === null ? 'p = ? (basura)' : s.p < 3 ? `p → e[${s.p}]` : 'p = e + 3';
+  $('#scrub').value = k; $('#stepn').textContent = `Paso ${k + 1} de ${steps.length}`;
+  $('#bPrev').disabled = k === 0; $('#bNext').disabled = k === steps.length - 1;
+  const sc = $('#score'); sc.hidden = !predict; sc.textContent = `Aciertos: ${score.ok} de ${score.n}`;
+  if (gl) gl.sync();
+}
+$('#expl').addEventListener('click', e => {
+  const b = e.target.closest('button[data-o]'); if (!b || !askNext()) return;
+  const q = steps[k + 1].q, ok = +b.dataset.o === q.ans, fb = $('#fb');
+  if (!tried[k + 1]) { tried[k + 1] = true; score.n++; if (ok) score.ok++; }
+  if (ok) {
+    answered[k + 1] = true; fb.className = 'fb ok'; fb.textContent = '✓ ' + q.why;
+    b.closest('.opts').querySelectorAll('button').forEach(x => x.disabled = true);
+    const n = k + 1; qTimer = setTimeout(() => { if (k === n - 1) go(n); }, reduce ? 0 : 1400);
+  } else { fb.className = 'fb no'; fb.textContent = 'No es esa opción. ' + (q.hint || 'Vuelve a leer la línea con borde punteado.'); b.disabled = true; }
+});
+function go(n) { k = Math.max(0, Math.min(steps.length - 1, n)); render(); }
+function stop() { playing = false; clearTimeout(timer); clearTimeout(qTimer); $('#bPlay').textContent = '▶ Reproducir'; }
+const nag = () => { const fb = $('#fb'); if (fb) { fb.className = 'fb no'; fb.textContent = 'Primero elige una respuesta.'; } };
+function tick() {
+  if (!playing) return;
+  if (askNext() || k >= steps.length - 1) { stop(); return; }
+  go(k + 1);
+  if (askNext() || k >= steps.length - 1) { stop(); return; }
+  timer = setTimeout(tick, 2000);
+}
+$('#bPlay').onclick = () => {
+  if (playing) { stop(); return; }
+  if (askNext()) { nag(); return; }
+  if (k >= steps.length - 1) { answered = {}; tried = {}; score = {ok: 0, n: 0}; go(0); if (askNext()) { nag(); return; } }
+  playing = true; $('#bPlay').textContent = '❚❚ Pausa'; timer = setTimeout(tick, 400);
+};
+$('#bNext').onclick = () => { stop(); if (askNext()) nag(); else go(k + 1); };
+$('#bPrev').onclick = () => { stop(); go(k - 1); };
+$('#bReset').onclick = () => { stop(); answered = {}; tried = {}; score = {ok: 0, n: 0}; if (gl) gl.reset(); go(0); };
+$('#scrub').max = steps.length - 1;
+$('#scrub').oninput = e => { stop(); go(+e.target.value); };
+$('#tBytes').onchange = e => { showBytes = e.target.checked; };
+$('#tPred').onchange = e => { predict = e.target.checked; if (!predict) clearTimeout(qTimer); render(); };
+addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.target.closest('input[type=range],textarea')) return;
+  if (e.key === 'ArrowRight') $('#bNext').click();
+  else if (e.key === 'ArrowLeft') $('#bPrev').click();
+  else if (e.key === ' ' && !e.target.closest('button,a,input,label')) { e.preventDefault(); $('#bPlay').click(); }
+});
+
+/* ---------- Tema ---------- */
+const root = document.documentElement;
+try { const t = localStorage.getItem('punteros-tema'); if (t === 'dark' || t === 'light') root.dataset.tema = t; } catch (e) {}
+const isDark = () => root.dataset.tema ? root.dataset.tema === 'dark' : root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+const themeBtn = $('#theme');
+const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>';
+const syncTheme = () => { const d = isDark(); root.dataset.mode = d ? 'dark' : 'light'; root.style.setProperty('color-scheme', d ? 'dark' : 'light', 'important'); themeBtn.innerHTML = d ? SUN : MOON; themeBtn.setAttribute('aria-label', d ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'); if (gl) gl.recolor(); };
+themeBtn.onclick = () => { const t = isDark() ? 'light' : 'dark'; root.dataset.tema = t; try { localStorage.setItem('punteros-tema', t); } catch (e) {} };
+new MutationObserver(syncTheme).observe(root, {attributes: true, attributeFilter: ['data-theme', 'data-tema']});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme);
+syncTheme(); render();
+}
+
+</script>
+</body>
+</html>
