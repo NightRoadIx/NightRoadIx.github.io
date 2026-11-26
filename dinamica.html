@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dinámica</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+
+<script>
+/* el tema se fija antes del primer pintado para que no parpadee */
+(function () {
+  var r = document.documentElement, t = null;
+  try { t = localStorage.getItem("banco-tema"); } catch (e) {}
+  if (t !== "claro" && t !== "oscuro") t = r.getAttribute("data-theme") === "light" ? "claro" : "oscuro";
+  r.setAttribute("data-tema", t);
+})();
+</script>
+
+<style>
+/* Layout: visor a la izquierda, panel de instrumento a la derecha; una pestaña por herramienta,
+   apila bajo 880px. Mismo sistema visual que los bancos de los otros cursos. */
+:root {
+  color-scheme: dark;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #0a0e15; --panel: #111722; --panel-2: #161e2b; --line: #223044; --line-rgb: 34,48,68;
+  --fg: #dde5f0; --dim: #8695aa;
+  --acc: #f2c454; --acc-rgb: 242,196,84;
+  --cy: #5fa8d8; --cy-rgb: 95,168,216;
+  --vi: #a888d8; --vi-rgb: 168,136,216;
+  --ok: #52b87c; --ok-rgb: 82,184,124;
+  --no: #d4624a; --no-rgb: 212,98,74;
+  --or: #e0743c; --or-rgb: 224,116,60;
+  --vp: #050709;
+  --hot: #6d3a2a; --good: #2a5c3f;
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --math: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+:root[data-tema="claro"] {
+  color-scheme: light;
+  --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eef1f6; --line: #d9dfe7; --line-rgb: 217,223,231;
+  --fg: #253243; --dim: #61728b;
+  --acc: #936904; --acc-rgb: 147,105,4;
+  --cy: #1a76b1; --cy-rgb: 26,118,177;
+  --vi: #8853d7; --vi-rgb: 136,83,215;
+  --ok: #27804c; --ok-rgb: 39,128,76;
+  --no: #ce3c1d; --no-rgb: 206,60,29;
+  --or: #c14a0d; --or-rgb: 193,74,13;
+  --vp: #f7f9fc;
+  --hot: #e8bfb2; --good: #b8dcc6;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0; }
+
+.wrap {
+  position: relative; max-width: 1200px; margin: 0 auto; padding-block: 20px 36px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header { padding-right: 46px; }
+.back { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px; }
+.back:hover { color: var(--acc); }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); margin: 0 0 6px; }
+h1 { font-size: clamp(22px, 4.4vw, 31px); font-weight: 600; letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance; }
+.lede { color: var(--dim); margin: 0; max-width: 70ch; font-size: 14.5px; }
+.lede b { color: var(--fg); font-weight: 500; }
+
+/* pestañas */
+nav { display: flex; flex-wrap: wrap; gap: 5px; margin: 18px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px; cursor: pointer;
+  display: flex; align-items: baseline; gap: 7px; transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] { color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600; }
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.tab.sep { margin-left: 8px; }
+
+/* escenario */
+.stage { display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.viewport {
+  position: relative; background: var(--vp); border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0; max-width: 100%;
+}
+.viewport canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hint {
+  position: absolute; left: 11px; bottom: 9px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+@media (max-width: 700px) { .hint { display: none; } }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0; display: flex; flex-direction: column; gap: 14px;
+}
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output { font-family: var(--mono); font-size: 13.5px; font-weight: 500; color: var(--acc); font-variant-numeric: tabular-nums; }
+.pair2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+
+input[type="range"] { width: 100%; -webkit-appearance: none; appearance: none; background: transparent; margin: 2px 0; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line); }
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px; }
+input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none; }
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+select, input[type="text"], input[type="number"] {
+  font: 500 14px var(--mono); color: var(--fg); background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 9px; width: 100%; min-width: 0;
+}
+select { font-family: var(--sans); }
+select:focus-visible, input:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button, .btn {
+  flex: 1; font-family: var(--sans); font-size: 12.5px; font-weight: 500; background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer; white-space: nowrap;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] { background: rgba(var(--acc-rgb), .14); color: var(--acc); border-color: rgba(var(--acc-rgb), .42); }
+.btn:hover, .toggle button:hover { color: var(--fg); border-color: var(--dim); }
+.toggle button:focus-visible, .btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--dim); }
+.chk input { accent-color: var(--acc); }
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(var(--line-rgb), .55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v { font-family: var(--mono); font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.v.acc { color: var(--acc); } .v.cy { color: var(--cy); } .v.ok { color: var(--ok); } .v.no { color: var(--no); }
+.v.vi { color: var(--vi); } .v.or { color: var(--or); } .v.dim { color: var(--dim); }
+.sect { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+.note { font-size: 12.5px; line-height: 1.5; color: var(--dim); background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; margin: 0; }
+.note b { color: var(--fg); font-weight: 600; }
+.note.hot { border-color: var(--hot); } .note.hot b { color: var(--no); }
+.note.good { border-color: var(--good); } .note.good b { color: var(--ok); }
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+
+/* visor de conversiones */
+.htmlview { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 22px; overflow: auto; }
+.bigres { font-family: var(--mono); font-size: clamp(22px, 4.2vw, 34px); font-weight: 600; letter-spacing: -.01em; text-align: center; font-variant-numeric: tabular-nums; }
+.bigres .from { color: var(--fg); } .bigres .to { color: var(--acc); } .bigres .eqs { color: var(--dim); font-weight: 400; margin: 0 .3em; }
+.chainv { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 12px; font-family: var(--mono); font-size: 15px; }
+.chainv .op { color: var(--dim); }
+.chainv .term { display: inline-flex; gap: 6px; align-items: baseline; }
+.frac { display: inline-flex; flex-direction: column; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; }
+.frac .num, .frac .den { display: flex; gap: 6px; align-items: baseline; white-space: nowrap; }
+.frac .num { border-bottom: 1.5px solid var(--dim); padding-bottom: 4px; margin-bottom: 4px; }
+.u { color: var(--cy); }
+.u.x { color: var(--dim); text-decoration: line-through; text-decoration-color: var(--no); text-decoration-thickness: 2px; }
+.chainv .res { color: var(--acc); font-weight: 600; }
+.steps-v { margin: 0 auto; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; color: var(--dim); max-width: 52ch; }
+.steps-v b { color: var(--fg); font-weight: 500; }
+
+/* visor de análisis dimensional */
+.eqbig { font-family: var(--math); font-size: clamp(24px, 4.4vw, 38px); text-align: center; color: var(--fg); white-space: nowrap; overflow-x: auto; }
+.terms { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.term-c { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 9px 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 112px; }
+.term-c .t { font-family: var(--math); font-size: 19px; }
+.term-c .d { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.term-c.ok { border-color: rgba(var(--ok-rgb), .6); } .term-c.ok .d { color: var(--ok); }
+.term-c.no { border-color: rgba(var(--no-rgb), .6); } .term-c.no .d { color: var(--no); }
+.waiting { text-align: center; color: var(--dim); font-size: 13.5px; }
+.m { font-family: var(--math); font-size: 1.06em; white-space: nowrap; }
+
+/* pestañas a todo el ancho */
+.full { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 15px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.card .tag { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--cy); }
+.card h3 { font-size: 15.5px; font-weight: 600; margin: 0; }
+.card p.q { font-size: 14px; margin: 0; }
+details { border-top: 1px solid rgba(var(--line-rgb), .7); padding-top: 8px; }
+summary { cursor: pointer; font-size: 12.5px; font-weight: 500; color: var(--acc); list-style: none; display: inline-flex; align-items: center; gap: 7px; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "+"; font-family: var(--mono); width: 16px; height: 16px; border: 1.3px solid var(--acc); border-radius: 4px; display: inline-grid; place-items: center; font-size: 11px; line-height: 1; }
+details[open] summary::before { content: "−"; }
+summary:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; border-radius: 4px; }
+.steps { margin: 10px 0 0; padding-left: 1.2rem; display: grid; gap: 6px; font-size: 13.5px; }
+.steps li::marker { font-family: var(--mono); color: var(--dim); font-size: 12px; }
+.ans { display: inline-block; margin-left: 4px; font-family: var(--mono); font-size: 12.5px; font-weight: 500; color: var(--ok); background: rgba(var(--ok-rgb), .12); border-radius: 4px; padding: 1px 7px; }
+
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.opts button { font: 500 13.5px var(--mono); text-align: left; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 11px; cursor: pointer; }
+.opts button:hover:not(:disabled) { border-color: var(--acc); }
+.opts button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.opts button.right { border-color: var(--ok); background: rgba(var(--ok-rgb), .12); color: var(--ok); }
+.opts button.wrong { border-color: var(--no); background: rgba(var(--no-rgb), .12); color: var(--no); }
+.opts button:disabled { cursor: default; }
+.fb { margin: 0; font-size: 13px; color: var(--dim); }
+.fb b.ok { color: var(--ok); } .fb b.no { color: var(--no); }
+.scorebar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-family: var(--mono); font-size: 13px; color: var(--dim); }
+.scorebar b { color: var(--acc); font-weight: 600; }
+
+footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--dim); max-width: 80ch; }
+footer a { color: var(--dim); }
+
+.tema {
+  position: absolute; top: 20px; right: max(16px, env(safe-area-inset-right, 0px)); z-index: 5; width: 34px; height: 34px; padding: 0;
+  display: grid; place-items: center; background: var(--panel); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: color .14s, border-color .14s, background .14s;
+}
+.tema:hover { color: var(--acc); border-color: var(--acc); background: var(--panel-2); }
+.tema:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.tema svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: none; }
+.tema .sol { display: block; }
+:root[data-tema="claro"] .tema .sol { display: none; }
+:root[data-tema="claro"] .tema .luna { display: block; }
+
+@media (max-width: 560px) { .opts { grid-template-columns: minmax(0, 1fr); } .full { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+
+/* fuerzas a elegir y subpaneles */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button {
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500; background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; cursor: pointer;
+}
+.chips button:hover { color: var(--fg); border-color: var(--dim); }
+.chips button[aria-pressed="true"] { background: rgba(var(--acc-rgb), .14); color: var(--acc); border-color: rgba(var(--acc-rgb), .42); }
+.chips button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.sub { display: flex; flex-direction: column; gap: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button class="tema" id="tema" type="button" aria-label="Cambiar a modo claro">
+    <svg class="sol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.3"/><path d="M12 2.6v2.4M12 19v2.4M4.3 4.3l1.7 1.7M18 18l1.7 1.7M2.6 12H5M19 12h2.4M4.3 19.7 6 18M18 6l1.7-1.7"/></svg>
+    <svg class="luna" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.8A8.6 8.6 0 0 1 9.2 3.5a7.7 7.7 0 1 0 11.3 11.3Z"/></svg>
+  </button>
+  <header>
+    <a class="back" href="physical.html">← Propedéutico de Física</a>
+    <p class="eyebrow">Mecánica · Propedéutico</p>
+    <h1>Dinámica</h1>
+    <p class="lede">Ahora sí preguntamos por qué las cosas se mueven como se mueven: <b>las fuerzas producen aceleración</b>, ΣF = ma. Con el peso, la normal y la fricción se explican el frenado de un auto, la báscula en un elevador, las poleas y el límite de velocidad en una curva.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="t-segunda-ley" aria-controls="p-segunda-ley" aria-selected="true"><span class="n">01</span> Segunda ley</button>
+    <button class="tab" role="tab" id="t-elevador" aria-controls="p-elevador" aria-selected="false" tabindex="-1"><span class="n">02</span> Elevador</button>
+    <button class="tab" role="tab" id="t-friccion" aria-controls="p-friccion" aria-selected="false" tabindex="-1"><span class="n">03</span> Fricción</button>
+    <button class="tab" role="tab" id="t-plano" aria-controls="p-plano" aria-selected="false" tabindex="-1"><span class="n">04</span> Plano inclinado</button>
+    <button class="tab" role="tab" id="t-poleas" aria-controls="p-poleas" aria-selected="false" tabindex="-1"><span class="n">05</span> Poleas</button>
+    <button class="tab" role="tab" id="t-curva" aria-controls="p-curva" aria-selected="false" tabindex="-1"><span class="n">06</span> Curva</button>
+    <button class="tab sep" role="tab" id="t-ejemplos" aria-controls="p-ejemplos" aria-selected="false" tabindex="-1">Ejemplos</button>
+    <button class="tab" role="tab" id="t-autoevaluacion" aria-controls="p-autoevaluacion" aria-selected="false" tabindex="-1">Autoevaluación</button>
+  </nav>
+
+  <!-- ============ 01 SEGUNDA LEY ============ -->
+  <section class="stage" id="p-segunda-ley" role="tabpanel" aria-labelledby="t-segunda-ley">
+    <div class="viewport"><canvas id="slCanvas" aria-label="Auto empujado por una fuerza neta, con su posición cada 2 segundos"></canvas><div class="hint" id="slHint">puntos: posición del auto cada 2 s</div></div>
+    <div class="panel">
+      <div class="toggle" role="group" aria-label="Modo">
+        <button type="button" data-sl="2" aria-pressed="true">Segunda ley</button>
+        <button type="button" data-sl="3" aria-pressed="false">Tercera ley</button>
+      </div>
+      <div class="sub" id="slSub2">
+        <p class="ask">Un auto de 1200 kg pasa de 0 a 100 km/h en 10 s. <b>¿Qué fuerza neta necesita?</b></p>
+        <div class="ctrl"><div class="ctrl-top"><label for="slF">Fuerza neta &nbsp;ΣF</label><output id="slFo"></output></div><input type="range" id="slF" min="0" max="6000" step="1" value="3333"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="slM">Masa &nbsp;m</label><output id="slMo"></output></div><input type="range" id="slM" min="500" max="3000" step="50" value="1200"></div>
+        <div class="readout">
+          <div class="row hero"><div class="k">Aceleración &nbsp;<em>a = ΣF / m</em></div><div class="v acc" id="slA">—</div></div>
+          <div class="row"><div class="k">Velocidad a los 10 s &nbsp;<em>v = a t</em></div><div class="v cy" id="slV">—</div></div>
+          <div class="row"><div class="k">Tiempo de 0 a 100 km/h</div><div class="v" id="slT">—</div></div>
+          <div class="row"><div class="k">Distancia en esos 10 s &nbsp;<em>½ a t²</em></div><div class="v dim" id="slX">—</div></div>
+        </div>
+      </div>
+      <div class="sub" id="slSub3" hidden>
+        <p class="ask">Dos patinadores se empujan. <b>¿Quién recibe más fuerza: el ligero o el pesado?</b></p>
+        <div class="ctrl"><div class="ctrl-top"><label for="tlM1">Masa del patinador 1</label><output id="tlM1o"></output></div><input type="range" id="tlM1" min="20" max="120" step="1" value="50"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="tlM2">Masa del patinador 2</label><output id="tlM2o"></output></div><input type="range" id="tlM2" min="20" max="120" step="1" value="100"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="tlF">Fuerza del empujón</label><output id="tlFo"></output></div><input type="range" id="tlF" min="0" max="500" step="10" value="200"></div>
+        <div class="readout">
+          <div class="row hero"><div class="k">Fuerza sobre cada uno</div><div class="v acc" id="tlFF">—</div></div>
+          <div class="row"><div class="k">Aceleración del 1 &nbsp;<em>F / m₁</em></div><div class="v cy" id="tlA1">—</div></div>
+          <div class="row"><div class="k">Aceleración del 2 &nbsp;<em>F / m₂</em></div><div class="v vi" id="tlA2">—</div></div>
+        </div>
+      </div>
+      <p class="note" id="slNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 02 ELEVADOR ============ -->
+  <section class="stage" id="p-elevador" role="tabpanel" aria-labelledby="t-elevador" hidden>
+    <div class="viewport"><canvas id="elCanvas" aria-label="Persona sobre una báscula dentro de un elevador"></canvas><div class="hint">la báscula mide la normal, no el peso</div></div>
+    <div class="panel">
+      <p class="ask">Te subes a una báscula dentro de un elevador. <b>¿Qué marca cuando arranca hacia arriba?</b></p>
+      <div class="toggle" id="elPresets">
+        <button type="button" class="btn" data-a="2">Arranca subiendo</button>
+        <button type="button" class="btn" data-a="0">Velocidad constante</button>
+        <button type="button" class="btn" data-a="-2">Frena subiendo</button>
+        <button type="button" class="btn" data-a="-9.81">Cable roto</button>
+      </div>
+      <div class="ctrl"><div class="ctrl-top"><label for="elM">Masa de la persona &nbsp;m</label><output id="elMo"></output></div><input type="range" id="elM" min="40" max="120" step="1" value="70"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="elA">Aceleración del elevador (+ hacia arriba) &nbsp;a</label><output id="elAo"></output></div><input type="range" id="elA" min="-9.81" max="5" step="0.01" value="2"></div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Lo que marca la báscula &nbsp;<em>N = m(g + a)</em></div><div class="v acc" id="elN">—</div></div>
+        <div class="row"><div class="k">En "kilos" aparentes &nbsp;<em>N / g</em></div><div class="v cy" id="elKg">—</div></div>
+        <div class="row"><div class="k">Peso real &nbsp;<em>mg</em></div><div class="v vi" id="elW">—</div></div>
+        <div class="row"><div class="k">Diferencia con el peso real</div><div class="v dim" id="elD">—</div></div>
+      </div>
+      <p class="note" id="elNote"></p>
+      <div class="legend"><span><i style="background:var(--vi)"></i> peso W</span><span><i style="background:var(--cy)"></i> normal N</span><span><i style="background:var(--acc)"></i> aceleración</span></div>
+    </div>
+  </section>
+
+  <!-- ============ 03 FRICCIÓN ============ -->
+  <section class="stage" id="p-friccion" role="tabpanel" aria-labelledby="t-friccion" hidden>
+    <div class="viewport"><canvas id="frCanvas" aria-label="Caja empujada sobre el piso y gráfica de fricción contra fuerza aplicada"></canvas><div class="hint">la fricción estática vale lo que haga falta, hasta μₛN</div></div>
+    <div class="panel">
+      <p class="ask">Empujas una caja de 50 kg con 200 N. <b>¿Se mueve?</b> ¿Y con 300 N?</p>
+      <div class="toggle">
+        <button type="button" class="btn" data-ff="200">Empujar con 200 N</button>
+        <button type="button" class="btn" data-ff="300">Empujar con 300 N</button>
+      </div>
+      <div class="ctrl"><div class="ctrl-top"><label for="frF">Fuerza aplicada &nbsp;F</label><output id="frFo"></output></div><input type="range" id="frF" min="0" max="500" step="5" value="200"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="frM">Masa &nbsp;m</label><output id="frMo"></output></div><input type="range" id="frM" min="1" max="100" step="1" value="50"></div>
+      <div class="pair2">
+        <div class="ctrl"><div class="ctrl-top"><label for="frMs">μₛ (estática)</label><output id="frMso"></output></div><input type="range" id="frMs" min="0" max="1" step="0.05" value="0.5"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="frMk">μₖ (cinética)</label><output id="frMko"></output></div><input type="range" id="frMk" min="0" max="1" step="0.05" value="0.3"></div>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Estado</div><div class="v" id="frSt">—</div></div>
+        <div class="row"><div class="k">Fricción que actúa</div><div class="v ok" id="frf">—</div></div>
+        <div class="row"><div class="k">Para empezar a moverla &nbsp;<em>μₛN</em></div><div class="v acc" id="frS">—</div></div>
+        <div class="row"><div class="k">Para mantenerla a velocidad constante &nbsp;<em>μₖN</em></div><div class="v cy" id="frK">—</div></div>
+        <div class="row"><div class="k">Aceleración &nbsp;<em>(F − μₖN) / m</em></div><div class="v" id="frA">—</div></div>
+      </div>
+      <p class="note" id="frNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 04 PLANO INCLINADO ============ -->
+  <section class="stage" id="p-plano" role="tabpanel" aria-labelledby="t-plano" hidden>
+    <div class="viewport"><canvas id="plnCanvas" aria-label="Bloque en un plano inclinado con sus fuerzas"></canvas><div class="hint">ejes girados: x a lo largo de la rampa</div></div>
+    <div class="panel">
+      <p class="ask">Un bloque de 10 kg en una rampa lisa de 30°. <b>¿Un bloque de 50 kg bajaría más rápido?</b></p>
+      <div class="ctrl"><div class="ctrl-top"><label for="pnA">Inclinación &nbsp;θ</label><output id="pnAo"></output></div><input type="range" id="pnA" min="0" max="60" step="1" value="30"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="pnM">Masa &nbsp;m</label><output id="pnMo"></output></div><input type="range" id="pnM" min="1" max="50" step="1" value="10"></div>
+      <div class="pair2">
+        <div class="ctrl"><div class="ctrl-top"><label for="pnMs">μₛ (estática)</label><output id="pnMso"></output></div><input type="range" id="pnMs" min="0" max="1" step="0.05" value="0"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="pnMk">μₖ (cinética)</label><output id="pnMko"></output></div><input type="range" id="pnMk" min="0" max="1" step="0.05" value="0"></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="pnComp" checked> Mostrar componentes del peso</label>
+      <div class="readout">
+        <div class="row hero"><div class="k">¿Se desliza desde el reposo? &nbsp;<em>tan θ &gt; μₛ</em></div><div class="v" id="pnSt">—</div></div>
+        <div class="row hero"><div class="k">Aceleración rampa abajo &nbsp;<em>g(sen θ − μₖ cos θ)</em></div><div class="v acc" id="pnAc">—</div></div>
+        <div class="row"><div class="k">Normal &nbsp;<em>mg cos θ</em></div><div class="v cy" id="pnN">—</div></div>
+        <div class="row"><div class="k">Fricción que actúa</div><div class="v ok" id="pnF">—</div></div>
+        <div class="row"><div class="k">Ángulo crítico &nbsp;<em>tan⁻¹ μₛ</em></div><div class="v dim" id="pnC">—</div></div>
+      </div>
+      <p class="note" id="pnNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 05 POLEAS ============ -->
+  <section class="stage" id="p-poleas" role="tabpanel" aria-labelledby="t-poleas" hidden>
+    <div class="viewport"><canvas id="poCanvas" aria-label="Sistema de bloques unidos por una cuerda que pasa por una polea"></canvas><div class="hint">cuerda y polea ideales: la misma tensión en toda la cuerda</div></div>
+    <div class="panel">
+      <div class="toggle" role="group" aria-label="Sistema">
+        <button type="button" data-po="atwood" aria-pressed="true">Máquina de Atwood</button>
+        <button type="button" data-po="mesa" aria-pressed="false">Bloque en mesa</button>
+      </div>
+      <p class="ask" id="poAsk"></p>
+      <div class="sub" id="poAt">
+        <div class="pair2">
+          <div class="ctrl"><div class="ctrl-top"><label for="poM1">m₁ (izq.)</label><output id="poM1o"></output></div><input type="range" id="poM1" min="0.5" max="10" step="0.5" value="3"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="poM2">m₂ (der.)</label><output id="poM2o"></output></div><input type="range" id="poM2" min="0.5" max="10" step="0.5" value="5"></div>
+        </div>
+      </div>
+      <div class="sub" id="poMe" hidden>
+        <div class="pair2">
+          <div class="ctrl"><div class="ctrl-top"><label for="pmM1">m₁ en la mesa</label><output id="pmM1o"></output></div><input type="range" id="pmM1" min="0.5" max="10" step="0.5" value="4"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="pmM2">m₂ colgando</label><output id="pmM2o"></output></div><input type="range" id="pmM2" min="0.5" max="10" step="0.5" value="2"></div>
+        </div>
+        <div class="ctrl"><div class="ctrl-top"><label for="pmMu">μ de la mesa (se usa igual para estática y cinética)</label><output id="pmMuo"></output></div><input type="range" id="pmMu" min="0" max="1" step="0.05" value="0.25"></div>
+      </div>
+      <div class="toggle">
+        <button type="button" class="btn" id="poPlay">Soltar</button>
+        <button type="button" class="btn" id="poReset">Reiniciar</button>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k" id="poAk">Aceleración</div><div class="v acc" id="poA">—</div></div>
+        <div class="row hero"><div class="k" id="poTk">Tensión de la cuerda</div><div class="v cy" id="poT">—</div></div>
+        <div class="row"><div class="k" id="poXk">—</div><div class="v dim" id="poX">—</div></div>
+      </div>
+      <p class="note" id="poNote"></p>
+      <div class="legend"><span><i style="background:var(--cy)"></i> tensión T</span><span><i style="background:var(--vi)"></i> peso</span><span><i style="background:var(--ok)"></i> fricción</span><span><i style="background:var(--acc)"></i> aceleración</span></div>
+    </div>
+  </section>
+
+  <!-- ============ 06 CURVA ============ -->
+  <section class="stage" id="p-curva" role="tabpanel" aria-labelledby="t-curva" hidden>
+    <div class="viewport"><canvas id="cuCanvas" aria-label="Auto en una curva vista desde arriba, con la aceleración que necesita y la que puede dar el piso"></canvas><div class="hint">vista desde arriba · el radio no está a escala</div></div>
+    <div class="panel">
+      <p class="ask">La curva de cinemática: 50 m de radio a 72 km/h, que pedía 0.82 g. <b>¿La toma un auto en piso seco?</b></p>
+      <div class="toggle" id="cuPresets">
+        <button type="button" class="btn" data-mu="0.8">Seco</button>
+        <button type="button" class="btn" data-mu="0.4">Mojado</button>
+        <button type="button" class="btn" data-mu="0.1">Hielo</button>
+      </div>
+      <div class="pair2">
+        <div class="ctrl"><div class="ctrl-top"><label for="cuR">Radio &nbsp;r</label><output id="cuRo"></output></div><input type="range" id="cuR" min="10" max="200" step="1" value="50"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cuV">Velocidad</label><output id="cuVo"></output></div><input type="range" id="cuV" min="10" max="150" step="1" value="72"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cuMu">μₛ llanta–piso</label><output id="cuMuo"></output></div><input type="range" id="cuMu" min="0" max="1.2" step="0.05" value="0.8"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cuTh">Peralte &nbsp;θ</label><output id="cuTho"></output></div><input type="range" id="cuTh" min="0" max="45" step="1" value="0"></div>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Estado</div><div class="v" id="cuSt">—</div></div>
+        <div class="row"><div class="k">Aceleración centrípeta que pide &nbsp;<em>v²/r</em></div><div class="v acc" id="cuAc">—</div></div>
+        <div class="row"><div class="k">Velocidad máxima sin derrapar</div><div class="v ok" id="cuVm">—</div></div>
+        <div class="row"><div class="k">Peralte ideal para esta velocidad &nbsp;<em>tan θ = v²/(rg)</em></div><div class="v cy" id="cuPi">—</div></div>
+        <div class="row"><div class="k">Velocidad ideal sin fricción &nbsp;<em>√(rg tan θ)</em></div><div class="v dim" id="cuVi">—</div></div>
+      </div>
+      <p class="note" id="cuNote"></p>
+      <div class="legend"><span><i style="background:var(--cy)"></i> velocidad</span><span><i style="background:var(--acc)"></i> a_c que pide</span><span><i style="background:var(--ok)"></i> máximo que da el piso</span></div>
+    </div>
+  </section>
+
+  <!-- ============ EJEMPLOS ============ -->
+  <section class="full" id="p-ejemplos" role="tabpanel" aria-labelledby="t-ejemplos" hidden>
+    <article class="card">
+      <span class="tag">Segunda ley</span>
+      <h3>La fuerza para acelerar un auto</h3>
+      <p class="q">Un auto de 1200 kg pasa de 0 a 100 km/h en 10 s. ¿Qué fuerza neta actúa sobre él?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>v = 100 / 3.6 = 27.8 m/s, así que a = 27.8 / 10. <span class="ans">a = 2.78 m/s²</span></li>
+          <li>ΣF = m a = (1200)(2.78). <span class="ans">ΣF = 3333 N</span></li>
+          <li>Es la fuerza <b>neta</b>: el motor debe dar además lo que se lleven el aire y la rodadura.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Masa y peso</span>
+      <h3>Una persona en la Luna</h3>
+      <p class="q">Una persona de 70 kg, ¿cuánto pesa en la Tierra y en la Luna (g = 1.62 m/s²)? ¿Cambia su masa?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Tierra: W = (70)(9.81). <span class="ans">686.7 N</span></li>
+          <li>Luna: W = (70)(1.62). <span class="ans">113.4 N</span></li>
+          <li>La masa sigue siendo 70 kg: es la cantidad de materia y la resistencia a acelerar. El peso es la fuerza con que la atrae el planeta.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Normal · elevador</span>
+      <h3>La báscula en el elevador</h3>
+      <p class="q">Una persona de 70 kg está sobre una báscula en un elevador. ¿Qué marca si el elevador acelera a 2 m/s² hacia arriba? ¿Y hacia abajo?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>ΣF = N − mg = m a, así que N = m(g + a).</li>
+          <li>Hacia arriba: N = 70 (11.81). <span class="ans">826.7 N</span> la báscula marca 84.3 kg.</li>
+          <li>Hacia abajo: N = 70 (7.81). <span class="ans">546.7 N</span> marca 55.7 kg.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Fricción</span>
+      <h3>Empujar una caja</h3>
+      <p class="q">Caja de 50 kg en un piso con μₛ = 0.5 y μₖ = 0.3. ¿Qué fuerza hace falta para empezar a moverla y para mantenerla a velocidad constante? ¿Y si se empuja con 300 N?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>N = mg = 490.5 N.</li>
+          <li>Para empezar: μₛN. <span class="ans">245.3 N</span> Para mantenerla: μₖN. <span class="ans">147.2 N</span></li>
+          <li>Con 300 N: a = (300 − 147.2) / 50. <span class="ans">a = 3.06 m/s²</span></li>
+          <li>Con 200 N no se mueve: la fricción estática vale exactamente 200 N.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Fricción · frenado</span>
+      <h3>De dónde salía el 7 m/s² de cinemática</h3>
+      <p class="q">Un auto frena con las ruedas bloqueadas sobre asfalto seco (μₖ = 0.7). ¿Qué desaceleración tiene y cuánto recorre frenando desde 100 km/h?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>La única fuerza horizontal es la fricción: μₖ m g = m a, así que a = μₖ g. <span class="ans">a = 6.87 m/s²</span> La masa se cancela.</li>
+          <li>d = v² / (2 μₖ g) = (27.8)² / 13.73. <span class="ans">d = 56.2 m</span></li>
+          <li>Por eso en cinemática usamos alrededor de 7 m/s² en piso seco.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Plano inclinado</span>
+      <h3>Bloque que baja con fricción</h3>
+      <p class="q">Un bloque baja por una rampa de 30° con μₖ = 0.2. ¿Cuál es su aceleración?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Eje a lo largo de la rampa: m g sen θ − μₖ m g cos θ = m a.</li>
+          <li>a = 9.81 (0.5 − 0.2 × 0.866). <span class="ans">a = 3.21 m/s²</span></li>
+          <li>Sin fricción sería g sen 30° = 4.91 m/s². En ningún caso importa la masa.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Poleas</span>
+      <h3>Máquina de Atwood</h3>
+      <p class="q">Dos masas de 3 kg y 5 kg cuelgan de una cuerda que pasa por una polea ideal. Aceleración y tensión.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Bloque de 5 kg: 5g − T = 5a. Bloque de 3 kg: T − 3g = 3a.</li>
+          <li>Sumando: 2g = 8a. <span class="ans">a = 2.45 m/s²</span></li>
+          <li>T = 3(g + a) = 3 (12.26). <span class="ans">T = 36.8 N</span> Queda entre los dos pesos (29.4 N y 49.1 N).</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Poleas · fricción</span>
+      <h3>Bloque en una mesa</h3>
+      <p class="q">Un bloque de 4 kg en una mesa (μₖ = 0.25) está unido por una cuerda que pasa por una polea a otro de 2 kg que cuelga. Aceleración y tensión.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Colgante: 2g − T = 2a. En la mesa: T − 0.25 (4) g = 4a.</li>
+          <li>Sumando: 19.62 − 9.81 = 6a. <span class="ans">a = 1.64 m/s²</span></li>
+          <li>T = 2(g − a). <span class="ans">T = 16.4 N</span></li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Reto · dinámica circular</span>
+      <h3>¿A qué velocidad se toma la curva?</h3>
+      <p class="q">Curva plana de 50 m de radio. Velocidad máxima con μₛ = 0.8 (seco) y con 0.4 (mojado). ¿Qué peralte haría falta para tomarla a 72 km/h sin fricción?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>La fricción da la fuerza centrípeta: μₛ m g = m v² / r, así que v = √(μₛ g r).</li>
+          <li>Seco: √(0.8 × 9.81 × 50) = 19.8 m/s. <span class="ans">71.3 km/h</span> Mojado: <span class="ans">50.4 km/h</span></li>
+          <li>Con peralte y sin fricción: tan θ = v² / (r g) = 400 / 490.5. <span class="ans">θ = 39.2°</span></li>
+        </ol>
+      </details>
+    </article>
+  </section>
+
+  <!-- ============ AUTOEVALUACIÓN ============ -->
+  <section class="full" id="p-autoevaluacion" role="tabpanel" aria-labelledby="t-autoevaluacion" hidden>
+    <div class="scorebar"><span id="score">0 de 8 respondidas</span><button class="btn" type="button" id="quizReset" style="flex:none">Reiniciar</button></div>
+  </section>
+
+  <footer>
+    Se usa g = 9.81 m/s², con cuerdas y poleas ideales (sin masa ni fricción). Anterior: <a href="cinematica.html">Cinemática</a>. Siguiente tema: <a href="energia.html"><b>Energía</b></a>. <a href="physical.html">Volver a los temas</a>.
+  </footer>
+</div>
+
+<script>
+(function () {
+"use strict";
+var $ = function (id) { return document.getElementById(id); };
+var root = document.documentElement, G = 9.81;
+var REDUCED = false; try { REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+
+/* ---------- tema ---------- */
+var V = {};
+function leerTema() {
+  var cs = getComputedStyle(root);
+  ["bg","panel","panel-2","line","fg","dim","acc","cy","vi","ok","no","or","vp"].forEach(function (k) { V[k] = cs.getPropertyValue("--" + k).trim(); });
+  ["line","acc","cy","vi","ok","no","or"].forEach(function (k) { V[k + "Rgb"] = cs.getPropertyValue("--" + k + "-rgb").trim(); });
+}
+function rgba(k, a) { return "rgba(" + V[k + "Rgb"] + "," + a + ")"; }
+leerTema();
+var bt = $("tema");
+function rotulo() { var c = root.getAttribute("data-tema") === "claro"; bt.setAttribute("aria-label", c ? "Cambiar a modo oscuro" : "Cambiar a modo claro"); }
+rotulo();
+bt.addEventListener("click", function () {
+  var nuevo = root.getAttribute("data-tema") === "claro" ? "oscuro" : "claro";
+  root.setAttribute("data-tema", nuevo);
+  try { localStorage.setItem("banco-tema", nuevo); } catch (e) {}
+});
+
+/* ---------- formato y dibujo ---------- */
+/* redondeo "hacia arriba en el medio" para que 245.25 dé 245.3 y 4.905 dé 4.91 */
+function rnd(x, d) { var p = Math.pow(10, d); return Math.round((x + (x >= 0 ? 1 : -1) * 1e-9) * p) / p; }
+function fx(x, d) { var v = rnd(x, d); if (Object.is(v, -0)) v = 0; return v.toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d }).replace(/,/g, " "); }
+function sg(x, d) { return (rnd(x, d) < 0 ? "−" : "") + fx(Math.abs(x), d); }
+function N(x) { var a = Math.abs(x); return (rnd(x, 1) < 0 ? "−" : "") + fx(a, a >= 1000 ? 0 : 1) + " N"; }
+function A(x) { return sg(x, 2) + " m/s²"; }
+function setup(cv) {
+  var dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return null;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.fillStyle = V.vp; c.fillRect(0, 0, w, h);
+  return { c: c, w: w, h: h };
+}
+function arrow(c, x1, y1, x2, y2, col, w, dash) {
+  var ang = Math.atan2(y2 - y1, x2 - x1), len = Math.hypot(x2 - x1, y2 - y1), hs = Math.min(12, len * 0.4);
+  if (len < 0.5) return;
+  c.save(); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = w || 2.5; c.setLineDash(dash || []);
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(ang) * hs * 0.8, y2 - Math.sin(ang) * hs * 0.8); c.stroke(); c.setLineDash([]);
+  if (len > 2) { c.beginPath(); c.moveTo(x2, y2); c.lineTo(x2 - hs * Math.cos(ang - 0.42), y2 - hs * Math.sin(ang - 0.42)); c.lineTo(x2 - hs * Math.cos(ang + 0.42), y2 - hs * Math.sin(ang + 0.42)); c.closePath(); c.fill(); }
+  c.restore();
+}
+/* flecha desde un ángulo físico (grados, antihorario desde +x) */
+function arrowA(c, x, y, deg, len, col, w, dash) { var r = deg * Math.PI / 180; arrow(c, x, y, x + len * Math.cos(r), y - len * Math.sin(r), col, w, dash); }
+var MONO = "'IBM Plex Mono', ui-monospace, monospace", SANS = "'IBM Plex Sans', system-ui, sans-serif";
+function label(c, txt, x, y, col, opt) {
+  opt = opt || {}; c.font = (opt.w || "600") + " " + (opt.s || 12.5) + "px " + (opt.f || MONO); c.fillStyle = col;
+  c.textAlign = opt.a || "center"; c.textBaseline = opt.b || "middle"; c.fillText(txt, x, y);
+}
+function hatch(c, x, y, w, h) {
+  c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.strokeStyle = V.dim; c.lineWidth = 1; c.globalAlpha = .55;
+  for (var k = -h - w; k < w + h; k += 9) { c.beginPath(); c.moveTo(x + k, y + h); c.lineTo(x + k + h, y); c.stroke(); }
+  c.restore();
+}
+function bind(ids, fn) { ids.forEach(function (id) { $(id).addEventListener("input", fn); }); }
+function press(sel, attr, val) { document.querySelectorAll(sel).forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute(attr) === String(val) ? "true" : "false"); }); }
+function ground(c, W, y) { c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); hatch(c, 0, y, W, 12); }
+function car(c, x, yb, s, col) {
+  var w = 120 * s, h = 34 * s, r = 11 * s;
+  c.fillStyle = V.panel; c.strokeStyle = col || V.fg; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(x - w / 2, yb - r); c.lineTo(x - w / 2, yb - r - h * 0.55); c.lineTo(x - w * 0.22, yb - r - h * 0.6); c.lineTo(x - w * 0.08, yb - r - h);
+  c.lineTo(x + w * 0.2, yb - r - h); c.lineTo(x + w * 0.34, yb - r - h * 0.55); c.lineTo(x + w / 2, yb - r - h * 0.45); c.lineTo(x + w / 2, yb - r); c.closePath(); c.fill(); c.stroke();
+  [-0.3, 0.3].forEach(function (k) { c.fillStyle = V.line; c.beginPath(); c.arc(x + k * w, yb - r, r, 0, Math.PI * 2); c.fill(); c.strokeStyle = V.fg; c.stroke(); });
+  return { cx: x, cy: yb - r - h * 0.45, top: yb - r - h };
+}
+function box(c, x, y, w, h, col, txt) {
+  c.fillStyle = V.panel; c.strokeStyle = col || V.fg; c.lineWidth = 2; c.fillRect(x - w / 2, y - h / 2, w, h); c.strokeRect(x - w / 2, y - h / 2, w, h);
+  if (txt) label(c, txt, x, y, V.fg, { s: 12 });
+}
+
+/* =========================================================
+   01 SEGUNDA LEY / TERCERA LEY
+   ========================================================= */
+var slMode = "2";
+function slUpdate() {
+  $("slSub2").hidden = slMode !== "2"; $("slSub3").hidden = slMode !== "3"; press("[data-sl]", "data-sl", slMode);
+  $("slHint").textContent = slMode === "2" ? "puntos: posición del auto cada 2 s" : "fuerzas iguales y opuestas, aceleraciones distintas";
+  if (slMode === "2") drawSl(); else drawTl();
+}
+function drawSl() {
+  var F = +$("slF").value, m = +$("slM").value, a = F / m, v10 = a * 10, x10 = 0.5 * a * 100, t100 = a > 0 ? (100 / 3.6) / a : Infinity;
+  $("slFo").textContent = N(F); $("slMo").textContent = fx(m, 0) + " kg";
+  $("slA").textContent = A(a); $("slV").textContent = fx(v10 * 3.6, 1) + " km/h"; $("slT").textContent = isFinite(t100) ? fx(t100, 1) + " s" : "nunca"; $("slX").textContent = fx(x10, 1) + " m";
+  var n = $("slNote");
+  if (F === 0) { n.className = "note"; n.innerHTML = "<b>Sin fuerza neta no hay aceleración.</b> El auto sigue como estaba: si estaba quieto se queda quieto, y si iba a velocidad constante sigue igual. Es la primera ley."; }
+  else if (Math.abs(t100 - 10) < 0.06) { n.className = "note good"; n.innerHTML = "<b>De 0 a 100 km/h en 10 s:</b> con 1200 kg hacen falta 3333 N netos. Al doble de masa harían falta el doble de newtons para la misma aceleración."; }
+  else { n.className = "note"; n.innerHTML = "<b>La misma fuerza acelera menos a una masa mayor:</b> a = ΣF/m. La distancia crece con t², por eso los puntos se separan cada vez más."; }
+  var S = setup($("slCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var gy = H * 0.62, x0 = 70, x1 = W - 40, xmax = 300, ppm = (x1 - x0) / xmax;
+  ground(c, W, gy);
+  c.font = "10.5px " + MONO; c.fillStyle = V.dim; c.textAlign = "center"; c.textBaseline = "top";
+  for (var d = 0; d <= xmax; d += 50) { var px = x0 + d * ppm; c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.moveTo(px, gy + 14); c.lineTo(px, gy + 20); c.stroke(); c.fillText(d + " m", px, gy + 23); }
+  var lastL = -1e9, lastR = -1e9;
+  for (var t = 0; t <= 10; t += 2) {
+    var xt = 0.5 * a * t * t, over = xt > xmax, px2 = x0 + Math.min(xt, xmax) * ppm;
+    c.fillStyle = over ? V.no : V.acc; c.globalAlpha = t === 10 ? 1 : 0.75; c.beginPath(); c.arc(px2, gy - 4, t === 10 ? 6 : 4.5, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1;
+    if ((!over || t === 10) && px2 - lastL >= 30) { label(c, t + " s" + (over ? " →" : ""), px2, gy - 18, over ? V.no : V.acc, { s: 10.5, w: "500" }); lastL = px2; }
+    else if (!over && px2 - lastR >= 30) { label(c, t + " s", px2, gy - 32, V.acc, { s: 10.5, w: "500" }); lastR = px2; }
+  }
+  var cp = car(c, x0, H * 0.36, 0.9);
+  var Fl = 26 + F / 6000 * (W * 0.32); arrow(c, cp.cx + 58, cp.cy, cp.cx + 58 + Fl, cp.cy, V.or, 3.4); label(c, "ΣF = " + N(F), cp.cx + 62 + Fl, cp.cy - 16, V.or, { a: "right", s: 12 });
+  var al = Math.min(140, 8 + a * 14); arrow(c, cp.cx - 30, cp.top - 18, cp.cx - 30 + al, cp.top - 18, V.acc, 2.4); label(c, "a = " + A(a), cp.cx - 30, cp.top - 34, V.acc, { a: "left", s: 12 });
+  label(c, fx(m, 0) + " kg", cp.cx, cp.cy + 2, V.fg, { s: 11 });
+}
+function drawTl() {
+  var m1 = +$("tlM1").value, m2 = +$("tlM2").value, F = +$("tlF").value, a1 = F / m1, a2 = F / m2;
+  $("tlM1o").textContent = m1 + " kg"; $("tlM2o").textContent = m2 + " kg"; $("tlFo").textContent = N(F);
+  $("tlFF").textContent = N(F) + " (iguales)"; $("tlA1").textContent = A(a1); $("tlA2").textContent = A(a2);
+  var n = $("slNote");
+  n.className = "note"; n.innerHTML = m1 === m2 ? "<b>Masas iguales:</b> se alejan con la misma aceleración, en sentidos opuestos." :
+    "<b>Las dos fuerzas son iguales</b> (tercera ley), pero actúan sobre cuerpos distintos. Por eso no se cancelan: el más ligero acelera " + fx(Math.max(a1, a2) / Math.min(a1, a2), 1) + " veces más.";
+  var S = setup($("slCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var gy = H * 0.66, cx = W / 2; ground(c, W, gy);
+  function skater(x, m, col, dir) {
+    var hgt = 70 + m * 0.7, w = 22 + m * 0.18;
+    c.fillStyle = V.panel; c.strokeStyle = col; c.lineWidth = 2;
+    c.fillRect(x - w / 2, gy - 10 - hgt, w, hgt - 18); c.strokeRect(x - w / 2, gy - 10 - hgt, w, hgt - 18);
+    c.beginPath(); c.arc(x, gy - 10 - hgt - 13, 12, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(x - w / 2 + 3, gy - 28); c.lineTo(x - w / 2 + 3, gy - 6); c.moveTo(x + w / 2 - 3, gy - 28); c.lineTo(x + w / 2 - 3, gy - 6); c.stroke();
+    c.beginPath(); c.moveTo(x - w / 2 - 6, gy - 4); c.lineTo(x + w / 2 + 6, gy - 4); c.stroke();
+    label(c, m + " kg", x, gy - 10 - hgt - 38, col, { s: 11.5 });
+    return { w: w, top: gy - 10 - hgt, mid: gy - 10 - hgt * 0.55 };
+  }
+  var s1 = skater(cx - 50, m1, V.cy), s2 = skater(cx + 50, m2, V.vi);
+  var k = Math.min(1, (W * 0.28) / 500), fl = 12 + F * k;
+  c.strokeStyle = V.dim; c.lineWidth = 1.5; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(cx - 50 + s1.w / 2, s1.mid); c.lineTo(cx + 50 - s2.w / 2, s1.mid); c.stroke(); c.setLineDash([]);
+  if (F > 0) { arrow(c, cx - 50, s1.mid + 18, cx - 50 - fl, s1.mid + 18, V.or, 3); arrow(c, cx + 50, s1.mid + 18, cx + 50 + fl, s1.mid + 18, V.or, 3);
+    label(c, "F sobre 1", cx - 50 - fl, s1.mid + 34, V.or, { a: "left", s: 11 }); label(c, "F sobre 2", cx + 50 + fl, s1.mid + 34, V.or, { a: "right", s: 11 }); }
+  var amax = Math.max(a1, a2, 0.01), ka = Math.min(W * 0.32, 160) / amax;
+  arrow(c, cx - 50, gy + 30, cx - 50 - a1 * ka, gy + 30, V.cy, 2.4); label(c, "a₁ = " + A(a1), cx - 56 - a1 * ka, gy + 46, V.cy, { a: "left", s: 11.5 });
+  arrow(c, cx + 50, gy + 30, cx + 50 + a2 * ka, gy + 30, V.vi, 2.4); label(c, "a₂ = " + A(a2), cx + 56 + a2 * ka, gy + 46, V.vi, { a: "right", s: 11.5 });
+}
+document.querySelectorAll("[data-sl]").forEach(function (b) { b.addEventListener("click", function () { slMode = b.getAttribute("data-sl"); slUpdate(); }); });
+bind(["slF", "slM"], drawSl); bind(["tlM1", "tlM2", "tlF"], drawTl);
+
+/* =========================================================
+   02 ELEVADOR
+   ========================================================= */
+function drawEl() {
+  var m = +$("elM").value, a = +$("elA").value, Nn = Math.max(0, m * (G + a)), Wt = m * G;
+  $("elMo").textContent = m + " kg"; $("elAo").textContent = sg(a, 2) + " m/s²";
+  $("elN").textContent = Nn < 0.05 ? "0 N" : N(Nn); $("elKg").textContent = fx(Nn / G, 1) + " kg"; $("elW").textContent = N(Wt);
+  var d = (Nn - Wt) / Wt * 100; $("elD").textContent = (Math.abs(d) < 0.05 ? "0" : (d > 0 ? "+" : "−") + fx(Math.abs(d), 1)) + " %";
+  var n = $("elNote");
+  if (a <= -9.8) { n.className = "note hot"; n.innerHTML = "<b>Ingravidez:</b> el elevador cae con aceleración g y la báscula cae igual de rápido que tú. No te empuja: marca 0. Es lo que sienten los astronautas en órbita."; }
+  else if (Math.abs(a) < 0.005) { n.className = "note good"; n.innerHTML = "<b>a = 0:</b> la báscula marca tu peso real, aunque el elevador se mueva. Velocidad constante y reposo son lo mismo para la segunda ley."; }
+  else if (a > 0) { n.className = "note"; n.innerHTML = "<b>Te sientes más pesado:</b> el piso tiene que empujarte con más que tu peso para acelerarte hacia arriba. Pasa al arrancar subiendo y también al frenar bajando."; }
+  else { n.className = "note"; n.innerHTML = "<b>Te sientes más ligero:</b> la normal es menor que tu peso. Pasa al frenar subiendo y al arrancar bajando. Tu masa y tu peso no cambiaron; cambió la normal."; }
+  var S = setup($("elCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var cw = Math.min(W * 0.52, 290), chh = H * 0.62, cx = W * 0.42, ct = H * 0.2, cb = ct + chh;
+  c.strokeStyle = V.line; c.lineWidth = 2; c.strokeRect(cx - cw / 2 - 14, 8, cw + 28, H - 40);
+  if (a > -9.8) { c.strokeStyle = V.dim; c.lineWidth = 2; c.beginPath(); c.moveTo(cx, 8); c.lineTo(cx, ct); c.stroke(); }
+  else { c.strokeStyle = V.no; c.lineWidth = 2; c.beginPath(); c.moveTo(cx, 8); c.lineTo(cx, ct - 46); c.moveTo(cx + 4, ct - 30); c.lineTo(cx, ct); c.stroke(); label(c, "cable roto", cx + 10, ct - 38, V.no, { a: "left", s: 11 }); }
+  c.fillStyle = rgba("line", .25); c.fillRect(cx - cw / 2, ct, cw, chh); c.strokeStyle = V.fg; c.lineWidth = 2; c.strokeRect(cx - cw / 2, ct, cw, chh);
+  var sw = 80, sy = cb - 16; c.fillStyle = V.panel; c.strokeStyle = V.dim; c.fillRect(cx - sw / 2, sy, sw, 14); c.strokeRect(cx - sw / 2, sy, sw, 14);
+  c.fillStyle = V.vp; c.fillRect(cx - 26, sy + 2, 52, 10); label(c, fx(Nn / G, 1) + " kg", cx, sy + 7, V.acc, { s: 9.5 });
+  var ph = Math.min(chh * 0.62, 150), pt = sy - ph, pc = pt + ph * 0.5;
+  c.strokeStyle = V.fg; c.lineWidth = 2.5; c.fillStyle = V.panel;
+  c.beginPath(); c.arc(cx, pt + 12, 11, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(cx, pt + 23); c.lineTo(cx, pt + ph * 0.62); c.moveTo(cx, pt + ph * 0.62); c.lineTo(cx - 12, sy); c.moveTo(cx, pt + ph * 0.62); c.lineTo(cx + 12, sy);
+  c.moveTo(cx, pt + 34); c.lineTo(cx - 18, pt + ph * 0.48); c.moveTo(cx, pt + 34); c.lineTo(cx + 18, pt + ph * 0.48); c.stroke();
+  var k = (H * 0.32) / (120 * (G + 5));
+  var off = Math.min(cw / 2 - 30, 78), wy0 = pc - 24;
+  arrow(c, cx + off, wy0, cx + off, wy0 + Wt * k, V.vi, 3); label(c, "W = " + N(Wt), cx + off, wy0 - 12, V.vi, { s: 11.5 });
+  if (Nn > 0.5) { arrow(c, cx - off, pc + 30, cx - off, pc + 30 - Nn * k, V.cy, 3); label(c, "N = " + N(Nn), cx - off, pc + 30 - Nn * k - 12, V.cy, { s: 11.5 }); }
+  else label(c, "N = 0", cx - off, pc, V.no, { s: 11.5 });
+  var ax = cx + cw / 2 + 40, al = 10 + Math.abs(a) * 12;
+  if (Math.abs(a) > 0.005) { arrow(c, ax, H * 0.5, ax, H * 0.5 - Math.sign(a) * al, V.acc, 3); label(c, "a", ax + 10, H * 0.5 - Math.sign(a) * al * 0.5, V.acc, { a: "left" }); }
+  else label(c, "a = 0", ax, H * 0.5, V.acc, { s: 11.5 });
+}
+bind(["elM", "elA"], drawEl);
+document.querySelectorAll("#elPresets button").forEach(function (b) { b.addEventListener("click", function () { $("elA").value = b.getAttribute("data-a"); drawEl(); }); });
+
+/* =========================================================
+   03 FRICCIÓN
+   ========================================================= */
+function frClamp(src) { var ms = +$("frMs").value, mk = +$("frMk").value; if (mk > ms) { if (src === "frMk") $("frMk").value = ms; else $("frMk").value = ms; } }
+function drawFr(e) {
+  if (e && e.target) frClamp(e.target.id);
+  var F = +$("frF").value, m = +$("frM").value, ms = +$("frMs").value, mk = +$("frMk").value, Nn = m * G, fs = ms * Nn, fk = mk * Nn;
+  var moving = F > fs + 1e-9, f = moving ? fk : F, a = moving ? (F - fk) / m : 0;
+  $("frFo").textContent = N(F); $("frMo").textContent = m + " kg"; $("frMso").textContent = fx(ms, 2); $("frMko").textContent = fx(mk, 2);
+  $("frSt").textContent = moving ? "se desliza" : "en reposo"; $("frSt").className = "v " + (moving ? "no" : "ok");
+  $("frf").textContent = N(f) + (moving ? " (cinética)" : " (estática)"); $("frS").textContent = N(fs); $("frK").textContent = N(fk); $("frA").textContent = A(a);
+  var n = $("frNote");
+  if (Math.abs(mk - 0.7) < 1e-6) { n.className = "note good"; n.innerHTML = "<b>Frenado de un auto:</b> con μₖ = 0.7 la fricción es la única fuerza horizontal, μₖmg = ma, y la masa se cancela: a = μₖg = 6.87 m/s². De ahí el 7 m/s² que usamos en cinemática."; }
+  else if (!moving) { n.className = "note"; n.innerHTML = "<b>No se mueve:</b> la fricción estática no vale siempre μₛN. Vale lo que haga falta para equilibrar el empujón, aquí " + N(F) + ", y como máximo " + N(fs) + "."; }
+  else { n.className = "note hot"; n.innerHTML = "<b>Se despega:</b> rebasaste μₛN = " + N(fs) + ". Ya en movimiento la fricción baja a μₖN = " + N(fk) + ", así que sobran " + N(F - fk) + " para acelerarla. Por eso cuesta más arrancar algo que mantenerlo en movimiento."; }
+  var S = setup($("frCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var gy = H * 0.36, bx = W * 0.42, bw = 96, bh = 62, by = gy - bh / 2;
+  ground(c, W, gy); box(c, bx, by, bw, bh, V.fg, m + " kg");
+  var k = (Math.min(W * 0.3, 150)) / Math.max(500, fs, m * G * 0.6);
+  var kv = (gy - 16) * 0.75 / (Math.max(m * G, 1));
+  arrow(c, bx + bw / 2, by, bx + bw / 2 + 8 + F * k, by, V.acc, 3); label(c, "F", bx + bw / 2 + 14 + F * k, by - 12, V.acc);
+  if (f > 0.5) { arrow(c, bx - bw / 2, gy - 6, bx - bw / 2 - 8 - f * k, gy - 6, V.ok, 3); label(c, "f", bx - bw / 2 - 14 - f * k, gy - 20, V.ok); }
+  var vl = Math.min(64, by - bh / 2 - 6);
+  arrow(c, bx - 22, by - 6, bx - 22, by - 6 - vl, V.cy, 2.6); label(c, "N", bx - 34, by - 6 - vl + 10, V.cy);
+  arrow(c, bx + 22, by + 6, bx + 22, by + 6 + vl, V.vi, 2.6); label(c, "W", bx + 34, by + 6 + vl - 8, V.vi);
+  if (moving) { arrow(c, bx + 4, by - bh / 2 - 14, bx + 58, by - bh / 2 - 14, V.acc, 2, [5, 4]); label(c, "a", bx + 70, by - bh / 2 - 14, V.acc); }
+  // gráfica f contra F
+  var px0 = 58, py0 = H - 50, pw = W - px0 - 24, ph = H * 0.38, Fmax = 500, fmaxY = Math.max(fs, 100) * 1.15;
+  var X = function (v) { return px0 + v / Fmax * pw; }, Y = function (v) { return py0 - v / fmaxY * ph; };
+  c.fillStyle = rgba("line", .18); c.fillRect(px0, py0 - ph, pw, ph); c.strokeStyle = V.line; c.lineWidth = 1; c.strokeRect(px0, py0 - ph, pw, ph);
+  c.font = "10.5px " + MONO; c.fillStyle = V.dim; c.textAlign = "center"; c.textBaseline = "top";
+  for (var q = 0; q <= 500; q += 100) c.fillText(q, X(q), py0 + 4);
+  label(c, pw < 420 ? "eje x: F [N]" : "eje x: fuerza aplicada F [N]", px0 + pw - 6, py0 - ph + 10, V.dim, { a: "right", s: 10.5, w: "500" });
+  label(c, "fricción f [N]", px0 + 4, py0 - ph + 10, V.dim, { a: "left", s: 10.5, w: "500" });
+  c.textAlign = "right"; c.textBaseline = "middle"; c.fillStyle = V.dim;
+  [0, fk, fs].forEach(function (v) { if (v <= fmaxY) c.fillText(fx(v, 0), px0 - 6, Y(v)); });
+  c.setLineDash([3, 4]); c.strokeStyle = rgba("line", 1); [fk, fs].forEach(function (v) { c.beginPath(); c.moveTo(px0, Y(v)); c.lineTo(px0 + pw, Y(v)); c.stroke(); }); c.setLineDash([]);
+  c.strokeStyle = V.ok; c.lineWidth = 2.4; c.beginPath(); c.moveTo(X(0), Y(0)); var fe = Math.min(fs, Fmax); c.lineTo(X(fe), Y(fe)); c.stroke();
+  if (fs < Fmax) { c.setLineDash([4, 4]); c.beginPath(); c.moveTo(X(fs), Y(fs)); c.lineTo(X(fs), Y(fk)); c.stroke(); c.setLineDash([]); c.beginPath(); c.moveTo(X(fs), Y(fk)); c.lineTo(X(Fmax), Y(fk)); c.stroke();
+    label(c, "estática", X(fs * 0.5) - 8, Y(fs * 0.5) - 10, V.ok, { a: "right", s: 10.5, w: "500" }); label(c, "cinética", X(Math.min(Fmax, fs + (Fmax - fs) / 2)), Y(fk) - 10, V.ok, { s: 10.5, w: "500" }); }
+  c.fillStyle = V.acc; c.beginPath(); c.arc(X(F), Y(f), 6, 0, Math.PI * 2); c.fill();
+}
+bind(["frF", "frM", "frMs", "frMk"], drawFr);
+document.querySelectorAll("[data-ff]").forEach(function (b) { b.addEventListener("click", function () { $("frF").value = b.getAttribute("data-ff"); $("frM").value = 50; $("frMs").value = 0.5; $("frMk").value = 0.3; drawFr(); }); });
+
+/* =========================================================
+   04 PLANO INCLINADO
+   ========================================================= */
+function drawPn(e) {
+  if (e && e.target && (e.target.id === "pnMs" || e.target.id === "pnMk")) { if (+$("pnMk").value > +$("pnMs").value) $("pnMk").value = $("pnMs").value; }
+  var deg = +$("pnA").value, m = +$("pnM").value, ms = +$("pnMs").value, mk = +$("pnMk").value, t = deg * Math.PI / 180;
+  var Wt = m * G, Nn = Wt * Math.cos(t), Wp = Wt * Math.sin(t), slides = Math.tan(t) > ms + 1e-12 && deg > 0;
+  var a = slides ? G * (Math.sin(t) - mk * Math.cos(t)) : 0, f = slides ? mk * Nn : Wp, crit = Math.atan(ms) * 180 / Math.PI;
+  $("pnAo").textContent = deg + "°"; $("pnMo").textContent = m + " kg"; $("pnMso").textContent = fx(ms, 2); $("pnMko").textContent = fx(mk, 2);
+  $("pnSt").textContent = slides ? "sí" : "no"; $("pnSt").className = "v " + (slides ? "no" : "ok");
+  $("pnAc").textContent = A(a); $("pnN").textContent = N(Nn); $("pnF").textContent = f < 0.05 ? "0 N" : N(f) + (slides ? " (cinética)" : " (estática)"); $("pnC").textContent = fx(crit, 1) + "°";
+  var n = $("pnNote");
+  if (slides && mk === 0) { n.className = "note"; n.innerHTML = "<b>Sin fricción, a = g sen θ = " + A(a) + ".</b> La masa no aparece: un bloque de 50 kg baja exactamente igual que uno de 10 kg. Más peso también significa más inercia."; }
+  else if (slides) { n.className = "note hot"; n.innerHTML = "<b>Se desliza</b> porque tan " + deg + "° = " + fx(Math.tan(t), 2) + " supera μₛ = " + fx(ms, 2) + ". Ya en movimiento la fricción cinética le quita " + A(G * mk * Math.cos(t)) + " a la aceleración."; }
+  else if (deg === 0) { n.className = "note"; n.innerHTML = "<b>Rampa horizontal:</b> la normal iguala al peso y nada lo empuja a moverse."; }
+  else { n.className = "note good"; n.innerHTML = "<b>Se queda quieto:</b> la fricción estática equilibra la componente del peso, " + N(Wp) + ". Resbalaría a partir de " + fx(crit, 1) + "°, sin importar la masa."; }
+  var S = setup($("plnCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var gy = H * 0.86, x1 = W * 0.9, base = W * 0.76, hgt = base * Math.tan(t);
+  if (hgt > H * 0.68) { hgt = H * 0.68; base = hgt / Math.tan(t); }
+  var x0 = x1 - base, top = gy - hgt;
+  c.fillStyle = rgba("line", .55); c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x0, gy); c.lineTo(x1, gy); c.lineTo(x1, top); c.closePath(); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke();
+  if (ms > 0) { c.strokeStyle = V.dim; c.lineWidth = 1; for (var q = 0; q < 16; q++) { var u = q / 16; c.beginPath(); c.moveTo(x0 + base * u, gy - hgt * u); c.lineTo(x0 + base * u + 4, gy - hgt * u + 5); c.stroke(); } }
+  var s = 0.55, px = x0 + base * s, py = gy - hgt * s, cx = px - 30 * Math.sin(t), cy = py - 30 * Math.cos(t);
+  c.save(); c.translate(cx, cy); c.rotate(-t); c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.fillRect(-40, -30, 80, 60); c.strokeRect(-40, -30, 80, 60); c.restore();
+  label(c, m + " kg", cx, cy, V.fg, { s: 11 });
+  if (deg > 0) { c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.arc(x0, gy, 36, -t, 0); c.stroke(); label(c, deg + "°", x0 + 50 * Math.cos(t / 2), gy - 50 * Math.sin(t / 2), V.dim, { s: 11 }); }
+  var k = Math.min(W, H) * 0.28 / Wt;
+  arrowA(c, cx, cy, -90, Wt * k, V.vi, 3); label(c, "W", cx + 10, cy + Wt * k - 4, V.vi, { a: "left" });
+  if ($("pnComp").checked && deg > 0) {
+    arrowA(c, cx, cy, deg + 180, Wp * k, V.vi, 1.5, [5, 4]); arrowA(c, cx, cy, deg - 90, Nn * k, V.vi, 1.5, [5, 4]);
+    var r1 = (deg + 180) * Math.PI / 180; label(c, "mg sen θ", cx + (Wp * k + 34) * Math.cos(r1), cy - (Wp * k + 14) * Math.sin(r1), V.vi, { s: 10.5, w: "500" });
+  }
+  arrowA(c, cx, cy, deg + 90, Nn * k, V.cy, 3); var rn = (deg + 90) * Math.PI / 180; label(c, "N", cx + (Nn * k + 14) * Math.cos(rn), cy - (Nn * k + 14) * Math.sin(rn), V.cy);
+  if (f > 0.05) { var fx0 = px + 12 * Math.cos(t), fy0 = py - 12 * Math.sin(t); arrowA(c, fx0, fy0, deg, f * k, V.ok, 3); var rf = deg * Math.PI / 180; label(c, "f", fx0 + (f * k + 12) * Math.cos(rf), fy0 - (f * k + 12) * Math.sin(rf) + 10, V.ok); }
+  if (slides && a > 0.005) { var ra = (deg + 180) * Math.PI / 180, ox = cx + 52 * Math.cos(rn), oy = cy - 52 * Math.sin(rn), al = 16 + a * 12;
+    arrow(c, ox, oy, ox + al * Math.cos(ra), oy - al * Math.sin(ra), V.acc, 2.6); label(c, "a", ox + (al + 12) * Math.cos(ra), oy - (al + 12) * Math.sin(ra), V.acc); }
+}
+bind(["pnA", "pnM", "pnMs", "pnMk"], drawPn); $("pnComp").addEventListener("change", drawPn);
+
+/* =========================================================
+   05 POLEAS
+   ========================================================= */
+var poMode = "atwood", poT = 0, poPlaying = false, poLast = 0;
+function poCalc() {
+  if (poMode === "atwood") {
+    var m1 = +$("poM1").value, m2 = +$("poM2").value, a = (m2 - m1) * G / (m1 + m2), T = 2 * m1 * m2 * G / (m1 + m2);
+    return { m1: m1, m2: m2, a: a, T: T };
+  }
+  var M1 = +$("pmM1").value, M2 = +$("pmM2").value, mu = +$("pmMu").value, drive = M2 * G, fr = mu * M1 * G, stuck = drive <= fr + 1e-9;
+  var aa = stuck ? 0 : (drive - fr) / (M1 + M2), TT = M2 * (G - aa);
+  return { m1: M1, m2: M2, mu: mu, a: aa, T: TT, f: stuck ? drive : fr, stuck: stuck };
+}
+function poUpdate() {
+  $("poAt").hidden = poMode !== "atwood"; $("poMe").hidden = poMode !== "mesa"; press("[data-po]", "data-po", poMode);
+  $("poAsk").innerHTML = poMode === "atwood" ? "Dos masas de 3 kg y 5 kg cuelgan de una polea. <b>¿La tensión es 29.4 N, 49.1 N o algo intermedio?</b>" : "Un bloque de 4 kg en una mesa con fricción, jalado por uno de 2 kg que cuelga. <b>¿Con qué aceleración se mueven?</b>";
+  drawPo();
+}
+function drawPo() {
+  var r = poCalc();
+  $("poM1o").textContent = fx(+$("poM1").value, 1) + " kg"; $("poM2o").textContent = fx(+$("poM2").value, 1) + " kg";
+  $("pmM1o").textContent = fx(+$("pmM1").value, 1) + " kg"; $("pmM2o").textContent = fx(+$("pmM2").value, 1) + " kg"; $("pmMuo").textContent = fx(+$("pmMu").value, 2);
+  var n = $("poNote");
+  if (poMode === "atwood") {
+    $("poAk").innerHTML = "Aceleración &nbsp;<em>(m₂ − m₁) g / (m₁ + m₂)</em>"; $("poTk").innerHTML = "Tensión &nbsp;<em>2 m₁ m₂ g / (m₁ + m₂)</em>";
+    $("poA").textContent = A(Math.abs(r.a)); $("poT").textContent = N(r.T);
+    $("poXk").textContent = "Pesos de cada lado"; $("poX").textContent = N(r.m1 * G) + " · " + N(r.m2 * G);
+    if (Math.abs(r.a) < 1e-9) { n.className = "note good"; n.innerHTML = "<b>Masas iguales: a = 0.</b> La tensión iguala a cada peso y el sistema queda en equilibrio, quieto o moviéndose a velocidad constante."; }
+    else { n.className = "note"; n.innerHTML = "<b>La tensión queda entre los dos pesos:</b> es mayor que el peso del ligero (por eso sube) y menor que el del pesado (por eso baja). Sólo la diferencia de pesos acelera las " + fx(r.m1 + r.m2, 1) + " kg del sistema."; }
+  } else {
+    $("poAk").innerHTML = "Aceleración &nbsp;<em>(m₂g − μm₁g) / (m₁ + m₂)</em>"; $("poTk").innerHTML = "Tensión &nbsp;<em>m₂ (g − a)</em>";
+    $("poA").textContent = A(r.a); $("poT").textContent = N(r.T);
+    $("poXk").textContent = "Fricción en la mesa"; $("poX").textContent = N(r.f) + (r.stuck ? " (estática)" : "");
+    if (r.stuck) { n.className = "note hot"; n.innerHTML = "<b>No se mueve:</b> el peso que cuelga (" + N(r.m2 * G) + ") no supera la fricción máxima de la mesa (" + N(r.mu * r.m1 * G) + "). Aquí se usa el mismo μ para el reposo y el movimiento."; }
+    else { n.className = "note"; n.innerHTML = "<b>T es menor que el peso del bloque colgante</b> (" + N(r.m2 * G) + "): si fueran iguales, el bloque no bajaría. La fricción le quita " + N(r.f) + " a la fuerza que mueve el sistema."; }
+  }
+  var S = setup($("poCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var ppm = 70, s = 0.5 * Math.abs(r.a) * poT * poT;
+  var kF = (H * 0.17) / Math.max(r.m1 * G, r.m2 * G, r.T, 1);
+  if (poMode === "atwood") {
+    var pcx = W / 2, pcy = 46, pr = 34, xl = pcx - pr, xr = pcx + pr, base = H * 0.5, dir = r.a >= 0 ? 1 : -1;
+    var maxS = (H * 0.3) / ppm; if (s > maxS) { s = maxS; poPlaying = false; $("poPlay").textContent = "Soltar"; }
+    var yl = base - dir * s * ppm, yr = base + dir * s * ppm;
+    c.fillStyle = V.line; c.fillRect(pcx - 70, 8, 140, 10); hatch(c, pcx - 70, 8, 140, 10);
+    c.strokeStyle = V.dim; c.lineWidth = 2; c.beginPath(); c.moveTo(pcx, 18); c.lineTo(pcx, pcy); c.stroke();
+    c.strokeStyle = V.fg; c.beginPath(); c.arc(pcx, pcy, pr, Math.PI, 0); c.stroke(); c.beginPath(); c.arc(pcx, pcy, pr, 0, Math.PI * 2); c.lineWidth = 1.5; c.stroke(); c.fillStyle = V.fg; c.beginPath(); c.arc(pcx, pcy, 4, 0, Math.PI * 2); c.fill();
+    function hb(x, y, m, col) { var sz = 46 + Math.sqrt(m) * 8; c.strokeStyle = V.fg; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, pcy); c.lineTo(x, y - sz / 2); c.stroke(); box(c, x, y, sz, sz, col, fx(m, 1) + " kg"); return sz; }
+    var s1 = hb(xl, yl, r.m1, V.cy), s2 = hb(xr, yr, r.m2, V.vi);
+    arrow(c, xl - s1 / 2 - 14, yl, xl - s1 / 2 - 14, yl - r.T * kF, V.cy, 2.6); label(c, "T", xl - s1 / 2 - 24, yl - r.T * kF * 0.6, V.cy, { a: "right" });
+    arrow(c, xl - s1 / 2 - 14, yl + 4, xl - s1 / 2 - 14, yl + 4 + r.m1 * G * kF, V.vi, 2.6); label(c, "m₁g", xl - s1 / 2 - 24, yl + 4 + r.m1 * G * kF * 0.7, V.vi, { a: "right", s: 11 });
+    arrow(c, xr + s2 / 2 + 14, yr, xr + s2 / 2 + 14, yr - r.T * kF, V.cy, 2.6); label(c, "T", xr + s2 / 2 + 24, yr - r.T * kF * 0.6, V.cy, { a: "left" });
+    arrow(c, xr + s2 / 2 + 14, yr + 4, xr + s2 / 2 + 14, yr + 4 + r.m2 * G * kF, V.vi, 2.6); label(c, "m₂g", xr + s2 / 2 + 24, yr + 4 + r.m2 * G * kF * 0.7, V.vi, { a: "left", s: 11 });
+    if (Math.abs(r.a) > 1e-9) { var al = 14 + Math.abs(r.a) * 8, axl = xl + s1 / 2 + 12, axr = xr - s2 / 2 - 12;
+      arrow(c, axl, yl + dir * al / 2, axl, yl - dir * al / 2, V.acc, 2.4); arrow(c, axr, yr - dir * al / 2, axr, yr + dir * al / 2, V.acc, 2.4); }
+  } else {
+    var ty = H * 0.4, tx1 = W * 0.66, tx0 = 24, pr2 = 18, fl0 = H - 40, pcx2 = tx1 + pr2, pcy2 = ty - pr2;
+    var maxS2 = Math.min((tx1 - tx0 - 160) / ppm, (fl0 - 30 - (ty + 100)) / ppm); if (s > maxS2) { s = maxS2; poPlaying = false; $("poPlay").textContent = "Soltar"; }
+    c.fillStyle = rgba("line", .5); c.fillRect(tx0, ty, tx1 - tx0, 12); c.strokeStyle = V.dim; c.lineWidth = 1.5; c.strokeRect(tx0, ty, tx1 - tx0, 12);
+    c.fillRect(tx0 + 10, ty + 12, 10, fl0 - ty - 12); c.fillRect(tx1 - 20, ty + 12, 10, fl0 - ty - 12); ground(c, W, fl0);
+    if (r.mu > 0) { c.strokeStyle = V.dim; c.lineWidth = 1; for (var q = tx0 + 8; q < tx1; q += 12) { c.beginPath(); c.moveTo(q, ty); c.lineTo(q + 4, ty + 5); c.stroke(); } }
+    var bsz = 46 + Math.sqrt(r.m1) * 8, bxc = tx0 + 60 + bsz / 2 + s * ppm, byc = ty - bsz / 2;
+    var hsz = 46 + Math.sqrt(r.m2) * 8, hy = ty + 50 + hsz / 2 + s * ppm;
+    c.strokeStyle = V.fg; c.lineWidth = 1.5; c.beginPath(); c.moveTo(bxc + bsz / 2, pcy2 - pr2); c.lineTo(pcx2, pcy2 - pr2); c.stroke();
+    c.beginPath(); c.arc(pcx2, pcy2, pr2, 0, Math.PI * 2); c.stroke(); c.fillStyle = V.fg; c.beginPath(); c.arc(pcx2, pcy2, 3, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.moveTo(pcx2 + pr2, pcy2); c.lineTo(pcx2 + pr2, hy - hsz / 2); c.stroke();
+    box(c, bxc, byc, bsz, bsz, V.cy, fx(r.m1, 1) + " kg"); box(c, pcx2 + pr2, hy, hsz, hsz, V.vi, fx(r.m2, 1) + " kg");
+    arrow(c, bxc + bsz / 2 + 4, byc - 10, bxc + bsz / 2 + 4 + r.T * kF, byc - 10, V.cy, 2.6); label(c, "T", bxc + bsz / 2 + 10 + r.T * kF, byc - 22, V.cy);
+    if (r.f > 0.05) { arrow(c, bxc - bsz / 2, ty - 6, bxc - bsz / 2 - r.f * kF, ty - 6, V.ok, 2.6); label(c, "f", bxc - bsz / 2 - r.f * kF - 10, ty - 18, V.ok); }
+    var hx = pcx2 + pr2;
+    arrow(c, hx + hsz / 2 + 12, hy, hx + hsz / 2 + 12, hy - r.T * kF, V.cy, 2.6); label(c, "T", hx + hsz / 2 + 22, hy - r.T * kF * 0.6, V.cy, { a: "left" });
+    arrow(c, hx + hsz / 2 + 12, hy + 4, hx + hsz / 2 + 12, hy + 4 + r.m2 * G * kF, V.vi, 2.6); label(c, "m₂g", hx + hsz / 2 + 22, hy + 4 + r.m2 * G * kF * 0.7, V.vi, { a: "left", s: 11 });
+    if (r.a > 1e-9) { var al2 = 14 + r.a * 10; arrow(c, bxc - 20, byc - bsz / 2 - 14, bxc - 20 + al2, byc - bsz / 2 - 14, V.acc, 2.4); arrow(c, hx - hsz / 2 - 14, hy - 10, hx - hsz / 2 - 14, hy - 10 + al2, V.acc, 2.4); }
+  }
+  if (poT > 0) label(c, "t = " + fx(poT, 2) + " s", W - 14, 16, V.dim, { a: "right", s: 11, w: "500" });
+}
+function poLoop(ts) {
+  if (!poPlaying || cur !== "poleas") { poLast = 0; return; }
+  if (poLast) poT += Math.min(0.05, (ts - poLast) / 1000); poLast = ts; drawPo();
+  if (poPlaying) requestAnimationFrame(poLoop); else poLast = 0;
+}
+function poStart() { var r = poCalc(); if (Math.abs(r.a) < 1e-9) { drawPo(); return; } poPlaying = !poPlaying; $("poPlay").textContent = poPlaying ? "Pausa" : "Soltar"; if (poPlaying) { poLast = 0; requestAnimationFrame(poLoop); } }
+function poReset() { poPlaying = false; poT = 0; poLast = 0; $("poPlay").textContent = "Soltar"; drawPo(); }
+document.querySelectorAll("[data-po]").forEach(function (b) { b.addEventListener("click", function () { poMode = b.getAttribute("data-po"); poReset(); poUpdate(); }); });
+bind(["poM1", "poM2", "pmM1", "pmM2", "pmMu"], function () { poReset(); });
+$("poPlay").addEventListener("click", poStart); $("poReset").addEventListener("click", poReset);
+
+/* =========================================================
+   06 CURVA
+   ========================================================= */
+function drawCu() {
+  var r = +$("cuR").value, vk = +$("cuV").value, mu = +$("cuMu").value, th = +$("cuTh").value, t = th * Math.PI / 180, v = vk / 3.6, ac = v * v / r;
+  var den = Math.cos(t) - mu * Math.sin(t), amax = den > 1e-9 ? G * (Math.sin(t) + mu * Math.cos(t)) / den : Infinity, vmax = isFinite(amax) ? Math.sqrt(r * amax) : Infinity;
+  var ok = ac <= amax + 1e-9, pid = Math.atan(v * v / (r * G)) * 180 / Math.PI;
+  $("cuRo").textContent = r + " m"; $("cuVo").textContent = vk + " km/h"; $("cuMuo").textContent = fx(mu, 2); $("cuTho").textContent = th + "°";
+  document.querySelectorAll("#cuPresets button").forEach(function (b) { b.setAttribute("aria-pressed", Math.abs(+b.getAttribute("data-mu") - mu) < 1e-6 ? "true" : "false"); });
+  $("cuSt").textContent = ok ? "toma la curva" : "derrapa"; $("cuSt").className = "v " + (ok ? "ok" : "no");
+  $("cuAc").textContent = fx(ac, 2) + " m/s² = " + fx(ac / G, 2) + " g";
+  $("cuVm").textContent = isFinite(vmax) ? fx(vmax, 1) + " m/s = " + fx(vmax * 3.6, 1) + " km/h" : "sin límite";
+  $("cuPi").textContent = fx(pid, 1) + "°"; $("cuVi").textContent = th > 0 ? fx(Math.sqrt(r * G * Math.tan(t)) * 3.6, 1) + " km/h" : "— (sin peralte)";
+  var n = $("cuNote");
+  if (!ok && isFinite(amax) && ac / amax < 1.05) { n.className = "note hot"; n.innerHTML = "<b>Derrapa por muy poco:</b> la curva pide " + fx(ac / G, 2) + " g y el piso da como máximo " + fx(amax / G, 2) + " g. Es la misma curva de <a href=\"cinematica.html#circular\">cinemática</a>: bajando a " + fx(vmax * 3.6, 1) + " km/h ya la toma."; }
+  else if (!ok) { n.className = "note hot"; n.innerHTML = "<b>Derrapa:</b> la fricción no alcanza a dar la fuerza centrípeta, y el auto sigue por la tangente. Para tomarla haría falta ir a menos de " + fx(vmax * 3.6, 1) + " km/h" + (th === 0 ? " o peraltar la curva" : "") + "."; }
+  else if (th > 0) { n.className = "note good"; n.innerHTML = "<b>El peralte ayuda:</b> una parte de la normal apunta hacia el centro, así que la fricción tiene que dar menos. A " + fx(Math.sqrt(r * G * Math.tan(t)) * 3.6, 1) + " km/h la curva se tomaría incluso sobre hielo."; }
+  else { n.className = "note good"; n.innerHTML = "<b>Toma la curva:</b> en una curva plana la única fuerza hacia el centro es la fricción, μₛmg ≥ mv²/r. La masa se cancela: v_máx = √(μₛ g r) vale igual para un auto que para un camión."; }
+  var S = setup($("cuCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var R = Math.min(W * 0.62, H * 0.95), ccx = W * 0.2, ccy = H * 0.9, rw = 34;
+  c.strokeStyle = rgba("line", 1); c.lineWidth = rw; c.beginPath(); c.arc(ccx, ccy, R, -Math.PI / 2 - 0.05, 0.05); c.stroke();
+  c.strokeStyle = V.dim; c.lineWidth = 1.2; c.setLineDash([10, 9]); c.beginPath(); c.arc(ccx, ccy, R, -Math.PI / 2, 0); c.stroke(); c.setLineDash([]);
+  c.fillStyle = V.dim; c.beginPath(); c.arc(ccx, ccy, 4, 0, Math.PI * 2); c.fill(); label(c, "centro", ccx + 8, ccy - 10, V.dim, { a: "left", s: 10.5, w: "500" });
+  var ang = -Math.PI / 4, px = ccx + R * Math.cos(ang), py = ccy + R * Math.sin(ang);
+  c.strokeStyle = V.dim; c.lineWidth = 1; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(ccx, ccy); c.lineTo(px, py); c.stroke(); c.setLineDash([]);
+  label(c, "r = " + r + " m", (ccx + px) / 2 + 10, (ccy + py) / 2 + 14, V.dim, { a: "left", s: 11 });
+  c.save(); c.translate(px, py); c.rotate(ang + Math.PI / 2); c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.fillRect(-11, -20, 22, 40); c.strokeRect(-11, -20, 22, 40); c.restore();
+  var vx = Math.sin(ang), vy = -Math.cos(ang); /* tangente: hacia la parte alta de la curva */
+  arrow(c, px, py, px + vx * 80, py + vy * 80, V.cy, 2.8); label(c, "v", px + vx * 92, py + vy * 92, V.cy);
+  if (!ok) { c.strokeStyle = V.no; c.lineWidth = 1.5; c.setLineDash([6, 5]); c.beginPath(); c.moveTo(px, py); c.lineTo(px + vx * 220, py + vy * 220); c.stroke(); c.setLineDash([]); label(c, "sale por la tangente", px + vx * 150 + 10, py + vy * 150 - 10, V.no, { a: "left", s: 11, w: "500" }); }
+  var ux = (ccx - px) / R, uy = (ccy - py) / R, kk = Math.min(W, H) * 0.3 / Math.max(ac, isFinite(amax) ? amax : ac, 1);
+  if (isFinite(amax)) { arrow(c, px + 14 * vx, py + 14 * vy, px + 14 * vx + ux * amax * kk, py + 14 * vy + uy * amax * kk, V.ok, 2.2, [6, 4]); label(c, "máx. " + fx(amax / G, 2) + " g", px + 14 * vx + ux * amax * kk + 30 * vx, py + 14 * vy + uy * amax * kk + 30 * vy, V.ok, { a: "right", s: 11 }); }
+  arrow(c, px - 14 * vx, py - 14 * vy, px - 14 * vx + ux * ac * kk, py - 14 * vy + uy * ac * kk, V.acc, 3); label(c, "pide " + fx(ac / G, 2) + " g", px - 14 * vx + ux * ac * kk - 30 * vx, py - 14 * vy + uy * ac * kk - 30 * vy, V.acc, { a: "left", s: 11 });
+  if (th > 0) {
+    var bw2 = Math.min(200, W * 0.36), bh2 = 140, bx2 = W - bw2 - 14, by2 = 14;
+    c.fillStyle = V.panel; c.strokeStyle = V.line; c.lineWidth = 1; c.fillRect(bx2, by2, bw2, bh2); c.strokeRect(bx2, by2, bw2, bh2);
+    label(c, "corte de la carretera", bx2 + 8, by2 + 12, V.dim, { a: "left", s: 10, w: "500" });
+    var rx0 = bx2 + 16, ry0 = by2 + bh2 - 16, len = bw2 - 32, rx1 = rx0 + len * Math.cos(t), ry1 = ry0 - len * Math.sin(t);
+    c.strokeStyle = V.fg; c.lineWidth = 2; c.beginPath(); c.moveTo(rx0, ry0); c.lineTo(rx1, ry1); c.stroke();
+    c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.moveTo(rx0, ry0); c.lineTo(rx0 + len, ry0); c.stroke(); c.beginPath(); c.arc(rx0, ry0, 26, -t, 0); c.stroke();
+    label(c, th + "°", rx0 + 36, ry0 - 8, V.dim, { a: "left", s: 10.5 });
+    var mx = rx0 + len * 0.55 * Math.cos(t), my = ry0 - len * 0.55 * Math.sin(t);
+    c.save(); c.translate(mx, my); c.rotate(-t); c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 1.5; c.fillRect(-14, -14, 28, 14); c.strokeRect(-14, -14, 28, 14); c.restore();
+    arrowA(c, mx - 7 * Math.sin(t), my - 7 * Math.cos(t), 90 + th, 34, V.cy, 2); label(c, "N", mx + 34 * Math.cos((90 + th) * Math.PI / 180) - 4, my - 34 * Math.sin((90 + th) * Math.PI / 180) - 8, V.cy, { s: 10.5 });
+    label(c, "← hacia el centro", bx2 + 8, by2 + 28, V.dim, { a: "left", s: 10, w: "500" });
+  }
+}
+bind(["cuR", "cuV", "cuMu", "cuTh"], drawCu);
+document.querySelectorAll("#cuPresets button").forEach(function (b) { b.addEventListener("click", function () { $("cuMu").value = b.getAttribute("data-mu"); drawCu(); }); });
+
+/* =========================================================
+   AUTOEVALUACIÓN
+   ========================================================= */
+var QZ = [
+  { q: "Un auto avanza a 80 km/h constantes en línea recta. La fuerza neta sobre él es:", o: ["Cero", "Hacia adelante", "Igual a su peso", "Hacia atrás"], c: 0, e: "Velocidad constante significa a = 0, así que ΣF = 0. El motor sólo compensa al aire y la rodadura (primera ley)." },
+  { q: "Un astronauta de 80 kg viaja a la Luna. Allá su masa es:", o: ["80 kg", "Una sexta parte", "Cero", "Depende de su peso"], c: 0, e: "La masa no cambia. Lo que cambia es el peso, porque g lunar es 1.62 m/s²." },
+  { q: "El par de acción y reacción de la tercera ley:", o: ["Actúa sobre cuerpos distintos", "Se cancela siempre", "Actúa sobre el mismo cuerpo", "Sólo existe si hay contacto"], c: 0, e: "Por eso no se cancelan: cada fuerza acelera a un cuerpo diferente." },
+  { q: "En un elevador que arranca hacia arriba, la báscula marca:", o: ["Más que tu peso", "Menos que tu peso", "Tu peso exacto", "Cero"], c: 0, e: "N − mg = ma con a > 0, así que N = m(g + a) es mayor que mg." },
+  { q: "Para empezar a mover una caja hace falta más fuerza que para mantenerla en movimiento porque:", o: ["μₛ es mayor que μₖ", "La caja pierde masa", "La normal disminuye al moverse", "La gravedad cambia"], c: 0, e: "La fricción estática máxima μₛN es mayor que la cinética μₖN." },
+  { q: "Un bloque baja por una rampa lisa. Si se duplica su masa, su aceleración:", o: ["No cambia", "Se duplica", "Se reduce a la mitad", "Se cuadruplica"], c: 0, e: "a = g sen θ: la masa se cancela porque más peso también es más inercia." },
+  { q: "En una máquina de Atwood con dos masas iguales, la aceleración es:", o: ["Cero", "g", "g / 2", "Depende de la tensión"], c: 0, e: "a = (m₂ − m₁)g/(m₁ + m₂) = 0. El sistema queda en equilibrio." },
+  { q: "En una curva plana, la fuerza que mantiene al auto en la trayectoria circular es:", o: ["La fricción entre llantas y piso", "Una fuerza centrífuga", "El peso", "La normal"], c: 0, e: "La fricción apunta hacia el centro y da la fuerza centrípeta. Si no alcanza, el auto sale por la tangente." }
+];
+var ORD = [[1,0,3,2],[2,3,0,1],[0,2,1,3],[3,1,2,0],[1,3,0,2],[2,0,3,1],[3,2,1,0],[0,3,2,1]];
+var qScore = 0, qDone = 0, qBox = $("p-autoevaluacion");
+function quizBuild() {
+  qScore = 0; qDone = 0; qBox.querySelectorAll(".qcard").forEach(function (n) { n.remove(); }); $("score").textContent = "0 de " + QZ.length + " respondidas";
+  QZ.forEach(function (it, qi) {
+    var card = document.createElement("div"); card.className = "card qcard";
+    card.innerHTML = '<span class="tag">Pregunta ' + (qi + 1) + '</span><h3>' + it.q + '</h3><div class="opts"></div><p class="fb" hidden></p>';
+    var opts = card.querySelector(".opts"), fb = card.querySelector(".fb");
+    ORD[qi].forEach(function (oi) { var b = document.createElement("button"); b.type = "button"; b.textContent = it.o[oi]; b.dataset.i = oi;
+      b.addEventListener("click", function () {
+        opts.querySelectorAll("button").forEach(function (x) { x.disabled = true; if (+x.dataset.i === it.c) x.classList.add("right"); });
+        var ok = oi === it.c; if (!ok) b.classList.add("wrong"); if (ok) qScore++; qDone++;
+        fb.hidden = false; fb.innerHTML = '<b class="' + (ok ? "ok" : "no") + '">' + (ok ? "Correcto." : "No es esa.") + "</b> " + it.e;
+        $("score").innerHTML = qDone < QZ.length ? qDone + " de " + QZ.length + " respondidas · <b>" + qScore + " correctas</b>" : "Resultado: <b>" + qScore + " de " + QZ.length + "</b>" + (qScore === QZ.length ? " · listo para energía" : " · revisa los ejemplos de las que fallaste");
+      }); opts.appendChild(b); });
+    qBox.appendChild(card);
+  });
+}
+$("quizReset").addEventListener("click", quizBuild);
+quizBuild();
+
+/* =========================================================
+   PESTAÑAS
+   ========================================================= */
+var cur = "segunda-ley";
+var DRAW = { "segunda-ley": slUpdate, elevador: drawEl, friccion: drawFr, plano: drawPn, poleas: poUpdate, curva: drawCu, ejemplos: function () {}, autoevaluacion: function () {} };
+var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+function nameOf(t) { return t.id.slice(2); }
+function show(name) {
+  if (!DRAW[name]) name = "segunda-ley";
+  if (name !== "poleas" && poPlaying) { poPlaying = false; $("poPlay").textContent = "Soltar"; }
+  cur = name;
+  tabs.forEach(function (t) { var on = nameOf(t) === name; t.setAttribute("aria-selected", on ? "true" : "false"); t.tabIndex = on ? 0 : -1; $("p-" + nameOf(t)).hidden = !on; });
+  DRAW[name]();
+}
+function redibujar() { var f = DRAW[cur]; if (cur === "poleas") drawPo(); else f(); }
+function go(name) { if (location.hash !== "#" + name) { try { location.hash = name; } catch (e) { show(name); } } else show(name); }
+tabs.forEach(function (t, i) {
+  t.addEventListener("click", function () { go(nameOf(t)); });
+  t.addEventListener("keydown", function (e) {
+    var k = e.key, j = null;
+    if (k === "ArrowRight") j = (i + 1) % tabs.length; else if (k === "ArrowLeft") j = (i - 1 + tabs.length) % tabs.length; else if (k === "Home") j = 0; else if (k === "End") j = tabs.length - 1;
+    if (j !== null) { e.preventDefault(); go(nameOf(tabs[j])); tabs[j].focus(); }
+  });
+});
+window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+var rt; window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(redibujar, 60); });
+try { new MutationObserver(function () { leerTema(); rotulo(); redibujar(); }).observe(root, { attributes: true, attributeFilter: ["data-tema"] }); } catch (e) {}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(redibujar);
+show(location.hash.slice(1) || "segunda-ley");
+})();
+</script>
+</body>
+</html>
