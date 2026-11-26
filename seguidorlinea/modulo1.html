@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Módulo 1 · Mecánica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.m1 .lab{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:900px){.m1 .lab{grid-template-columns:minmax(0,1fr)}}
+.m1 .lienzo{background:var(--card);border:1px solid var(--line);border-radius:var(--radio);padding:8px;overflow-x:auto}
+.m1 .lienzo svg{display:block;width:100%;height:auto;min-width:500px}
+.m1 .lienzo text{font-family:Barlow,sans-serif}
+.m1 .ctrls{display:grid;gap:4px}
+.m1 .ctl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:center;padding:3px 0}
+.m1 .ctl output{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.m1 .ctl input{grid-column:1/3}
+.m1 .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:10px;margin-top:12px}
+.m1 .res div{background:var(--bg2);border-radius:8px;padding:8px 12px}
+.m1 .res b{display:block;font-size:22px;font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.m1 .res span{font-size:13px;color:var(--ink2)}
+.m1 .formula{font-family:"JetBrains Mono",monospace;font-size:14px;background:var(--bg2);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.m1 .veredicto{margin-top:12px;font-weight:600}
+.m1 .veredicto .est,.m1 td .est{white-space:normal}
+.m1 tr.sel td{background:var(--ir-suave)}
+.m1 #tabRed tbody tr{cursor:pointer}
+.m1 .tres{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.m1 .tres .card h3{font-size:19px}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+</head>
+<body data-pagina="m1">
+<main class="m1">
+<section class="band">
+  <div class="wrap">
+    <p><span class="tag t-mec">Módulo 1 · Mecánica</span></p>
+    <h1>Mecánica: el chasis decide qué tan rápido puede ir y qué tan fácil es de controlar</h1>
+    <p class="muted" style="font-size:18px">Antes de pensar en el PID hay que fijar cómo gira el carrito, qué motor y reducción mueven sus ruedas, dónde queda su centro de masa y a qué distancia van los sensores. Cada sección deja un número en la ficha técnica, y el simulador lo usa.</p>
+    <nav class="secc scroll" aria-label="Secciones del módulo" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <a class="btn" href="#cinematica">1. Cómo gira</a>
+      <a class="btn" href="#reduccion">2. Motor y reducción</a>
+      <a class="btn" href="#centro-masa">3. Centro de masa</a>
+      <a class="btn" href="#lookahead">4. Sensores en la curva</a>
+      <a class="btn" href="#decisiones">5. Decisiones</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============ 1. CINEMÁTICA ============ -->
+<section class="band alt" id="cinematica">
+  <div class="wrap">
+    <h2>1. Tracción diferencial: girar con la diferencia de velocidades</h2>
+    <div class="tres" style="margin-bottom:20px">
+      <div class="card"><h3>Diferencial + rueda loca</h3><p class="small" style="margin:0">Dos motores independientes y un apoyo libre. Es mecánicamente simple, gira sobre su propio eje y la dirección se controla sólo con el PWM. Es la que se usa aquí.</p></div>
+      <div class="card"><h3>Triciclo con servo de dirección</h3><p class="small" style="margin:0">Un motor de tracción y un servo que orienta la rueda. Se parece a un auto, pero tiene un radio de giro mínimo y el servo agrega retardo.</p></div>
+      <div class="card"><h3>Ackermann (tipo automóvil)</h3><p class="small" style="margin:0">La geometría de un vehículo real. Es interesante para Sistemas Automotrices, pero es demasiado compleja para un seguidor de competencia.</p></div>
+    </div>
+    <p>Con dos ruedas motrices separadas una distancia <i>b</i>, el carrito siempre gira alrededor de un punto sobre la línea del eje: el <b>centro instantáneo de rotación</b> (CIR). Mueve las velocidades de cada rueda y observa dónde queda ese punto.</p>
+    <div class="lab">
+      <div class="lienzo"><svg id="svgCir" viewBox="0 0 640 400" role="img" aria-label="Vista superior del carrito con su centro instantáneo de rotación"></svg></div>
+      <div class="card">
+        <div class="ctrls">
+          <div class="ctl"><label for="c_vl">Velocidad rueda izquierda v<sub>L</sub></label><output id="o_vl"></output><input type="range" id="c_vl" min="-0.8" max="0.8" step="0.01"></div>
+          <div class="ctl"><label for="c_vr">Velocidad rueda derecha v<sub>R</sub></label><output id="o_vr"></output><input type="range" id="c_vr" min="-0.8" max="0.8" step="0.01"></div>
+          <div class="ctl"><label for="c_b">Distancia entre ruedas b</label><output id="o_b"></output><input type="range" id="c_b" min="0.07" max="0.20" step="0.005"></div>
+        </div>
+        <div class="formula">v = (v<sub>R</sub> + v<sub>L</sub>)/2 &nbsp; ω = (v<sub>R</sub> − v<sub>L</sub>)/b &nbsp; R = v/ω</div>
+        <div class="res" id="resCir"></div>
+        <p class="small muted" style="margin:12px 0 0">Observa: con la misma diferencia de velocidades, una <i>b</i> menor da un ω mayor. Para el controlador, el chasis tiene una "ganancia" de 1/b: una trocha angosta hace al carrito más nervioso.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. REDUCCIÓN ============ -->
+<section class="band" id="reduccion">
+  <div class="wrap">
+    <h2>2. Motor, reducción y rueda: velocidad contra fuerza</h2>
+    <p>Un motor de CD pequeño gira muy rápido (decenas de miles de rpm) pero con muy poco par. La caja de engranes 1:N divide la velocidad entre N y multiplica el par por N·η. En la curva par-velocidad, que es aproximadamente lineal, el motor entrega su par máximo detenido (arranque) y cero par a su velocidad máxima sin carga. Elegir N es elegir un punto de esa negociación.</p>
+    <div class="formula">n₀,rueda = n₀,motor / N &nbsp; τ₀,rueda = N·η·τ<sub>arranque</sub> &nbsp; F(v) = F₀·(1 − v/v₀), &nbsp; F₀ = 2τ₀/r, &nbsp; v₀ = n₀·2π·r/60</div>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="svgRed" viewBox="0 0 640 360" role="img" aria-label="Fuerza disponible contra velocidad del carrito"></svg></div>
+        <p class="small muted">Línea verde: fuerza de tracción de los dos motores a PWM 100 %. Línea café punteada: lo máximo que aguantan las llantas antes de patinar (μ·f·m·g). Línea gris: resistencia a la rodadura. Línea roja: velocidad que exigen los requisitos.</p>
+      </div>
+      <div class="card">
+        <div class="ctrls">
+          <div class="ctl"><label for="c_N">Reducción 1:N</label><output id="o_N"></output><input type="range" id="c_N" min="5" max="300" step="1"></div>
+          <div class="ctl"><label for="c_r">Radio de rueda</label><output id="o_r"></output><input type="range" id="c_r" min="0.010" max="0.035" step="0.0005"></div>
+        </div>
+        <div class="res" id="resRed"></div>
+        <p class="veredicto" id="verRed"></p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px">Estudio comparativo de reducciones</h3>
+    <p class="small muted">Con la masa y la rueda actuales. Haz clic en una fila para elegirla.</p>
+    <div class="scroll"><table class="stack" id="tabRed">
+      <thead><tr><th>Reducción</th><th class="num">rpm rueda</th><th class="num">v máx.</th><th class="num">F₀ (2 motores)</th><th class="num">τ del carrito</th><th class="num">Aceleración inicial</th><th>Diagnóstico</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+
+    <div class="dos" style="margin-top:22px">
+      <div>
+        <h3>Datos del motor base</h3>
+        <div class="scroll"><table class="stack"><thead><tr><th>Dato</th><th class="num">Valor</th><th>De dónde sale</th></tr></thead><tbody id="tabMotor"></tbody></table></div>
+        <p class="small muted">Son valores típicos de un micromotor tipo N20 a 7.4 V. Cuando el grupo tenga la hoja de datos del motor real, se cambian en <code>js/carrito.js</code>.</p>
+      </div>
+      <div>
+        <h3>¿De dónde sale τ?</h3>
+        <p>Si la fuerza del motor cae linealmente con la velocidad, la segunda ley de Newton queda</p>
+        <div class="formula">m·dv/dt = F₀·(1 − v/v₀) &nbsp;⇒&nbsp; (m·v₀/F₀)·dv/dt + v = v₀</div>
+        <p>que es un sistema de <b>primer orden</b> con constante de tiempo τ = m·v₀/F₀ y función de transferencia K/(τs + 1). Es el bloque del motor del Módulo 0, y ahora sale de la física: τ crece con la masa y con la rueda, y baja con la reducción. No depende del voltaje, porque F₀ y v₀ escalan igual con él. Este cálculo ignora la inercia del rotor y de las ruedas, así que el τ real será un poco mayor; en el Módulo 4 se mide.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. CENTRO DE MASA ============ -->
+<section class="band alt" id="centro-masa">
+  <div class="wrap">
+    <h2>3. Centro de masa: dónde va la batería</h2>
+    <p>Visto de lado, el carrito se apoya en sólo dos puntos: el eje de las ruedas motrices y un apoyo libre. El centro de masa (CM) debe quedar <b>entre</b> ellos, y mientras más cerca del eje, más peso cargan las ruedas motrices y más agarre tienen, porque el apoyo libre no aporta agarre lateral.</p>
+    <p class="small" id="txtApoyo"></p>
+    <div class="lab">
+      <div class="lienzo"><svg id="svgCm" viewBox="0 0 640 280" role="img" aria-label="Vista lateral del carrito con su centro de masa y reacciones"></svg></div>
+      <div class="card">
+        <div class="ctrls">
+          <div class="ctl"><label for="c_xb">Posición de la batería (desde el eje)</label><output id="o_xb"></output><input type="range" id="c_xb" min="-0.06" max="0.05" step="0.001"></div>
+          <div class="ctl"><label for="c_mb">Masa de la batería</label><output id="o_mb"></output><input type="range" id="c_mb" min="0.03" max="0.20" step="0.005"></div>
+        </div>
+        <div class="formula">x<sub>CM</sub> = Σ mᵢ·xᵢ / Σ mᵢ &nbsp;&nbsp; f = N<sub>motrices</sub>/(m·g) = 1 − x<sub>CM</sub>/x<sub>apoyo</sub></div>
+        <div class="res" id="resCm"></div>
+        <p class="veredicto" id="verCm"></p>
+      </div>
+    </div>
+    <h3 style="margin-top:22px">Presupuesto de masa</h3>
+    <div class="scroll"><table class="stack" id="tabMasa"><thead><tr><th>Componente</th><th class="num">Masa</th><th class="num">Posición x</th><th class="num">Momento m·x</th></tr></thead><tbody></tbody></table></div>
+    <p class="small muted"><span id="txtMasas">Masas estimadas para el carrito genérico</span>; se reemplazan pesando las piezas reales con una báscula de cocina. Las posiciones se miden desde el eje de las ruedas, positivas hacia adelante.</p>
+  </div>
+</section>
+
+<!-- ============ 4. LOOKAHEAD ============ -->
+<section class="band" id="lookahead">
+  <div class="wrap">
+    <h2>4. ¿A qué distancia van los sensores?</h2>
+    <p>Los sensores van adelante del eje una distancia <i>L</i> (lookahead). En una recta da igual, pero en una curva de radio <i>R</i>, aunque el eje vaya perfectamente sobre la línea, la línea se desplaza bajo los sensores una distancia <i>d</i>. Si <i>d</i> es mayor que medio arreglo, la línea se sale del campo de visión.</p>
+    <div class="formula">d = R − √(R² − L²) ≈ L²/(2R) &nbsp;&nbsp; requisito: d + w/2 &lt; medio ancho del arreglo</div>
+    <div class="lab">
+      <div class="lienzo"><svg id="svgLa" viewBox="0 0 640 340" role="img" aria-label="Desplazamiento de la línea bajo el arreglo de sensores en una curva"></svg></div>
+      <div class="card">
+        <div class="ctrls">
+          <div class="ctl"><label for="c_L">Distancia eje → sensores L</label><output id="o_L"></output><input type="range" id="c_L" min="0.02" max="0.15" step="0.005"></div>
+          <div class="ctl"><label for="c_R">Radio de la curva R</label><output id="o_R"></output><input type="range" id="c_R" min="0.05" max="0.6" step="0.01"></div>
+        </div>
+        <div class="res" id="resLa"></div>
+        <p class="veredicto" id="verLa"></p>
+        <p class="small muted" style="margin:10px 0 0">Ahí está el compromiso: una <i>L</i> grande ve antes los cambios y estabiliza el lazo (funciona como una acción derivativa "gratis"), pero en curvas cerradas la línea se escapa del arreglo y el carrito tiende a cortar la curva.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. DECISIONES ============ -->
+<section class="band alt" id="decisiones">
+  <div class="wrap">
+    <h2>5. Decisiones mecánicas para la ficha</h2>
+    <p>Estos son los valores que quedaron en cada sección. Al aplicarlos, el simulador y los demás módulos los toman.</p>
+    <div class="scroll"><table class="stack" id="tabDec"><thead><tr><th>Decisión</th><th class="num">En la ficha</th><th class="num">Propuesta</th><th>Consecuencia</th></tr></thead><tbody></tbody></table></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px">
+      <button class="pri" type="button" id="btnAplicar">Aplicar al carrito</button>
+      <a class="btn" href="simulador.html">Probarlo en el simulador</a>
+      <span class="small" id="msgDec" role="status" style="color:var(--ok)"></span>
+    </div>
+
+    <h2 style="margin-top:36px">Actividad</h2>
+    <ol class="act">
+      <li>En la sección 1, encuentren las velocidades de rueda que hacen que el carrito siga la curva más cerrada de su pista. ¿Qué diferencia de velocidades se necesita?</li>
+      <li>En el estudio comparativo, expliquen por qué ni la reducción más baja ni la más alta son buena elección. ¿Cuál escogen y por qué?</li>
+      <li>Cambien la batería por una de 150 g. ¿Dónde tienen que colocarla para que el carrito no se vaya de nariz? ¿Qué le pasa a τ?</li>
+      <li>En el simulador, suban la masa a 900 g sin tocar las ganancias. Describan qué cambia en la gráfica de error y relaciónenlo con τ.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<script>
+{
+  const $ = s => document.querySelector(s);
+  const G = 9.81;
+  const ficha = window.Ficha.leer();
+  const st = {
+    vL: 0.35, vR: 0.5, b: ficha.trocha,
+    N: ficha.reduccion, r: ficha.radioRueda,
+    xb: ficha.posBateria, mb: ficha.masaBateria,
+    L: ficha.lookahead, R: ficha.radioMin
+  };
+  const color = n => { const e = document.createElement("span"); e.style.color = "var(" + n + ")"; document.body.append(e); const c = getComputedStyle(e).color; e.remove(); return c; };
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  /* ---------- masa y centro de masa (compartido) ---------- */
+  // masas por componente: salen de la ficha del perfil activo ("L·f" = fracción del lookahead)
+  function componentes() {
+    const fL = Object.assign({}, ficha, { lookahead: st.L });
+    return ficha.masasFijas.map(c => [c[0], c[1], window.Ficha.xMasa(c[2], fL)]).concat([["Batería", st.mb, st.xb]]);
+  }
+  const PATIN = ficha.apoyo === "patin";
+  const xApoyo = () => PATIN ? st.L : ficha.xApoyo;     // patines bajo la barra o rueda loca atrás
+  function cm() {
+    const c = componentes();
+    const m = c.reduce((a, x) => a + x[1], 0), mx = c.reduce((a, x) => a + x[1] * x[2], 0);
+    const x = mx / m, xa = xApoyo();
+    const f = 1 - x / xa;                                   // fracción del peso sobre las ruedas motrices
+    const vuelca = xa < 0 ? x >= 0 : x <= 0;                // el CM debe quedar entre el eje y el apoyo
+    return { m, x, f, c, xa, vuelca };
+  }
+  function motor(N, r, m, f) {
+    const n0 = ficha.n0Motor / N, v0 = n0 * 2 * Math.PI / 60 * r * window.Ficha.vMotor(ficha) / ficha.vNom;
+    const F0 = 2 * N * ficha.eta * ficha.tauStall / r * window.Ficha.vMotor(ficha) / ficha.vNom;
+    const Fmu = ficha.mu * f * m * G, Frr = ficha.crr * m * G;
+    const tau = m * (n0 * 2 * Math.PI / 60 * r) / (2 * N * ficha.eta * ficha.tauStall / r);
+    const a0 = (Math.min(F0, Fmu) - Frr) / m;
+    return { n0, v0, F0, Fmu, Frr, tau, a0 };
+  }
+
+  /* ---------- utilidades de controles ---------- */
+  function slider(id, clave, fmtf, alCambiar) {
+    const i = $("#c_" + id), o = $("#o_" + id);
+    i.value = st[clave];
+    const pinta = () => { o.textContent = fmtf(st[clave]); };
+    i.addEventListener("input", () => { st[clave] = parseFloat(i.value); pinta(); alCambiar(); });
+    pinta();
+    return () => { i.value = st[clave]; pinta(); };
+  }
+  const tarjetas = (sel, items) => { $(sel).innerHTML = items.map(x => `<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join(""); };
+
+  /* ================= 1. CIR ================= */
+  function dibujarCir() {
+    const s = $("#svgCir"), ink = color("--ink"), ink2 = color("--ink2"), mec = color("--mec"), ir = color("--ir"), ctl = color("--ctl"), line = color("--line");
+    const K = 900, cx = 320, cy = 250, bpx = st.b * K, A = 160; // px por m/s en flechas
+    const v = (st.vR + st.vL) / 2, w = (st.vR - st.vL) / st.b;
+    const R = Math.abs(w) < 1e-6 ? Infinity : v / w;
+    let h = `<line x1="0" y1="${cy}" x2="640" y2="${cy}" stroke="${line}" stroke-dasharray="6 5"/>`;
+    // trayectoria
+    if (isFinite(R) && Math.abs(R * K) < 4000) {
+      const xi = cx - R * K, rad = Math.abs(R * K);
+      h += `<circle cx="${xi}" cy="${cy}" r="${rad}" fill="none" stroke="${ctl}" stroke-width="2" stroke-dasharray="3 6" opacity=".7"/>`;
+    } else if (Math.abs(v) > 1e-4) h += `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="0" stroke="${ctl}" stroke-width="2" stroke-dasharray="3 6" opacity=".7"/>`;
+    // carrito
+    h += `<rect x="${cx - bpx / 2 + 10}" y="${cy - 80}" width="${bpx - 20}" height="125" rx="10" fill="#1d6b47"/>`;
+    h += `<rect x="${cx - 30}" y="${cy - 98}" width="60" height="12" rx="3" fill="#1d6b47"/>`;
+    for (const [sx, vv] of [[-1, st.vL], [1, st.vR]]) {
+      const x = cx + sx * bpx / 2;
+      h += `<rect x="${x - 7}" y="${cy - 26}" width="14" height="52" rx="3" fill="#1b1b1b"/>`;
+      const y2 = cy - vv * A;
+      if (Math.abs(vv) > 0.005) h += `<line x1="${x}" y1="${cy}" x2="${x}" y2="${y2}" stroke="${mec}" stroke-width="4" marker-end="url(#fl1)"/>`;
+    }
+    // CIR y líneas de velocidad
+    if (isFinite(R) && Math.abs(R * K) < 2000) {
+      const xi = cx - R * K;
+      if (xi > -50 && xi < 690) {
+        h += `<line x1="${xi}" y1="${cy}" x2="${cx + bpx / 2}" y2="${cy - st.vR * A}" stroke="${ink2}" stroke-width="1.2"/>`;
+        h += `<line x1="${xi}" y1="${cy}" x2="${cx - bpx / 2}" y2="${cy - st.vL * A}" stroke="${ink2}" stroke-width="1.2"/>`;
+        const xs = Math.max(14, Math.min(626, xi));
+        h += `<circle cx="${xs}" cy="${cy}" r="7" fill="${ir}"/><text x="${xs}" y="${cy + 28}" text-anchor="middle" font-size="15" font-weight="700" fill="${ir}">CIR</text>`;
+      }
+    }
+    h += `<circle cx="${cx}" cy="${cy}" r="4" fill="${ink}"/>`;
+    h += `<text x="${cx - bpx / 2}" y="${cy + 48}" text-anchor="middle" font-size="14" fill="${ink2}">v<tspan font-size="11" dy="3">L</tspan></text><text x="${cx + bpx / 2}" y="${cy + 48}" text-anchor="middle" font-size="14" fill="${ink2}">v<tspan font-size="11" dy="3">R</tspan></text>`;
+    h += `<text x="628" y="${cy - 8}" text-anchor="end" font-size="13" fill="${ink2}">línea del eje</text>`;
+    s.innerHTML = `<defs><marker id="fl1" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="${mec}"/></marker></defs>` + h;
+    const Rtxt = !isFinite(R) ? "∞ (recta)" : Math.abs(R) < 0.005 ? "0 (sobre su eje)" : fmt(Math.abs(R) * 100, 1, "cm") + (R > 0 ? " izq." : " der.");
+    tarjetas("#resCir", [["v del centro", fmt(v, 2, "m/s")], ["ω", fmt(w, 2, "rad/s")], ["ω", fmt(w * 180 / Math.PI, 0, "°/s")], ["Radio de giro", Rtxt]]);
+  }
+  slider("vl", "vL", x => fmt(x, 2, "m/s"), dibujarCir);
+  slider("vr", "vR", x => fmt(x, 2, "m/s"), dibujarCir);
+  slider("b", "b", x => fmt(x * 1000, 0, "mm"), () => { dibujarCir(); decisiones(); });
+
+  /* ================= 2. REDUCCIÓN ================= */
+  const RATIOS = [10, 20, 30, 50, 75, 100, 150, 210, 298];
+  function diagnostico(M) {
+    const vReq = 1.3 * ficha.vObjetivo;
+    if (M.v0 < vReq) return ["bad", "No alcanza la velocidad requerida"];
+    if (M.F0 > 1.5 * M.Fmu) return ["warn", "Patina al arrancar: hay que limitar el PWM inicial"];
+    if (M.tau > 0.25) return ["warn", "Respuesta lenta"];
+    if (M.v0 > 3 * vReq) return ["warn", "Mucha velocidad sobrante: poca resolución de PWM"];
+    return ["ok", "Buen compromiso"];
+  }
+  function dibujarRed() {
+    const C = cm(), M = motor(st.N, st.r, C.m, C.f);
+    const s = $("#svgRed"), ink2 = color("--ink2"), line = color("--line"), ele = color("--ele"), mec = color("--mec"), ir = color("--ir"), int = color("--int"), ink = color("--ink");
+    const x0 = 60, y0 = 310, W = 560, H = 270;
+    const vmax = Math.max(M.v0 * 1.15, 1.3 * ficha.vObjetivo * 1.3, 0.5), Fmax = Math.max(M.F0, M.Fmu) * 1.2;
+    const X = v => x0 + v / vmax * W, Y = F => y0 - F / Fmax * H;
+    let h = "";
+    const pasoV = vmax > 3 ? 1 : vmax > 1.5 ? 0.5 : 0.25, pasoF = Fmax > 8 ? 2 : Fmax > 4 ? 1 : Fmax > 2 ? 0.5 : 0.25;
+    for (let v = 0; v <= vmax + 1e-9; v += pasoV) h += `<line x1="${X(v)}" y1="${y0}" x2="${X(v)}" y2="${y0 - H}" stroke="${line}"/><text x="${X(v)}" y="${y0 + 18}" text-anchor="middle" font-size="13" fill="${ink2}">${fmt(v, 2)}</text>`;
+    for (let F = 0; F <= Fmax + 1e-9; F += pasoF) h += `<line x1="${x0}" y1="${Y(F)}" x2="${x0 + W}" y2="${Y(F)}" stroke="${line}"/><text x="${x0 - 8}" y="${Y(F) + 4}" text-anchor="end" font-size="13" fill="${ink2}">${fmt(F, 2)}</text>`;
+    h += `<text x="${x0 + W}" y="${y0 + 40}" text-anchor="end" font-size="13" fill="${ink2}">velocidad del carrito (m/s)</text>`;
+    h += `<text x="${x0}" y="${y0 - H - 12}" font-size="13" fill="${ink2}">fuerza de tracción (N)</text>`;
+    const vReq = 1.3 * ficha.vObjetivo;
+    h += `<line x1="${X(vReq)}" y1="${y0}" x2="${X(vReq)}" y2="${y0 - H}" stroke="${ir}" stroke-width="2" stroke-dasharray="6 4"/>`;
+    h += `<text x="${X(vReq) + 6}" y="${y0 - H + 14}" font-size="13" fill="${ir}">v requerida</text>`;
+    h += `<line x1="${x0}" y1="${Y(M.Fmu)}" x2="${x0 + W}" y2="${Y(M.Fmu)}" stroke="${mec}" stroke-width="2.2" stroke-dasharray="8 5"/>`;
+    h += `<text x="${x0 + W - 4}" y="${Y(M.Fmu) - 7}" text-anchor="end" font-size="13" fill="${mec}">límite de adherencia</text>`;
+    h += `<line x1="${x0}" y1="${Y(M.Frr)}" x2="${x0 + W}" y2="${Y(M.Frr)}" stroke="${int}" stroke-width="2"/>`;
+    h += `<line x1="${X(0)}" y1="${Y(M.F0)}" x2="${X(M.v0)}" y2="${Y(0)}" stroke="${ele}" stroke-width="3.5"/>`;
+    h += `<circle cx="${X(0)}" cy="${Y(M.F0)}" r="5" fill="${ele}"/><circle cx="${X(M.v0)}" cy="${Y(0)}" r="5" fill="${ele}"/>`;
+    h += `<text x="${X(0) + 10}" y="${Y(M.F0) - 8}" font-size="13" font-weight="700" fill="${ele}">F₀ = ${fmt(M.F0, 2, "N")}</text>`;
+    h += `<text x="${X(M.v0)}" y="${Y(0) - 10}" text-anchor="middle" font-size="13" font-weight="700" fill="${ele}">v₀</text>`;
+    s.innerHTML = h;
+    tarjetas("#resRed", [["rpm de rueda", fmt(M.n0, 0, "rpm")], ["Velocidad máxima", fmt(M.v0, 2, "m/s")], ["Par por rueda", fmt(M.F0 * st.r / 2 * 1000, 1, "mN·m")], ["Constante τ", fmt(M.tau * 1000, 0, "ms")], ["Aceleración inicial", fmt(M.a0, 1, "m/s²")], ["Corriente de arranque", fmt(2 * ficha.iStall, 1, "A") + " total"]]);
+    const d = diagnostico(M);
+    $("#verRed").innerHTML = `<span class="est ${d[0]}">${d[0] === "ok" ? "✓" : d[0] === "warn" ? "!" : "✗"} ${d[1]}</span>`;
+    // tabla
+    const filas = [...new Set([...RATIOS, Math.round(st.N)])].sort((a, b) => a - b);
+    $("#tabRed tbody").innerHTML = filas.map(N => {
+      const m = motor(N, st.r, C.m, C.f), dd = diagnostico(m);
+      return `<tr data-n="${N}" class="${N === Math.round(st.N) ? "sel" : ""}"><td><b>1:${N}</b></td><td class="num">${fmt(m.n0, 0)}</td><td class="num">${fmt(m.v0, 2, "m/s")}</td><td class="num">${fmt(m.F0, 2, "N")}</td><td class="num">${fmt(m.tau * 1000, 0, "ms")}</td><td class="num">${fmt(m.a0, 1, "m/s²")}</td><td><span class="est ${dd[0]}">${dd[1]}</span></td></tr>`;
+    }).join("");
+  }
+  const refN = slider("N", "N", x => "1:" + Math.round(x), () => { dibujarRed(); decisiones(); });
+  slider("r", "r", x => fmt(x * 2000, 0, "mm") + " Ø", () => { dibujarRed(); decisiones(); });
+  $("#tabRed tbody").addEventListener("click", e => { const tr = e.target.closest("tr[data-n]"); if (!tr) return; st.N = +tr.dataset.n; refN(); dibujarRed(); decisiones(); });
+  $("#tabMotor").innerHTML = [
+    ["Velocidad sin carga (sin reducción)", fmt(ficha.n0Motor, 0, "rpm"), "Hoja de datos"],
+    ["Par de arranque (sin reducción)", fmt(ficha.tauStall * 1000, 2, "mN·m"), "Hoja de datos"],
+    ["Corriente de arranque", fmt(ficha.iStall, 1, "A"), "Hoja de datos; dimensiona el puente H (Módulo 3)"],
+    ["Eficiencia de la caja η", fmt(ficha.eta, 2), "Típica de engranes rectos pequeños"],
+    ["Voltaje nominal / batería", fmt(ficha.vNom, 1, "V") + " / " + fmt(ficha.vBat, 1, "V"), "Ficha"],
+    ["Resistencia a la rodadura C_rr", fmt(ficha.crr, 2), "Hule sobre superficie lisa"]
+  ].map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td>${r[2]}</td></tr>`).join("");
+
+  /* ================= 3. CENTRO DE MASA ================= */
+  function dibujarCm() {
+    const C = cm();
+    const s = $("#svgCm"), ink = color("--ink"), ink2 = color("--ink2"), mec = color("--mec"), ir = color("--ir"), line = color("--line"), ok = color("--ok"), bad = color("--bad");
+    const K = Math.min(2400, 290 / (Math.max(st.L, Math.abs(C.xa)) + 0.03)), ax = PATIN ? 230 : 300, gy = 220, r = ficha.radioRueda * K;
+    const X = x => ax + x * K;
+    let h = `<line x1="20" y1="${gy}" x2="620" y2="${gy}" stroke="${ink2}" stroke-width="2"/>`;
+    for (let i = 20; i < 620; i += 16) h += `<line x1="${i}" y1="${gy}" x2="${i - 8}" y2="${gy + 8}" stroke="${line}"/>`;
+    const yPl = gy - r - 4;
+    h += `<rect x="${X(-0.06)}" y="${yPl - 5}" width="${(st.L + 0.075) * K}" height="6" rx="2" fill="#1d6b47"/>`;
+    // rueda motriz
+    h += `<circle cx="${ax}" cy="${gy - r}" r="${r}" fill="#1b1b1b"/><circle cx="${ax}" cy="${gy - r}" r="${r * 0.35}" fill="#cfcfcf"/>`;
+    // apoyo: rueda loca atrás o patines bajo la barra
+    if (!PATIN) h += `<line x1="${X(C.xa)}" y1="${yPl}" x2="${X(C.xa)}" y2="${gy - 9}" stroke="#555" stroke-width="5"/><circle cx="${X(C.xa)}" cy="${gy - 7}" r="7" fill="#9a9a9a"/>`;
+    else h += `<ellipse cx="${X(C.xa)}" cy="${gy - 4}" rx="9" ry="4" fill="#bbb"/>`;
+    // barra de sensores
+    h += `<line x1="${X(st.L)}" y1="${yPl}" x2="${X(st.L)}" y2="${gy - 12}" stroke="#1d6b47" stroke-width="5"/><rect x="${X(st.L) - 14}" y="${gy - 13}" width="28" height="5" rx="2" fill="#1d6b47"/>`;
+    // electrónica
+    h += `<rect x="${X(0.02) - 30}" y="${yPl - 17}" width="60" height="12" rx="2" fill="#0d4f7a"/>`;
+    // batería
+    const bw = 50 + st.mb * 150;
+    h += `<rect x="${X(st.xb) - bw / 2}" y="${yPl - 5 - 24}" width="${bw}" height="24" rx="4" fill="#2b3f6b"/><text x="${X(st.xb)}" y="${yPl - 12}" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">batería</text>`;
+    // CM
+    const vuelca = C.vuelca, colCm = vuelca ? bad : ok;
+    const ycm = yPl - 48;
+    h += `<g transform="translate(${X(C.x)} ${ycm})"><circle r="11" fill="none" stroke="${colCm}" stroke-width="2.5"/><path d="M0-11A11 11 0 0 1 11 0H0zM0 11A11 11 0 0 1-11 0H0z" fill="${colCm}"/></g>`;
+    h += `<line x1="${X(C.x)}" y1="${ycm + 13}" x2="${X(C.x)}" y2="${ycm + 60}" stroke="${colCm}" stroke-width="2.5" marker-end="url(#fl3)"/>`;
+    h += `<text x="${X(C.x) + 16}" y="${ycm - 4}" font-size="14" font-weight="700" fill="${colCm}">CM</text>`;
+    // reacciones
+    if (!vuelca) {
+      const Nm = C.f, Nc = 1 - C.f, Lm = 20 + 70 * Nm, Lc = 20 + 70 * Nc;
+      h += `<line x1="${ax}" y1="${gy + 12 + Lm}" x2="${ax}" y2="${gy + 4}" stroke="${mec}" stroke-width="3" marker-end="url(#fl2)"/>`;
+      h += `<line x1="${X(C.xa)}" y1="${gy + 12 + Lc}" x2="${X(C.xa)}" y2="${gy + 4}" stroke="${mec}" stroke-width="3" marker-end="url(#fl2)"/>`;
+    }
+    h += `<text x="${ax + 10}" y="${gy + 26}" font-size="13" fill="${ink2}">eje (x = 0)</text>`;
+    if (!PATIN) h += `<text x="${X(C.xa) - 10}" y="${gy + 26}" text-anchor="end" font-size="13" fill="${ink2}">rueda loca</text>`;
+    h += `<text x="${X(st.L)}" y="${gy - 30}" text-anchor="middle" font-size="13" fill="${ink2}">${PATIN ? "sensores y patines" : "sensores"}</text>`;
+    s.setAttribute("viewBox", "0 0 640 " + (vuelca ? 250 : 330));
+    s.innerHTML = `<defs><marker id="fl2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="${mec}"/></marker><marker id="fl3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="${colCm}"/></marker></defs>` + h;
+    const aLat = ficha.mu * Math.max(0, C.f) * G, vCurva = Math.sqrt(aLat * ficha.radioMin);
+    tarjetas("#resCm", [["Masa total", fmt(C.m * 1000, 0, "g")], ["x del CM", fmt(C.x * 1000, 1, "mm")], ["Peso en ruedas motrices", fmt(Math.max(0, Math.min(1, C.f)) * 100, 0, "%")], ["a lateral máx.", fmt(aLat, 1, "m/s²")], ["v máx. en curva de " + fmt(ficha.radioMin * 100, 0, "cm"), fmt(vCurva, 2, "m/s")]]);
+    const margen = Math.abs(C.x) * 1000;
+    $("#verCm").innerHTML = vuelca ? (PATIN ? `<span class="est bad">✗ El CM quedó detrás del eje: sin apoyo atrás, el carrito se va de espaldas.</span>` : `<span class="est bad">✗ El CM está delante del eje: el carrito se va de nariz sobre los sensores.</span>`)
+      : margen < 5 ? `<span class="est warn">! Sólo ${fmt(margen, 1, "mm")} de margen respecto al eje: al acelerar o frenar el carrito puede cabecear.</span>`
+      : C.f < 0.6 ? `<span class="est warn">! Mucho peso en ${PATIN ? "los patines" : "la rueda loca"}: las ruedas motrices pierden agarre en curva${PATIN ? " y los patines rozan más" : ""}.</span>`
+      : `<span class="est ok">✓ Margen de ${fmt(margen, 1, "mm")} y ${fmt(C.f * 100, 0, "%")} del peso en las ruedas motrices.</span>`;
+    $("#tabMasa tbody").innerHTML = C.c.map(c => `<tr><td>${c[0]}</td><td class="num">${fmt(c[1] * 1000, 0, "g")}</td><td class="num">${fmt(c[2] * 1000, 0, "mm")}</td><td class="num">${fmt(c[1] * c[2] * 1e6, 0, "g·mm")}</td></tr>`).join("") +
+      `<tr><td><b>Total</b></td><td class="num"><b>${fmt(C.m * 1000, 0, "g")}</b></td><td class="num"><b>${fmt(C.x * 1000, 1, "mm")}</b></td><td class="num"><b>${fmt(C.m * C.x * 1e6, 0, "g·mm")}</b></td></tr>`;
+  }
+  $("#txtMasas").textContent = ficha.perfilId === "especifico01" ? "Masas del Robot específico 01: los motores (29 g c/u) son dato del fabricante; lo demás está estimado" : "Masas estimadas para el carrito genérico";
+  $("#txtApoyo").innerHTML = PATIN
+    ? "<b>Este perfil no tiene rueda loca:</b> se apoya en patines (deslizadores) bajo la barra de sensores, adelante del eje. Por eso el CM debe quedar <i>delante</i> del eje: si se va atrás, el carrito se cae de espaldas. Los patines rozan con el piso, así que conviene que carguen poco peso."
+    : "<b>En este perfil</b> la rueda loca va atrás y los sensores al frente: si el CM queda delante del eje, el carrito se va de nariz sobre la barra.";
+  slider("xb", "xb", x => fmt(x * 1000, 0, "mm"), () => { dibujarCm(); dibujarRed(); decisiones(); });
+  slider("mb", "mb", x => fmt(x * 1000, 0, "g"), () => { dibujarCm(); dibujarRed(); decisiones(); });
+
+  /* ================= 4. LOOKAHEAD ================= */
+  function dibujarLa() {
+    const s = $("#svgLa"), ink2 = color("--ink2"), sen = color("--sen"), cinta = color("--cinta"), ok = color("--ok"), bad = color("--bad"), line = color("--line");
+    const half = (ficha.nSens - 1) / 2 * ficha.pasoSens, w = ficha.anchoLinea;
+    const K = 210 / Math.max(st.L, 0.06), ax = 360, ay = 300;
+    const L = st.L, R = st.R;
+    const alcanza = L < R;
+    const d = alcanza ? R - Math.sqrt(R * R - L * L) : R;
+    // línea: arco de radio R centrado a la izquierda del eje
+    const cx = ax - R * K, rad = R * K;
+    let h = "";
+    const a0 = -Math.PI / 2 * 0, pasos = 80, pts = [];
+    for (let i = 0; i <= pasos; i++) {
+      const ang = -i / pasos * Math.min(Math.PI, (340 / Math.max(rad, 1)) * 1.2);
+      pts.push([cx + rad * Math.cos(ang), ay + rad * Math.sin(ang)]);
+    }
+    pts.unshift([ax, ay + 60]);
+    h += `<polyline points="${pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ")}" fill="none" stroke="${cinta}" stroke-width="${Math.max(4, w * K)}" stroke-linecap="round"/>`;
+    // carrito (eje horizontal, avanza hacia arriba)
+    const bpx = ficha.trocha * K;
+    h += `<rect x="${ax - bpx / 2 + 8}" y="${ay - 30}" width="${bpx - 16}" height="56" rx="8" fill="#1d6b47" opacity=".88"/>`;
+    h += `<rect x="${ax - bpx / 2 - 6}" y="${ay - 18}" width="12" height="36" rx="3" fill="#1b1b1b"/><rect x="${ax + bpx / 2 - 6}" y="${ay - 18}" width="12" height="36" rx="3" fill="#1b1b1b"/>`;
+    h += `<line x1="${ax}" y1="${ay}" x2="${ax}" y2="${ay - L * K}" stroke="${ink2}" stroke-dasharray="4 4"/>`;
+    // barra de sensores
+    const ys = ay - L * K;
+    h += `<rect x="${ax - half * K - 8}" y="${ys - 7}" width="${2 * half * K + 16}" height="14" rx="4" fill="#1d6b47"/>`;
+    for (let k = 0; k < ficha.nSens; k++) { const x = ax + ((ficha.nSens - 1) / 2 - k) * ficha.pasoSens * K * -1; h += `<rect x="${x - 3}" y="${ys - 4}" width="6" height="8" rx="1" fill="#111"/>`; }
+    // desplazamiento d
+    const colD = d + w / 2 < half ? ok : bad;
+    if (alcanza) {
+      const xl = ax - d * K;
+      h += `<line x1="${xl}" y1="${ys - 26}" x2="${ax}" y2="${ys - 26}" stroke="${colD}" stroke-width="2.5"/><line x1="${xl}" y1="${ys - 34}" x2="${xl}" y2="${ys - 18}" stroke="${colD}" stroke-width="2.5"/><line x1="${ax}" y1="${ys - 34}" x2="${ax}" y2="${ys - 18}" stroke="${colD}" stroke-width="2.5"/>`;
+      h += `<text x="${(xl + ax) / 2}" y="${ys - 40}" text-anchor="middle" font-size="15" font-weight="700" fill="${colD}">d = ${fmt(d * 1000, 1, "mm")}</text>`;
+    }
+    h += `<text x="${ax + 14}" y="${ay - L * K / 2}" font-size="14" fill="${ink2}">L</text>`;
+    h += `<text x="${ax + bpx / 2 + 16}" y="${ay + 5}" font-size="13" fill="${ink2}">eje sobre la línea</text>`;
+    s.innerHTML = h;
+    const vB = ficha.rpmMax * 2 * Math.PI / 60 * ficha.radioRueda * window.Ficha.vMotor(ficha) / ficha.vNom * ficha.vBase;
+    tarjetas("#resLa", [["Desplazamiento d", alcanza ? fmt(d * 1000, 1, "mm") : "la línea se pierde"], ["Medio arreglo", fmt(half * 1000, 1, "mm")], ["Margen", fmt((half - d - w / 2) * 1000, 1, "mm")], ["Anticipación a v base", fmt(L / Math.max(vB, 1e-3) * 1000, 0, "ms")]]);
+    $("#verLa").innerHTML = !alcanza ? `<span class="est bad">✗ L ≥ R: en esta curva la línea queda fuera del arreglo.</span>` :
+      d + w / 2 < 0.6 * half ? `<span class="est ok">✓ La línea queda bien dentro del arreglo.</span>` :
+      d + w / 2 < half ? `<span class="est warn">! La línea llega cerca del borde: poco margen para corregir.</span>` :
+      `<span class="est bad">✗ La línea se sale del arreglo en esta curva.</span>`;
+  }
+  slider("L", "L", x => fmt(x * 1000, 0, "mm"), () => { dibujarLa(); dibujarCm(); dibujarRed(); decisiones(); });
+  slider("R", "R", x => fmt(x * 100, 0, "cm"), dibujarLa);
+
+  /* ================= 5. DECISIONES ================= */
+  function decisiones() {
+    const C = cm(), M = motor(st.N, st.r, C.m, C.f);
+    const filas = [
+      ["Distancia entre ruedas", fmt(ficha.trocha * 1000, 0, "mm"), fmt(st.b * 1000, 0, "mm"), "Ganancia del chasis 1/b"],
+      ["Diámetro de rueda", fmt(ficha.radioRueda * 2000, 0, "mm"), fmt(st.r * 2000, 0, "mm"), "Velocidad máxima y par"],
+      ["Reducción", "1:" + ficha.reduccion, "1:" + Math.round(st.N), fmt(M.v0, 2, "m/s") + " máx."],
+      ["Masa total", fmt(ficha.masa * 1000, 0, "g"), fmt(C.m * 1000, 0, "g"), "τ = " + fmt(M.tau * 1000, 0, "ms")],
+      ["Batería (masa / posición)", fmt(ficha.masaBateria * 1000, 0, "g") + " / " + fmt(ficha.posBateria * 1000, 0, "mm"), fmt(st.mb * 1000, 0, "g") + " / " + fmt(st.xb * 1000, 0, "mm"), "CM en " + fmt(C.x * 1000, 1, "mm")],
+      ["Peso en ruedas motrices", fmt(ficha.fTraccion * 100, 0, "%"), fmt(Math.max(0, C.f) * 100, 0, "%"), "Adherencia lateral"],
+      ["Distancia eje → sensores", fmt(ficha.lookahead * 1000, 0, "mm"), fmt(st.L * 1000, 0, "mm"), "Anticipación contra margen en curva"]
+    ];
+    $("#tabDec tbody").innerHTML = filas.map(f => `<tr><td>${f[0]}</td><td class="num">${f[1]}</td><td class="num"><b>${f[2]}</b></td><td>${f[3]}</td></tr>`).join("");
+  }
+  $("#btnAplicar").addEventListener("click", () => {
+    const C = cm();
+    if (C.vuelca) { $("#msgDec").style.color = "var(--bad)"; $("#msgDec").textContent = "Primero corrige el centro de masa: con ese arreglo el carrito se voltea."; return; }
+    const nueva = window.Ficha.guardar(Object.assign({ trocha: st.b, radioRueda: st.r, reduccion: Math.round(st.N), masa: +C.m.toFixed(3), masaBateria: st.mb, posBateria: st.xb, fTraccion: +C.f.toFixed(3), lookahead: st.L }, PATIN ? { xApoyo: st.L } : {}));
+    Object.assign(ficha, nueva);
+    decisiones();
+    $("#msgDec").style.color = "var(--ok)";
+    $("#msgDec").textContent = "Listo: la ficha quedó con τ = " + fmt(nueva.tauMotor * 1000, 0, "ms") + " y " + fmt(nueva.rpmMax, 0, "rpm") + ". El simulador ya la usa.";
+  });
+
+  function todo() { dibujarCir(); dibujarRed(); dibujarCm(); dibujarLa(); decisiones(); }
+  todo();
+  document.addEventListener("cambio-tema", todo);
+}
+</script>
+</body>
+</html>

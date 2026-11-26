@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Módulo 8 · Costo y sostenibilidad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.m8 .lab{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:900px){.m8 .lab{grid-template-columns:minmax(0,1fr)}}
+.m8 .lienzo{background:var(--card);border:1px solid var(--line);border-radius:var(--radio);padding:8px;overflow-x:auto}
+.m8 .lienzo svg{display:block;width:100%;height:auto;min-width:500px}
+.m8 .lienzo text{font-family:Barlow,sans-serif}
+.m8 .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:10px;margin-top:12px}
+.m8 .res div{background:var(--bg2);border-radius:8px;padding:8px 12px}
+.m8 .res b{display:block;font-size:20px;font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.m8 .res span{font-size:13px;color:var(--ink2)}
+.m8 .veredicto{margin-top:12px;font-weight:600}
+.m8 .veredicto .est,.m8 td .est{white-space:normal}
+.m8 .ctl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:center;padding:3px 0}
+.m8 .ctl output{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.m8 .ctl input{grid-column:1/3}
+.m8 #f8Bom input[type=number]{width:96px;min-height:36px;text-align:right}
+.m8 #f8Bom input[type=checkbox]{min-height:0;width:20px;height:20px}
+.m8 #f8Bom tr.excl td{opacity:.45}
+.m8 .barras{display:grid;gap:8px;margin-top:8px}
+.m8 .barras .f{display:grid;grid-template-columns:120px minmax(0,1fr) 90px;gap:10px;align-items:center;font-size:14.5px}
+.m8 .barras .t{height:16px;background:var(--bg2);border-radius:8px;overflow:hidden}
+.m8 .barras .t span{display:block;height:100%}
+.m8 .barras b{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.m8 .tres{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.m8 .tres .card h3{font-size:19px}
+.m8 .hoja{border:2px solid var(--ink);border-radius:var(--radio);background:var(--card);padding:20px 24px}
+.m8 .hoja h3{font-size:24px;margin-bottom:2px}
+.m8 .kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,160px),1fr));gap:12px;margin:16px 0}
+.m8 .kpi div{border-top:3px solid var(--ir);padding-top:6px}
+.m8 .kpi b{display:block;font:700 28px/1.1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+.m8 .kpi span{font-size:13px;color:var(--ink2)}
+.m8 .botones{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/sim-core.js"></script>
+</head>
+<body data-pagina="m8">
+<main class="m8">
+<section class="band">
+  <div class="wrap">
+    <p><span class="tag t-int">Módulo 8 · Materiales, costo y sostenibilidad</span></p>
+    <h1>Cierre: cuánto cuesta, cuánta energía gasta y qué pasa con el carrito al final</h1>
+    <p class="muted" style="font-size:18px">Un diseño de ingeniería no termina cuando funciona. También tiene que caber en el presupuesto, gastar la energía razonable y poder repararse, reutilizarse o desecharse bien. Este módulo arma la lista de materiales con la ficha, mide la energía por vuelta en el simulador, compara materiales para el chasis y cierra con la hoja de datos del carrito.</p>
+    <nav class="scroll" aria-label="Secciones del módulo" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <a class="btn" href="#f8-bom">1. Lista de materiales</a>
+      <a class="btn" href="#f8-energia">2. Energía por vuelta</a>
+      <a class="btn" href="#f8-material">3. Material del chasis</a>
+      <a class="btn" href="#f8-ciclo">4. Ciclo de vida</a>
+      <a class="btn" href="#f8-hoja">5. Hoja de datos final</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============ 1. BOM ============ -->
+<section class="band alt" id="f8-bom">
+  <div class="wrap">
+    <h2>1. Lista de materiales: sale de la ficha</h2>
+    <p>Cada renglón viene de una decisión de los módulos anteriores: el número de sensores, el driver, la reducción, la batería, el regulador. Si cambia la ficha, cambia la lista. Los precios son <b>de referencia, aproximados y en pesos mexicanos</b>; no se consultaron en línea, así que actualícenlos con su proveedor. Lo que escriban se recuerda en este navegador.</p>
+    <div class="lab">
+      <div class="scroll"><table id="f8Bom"><thead><tr><th></th><th>Componente</th><th>Viene de</th><th class="num">Cant.</th><th class="num">Precio unitario</th><th class="num">Subtotal</th></tr></thead><tbody></tbody></table></div>
+      <div class="card">
+        <div class="res" id="f8ResBom"></div>
+        <p class="veredicto" id="f8VerBom"></p>
+        <h3 style="font-size:18px;margin-top:16px">Costo por subsistema</h3>
+        <div class="barras" id="f8Barras"></div>
+        <div class="botones"><button type="button" id="f8CopiarBom">Copiar lista (CSV)</button><button type="button" id="f8RestPrecios">Restablecer precios</button><span class="small" id="f8MsgBom" role="status"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. ENERGÍA ============ -->
+<section class="band" id="f8-energia">
+  <div class="wrap">
+    <h2>2. Energía por vuelta: ¿a dónde se va la batería?</h2>
+    <p>El simulador ya calcula, cada milisegundo, el ciclo de trabajo y la velocidad de cada rueda. Con el modelo eléctrico del motor (R = V<sub>nom</sub>/I<sub>arranque</sub> y fuerza contraelectromotriz proporcional a la velocidad) se obtiene la corriente que toma cada motor. Sumando la caída en el driver y la lógica de 5 V, sale la energía de una vuelta a distintas velocidades.</p>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;background:var(--bg2);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap">i<sub>motor</sub> = (V<sub>m</sub>/R)·(|d| − ω/ω₀) + I₀ &nbsp;&nbsp; I<sub>batería</sub> = |d|·i<sub>motor</sub> &nbsp;&nbsp; E = ∫ V<sub>bat</sub>·(I<sub>izq</sub> + I<sub>der</sub> + I<sub>5V</sub>) dt</div>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="f8SvgE" viewBox="0 0 640 300" role="img" aria-label="Energía por vuelta según la velocidad, separada por consumidor"></svg></div>
+        <div class="small muted" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px"><span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:var(--mec);margin-right:5px;vertical-align:middle"></i>motores</span><span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:var(--int);margin-right:5px;vertical-align:middle"></i>pérdida en el driver</span><span><i style="display:inline-block;width:12px;height:12px;border-radius:2px;background:var(--sen);margin-right:5px;vertical-align:middle"></i>lógica y sensores (5 V)</span></div>
+      </div>
+      <div class="card">
+        <div class="scroll"><table id="f8TabE"><thead><tr><th class="num">Velocidad</th><th class="num">Vuelta</th><th class="num">Energía</th><th class="num">Vueltas por carga</th></tr></thead><tbody></tbody></table></div>
+        <p class="veredicto" id="f8VerE"></p>
+        <p class="small muted" style="margin:8px 0 0">I₀ = 60 mA por motor (fricción interna, supuesto). Batería de la ficha (<span id="f8Bat"></span>) con 80 % de capacidad útil. Estimaciones del simulador: midan la corriente real con un multímetro en serie con la batería.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. MATERIAL ============ -->
+<section class="band alt" id="f8-material">
+  <div class="wrap">
+    <h2>3. Elegir el material del chasis con una matriz de decisión</h2>
+    <p>No hay un material "mejor": depende de qué importe más. Una <b>matriz de decisión ponderada</b> (o de Pugh) hace explícito ese juicio: cada criterio tiene un peso, cada opción una calificación de 1 a 5, y gana la mayor suma ponderada. Muevan los pesos según las prioridades del equipo y observen si cambia el ganador.</p>
+    <div class="lab">
+      <div class="scroll"><table id="f8Mat"><thead></thead><tbody></tbody></table></div>
+      <div class="card">
+        <div id="f8Pesos"></div>
+        <div class="res" id="f8ResMat"></div>
+        <p class="veredicto" id="f8VerMat"></p>
+        <div class="botones"><button type="button" class="pri" id="f8AplicarMat">Usar el ganador en la ficha</button><span class="small" id="f8MsgMat" role="status"></span></div>
+      </div>
+    </div>
+    <p class="small muted">Calificaciones orientativas para una placa de unos 120 × 100 mm. La masa se estimó con la densidad típica de cada material; el costo, con precios de referencia.</p>
+  </div>
+</section>
+
+<!-- ============ 4. CICLO DE VIDA ============ -->
+<section class="band" id="f8-ciclo">
+  <div class="wrap">
+    <h2>4. Ciclo de vida: diseñar pensando en el final</h2>
+    <div class="tres">
+      <div class="card"><h3>Batería LiPo</h3><p class="small" style="margin:0">Es el componente más delicado. Se carga con cargador balanceador y nunca sin supervisión. Para guardarla, se deja en ≈ 3.8 V por celda (7.6 V la 2S) dentro de una bolsa ignífuga, y no se descarga por debajo de 3.3 V por celda. Si se infla, se retira de servicio y se lleva a un centro de acopio de pilas y baterías: nunca a la basura.</p></div>
+      <div class="card"><h3>Diseñar para desarmar</h3><p class="small" style="margin:0">Con conectores, tiras de pines y bases en lugar de soldar todo directo, el Arduino, el driver y los motores se recuperan intactos para la siguiente generación del curso. Los tornillos aguantan mejor el desarme que el pegamento.</p></div>
+      <div class="card"><h3>Energía en reposo</h3><p class="small" style="margin:0">La sección 2 muestra que los LEDs infrarrojos y el regulador lineal pueden gastar más que los motores. Apagar los emisores entre lecturas (con un transistor), subir la R del LED o usar un regulador conmutado alarga la batería sin tocar el desempeño.</p></div>
+      <div class="card"><h3>Soldadura y residuos</h3><p class="small" style="margin:0">Soldadura sin plomo cuando sea posible, extractor de humos y residuos de estaño y placas en su contenedor. Las placas FR4 (fibra de vidrio y epoxi) casi no se reciclan; por eso conviene diseñarlas para reutilizarse.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. HOJA DE DATOS ============ -->
+<section class="band alt" id="f8-hoja">
+  <div class="wrap">
+    <h2>5. La hoja de datos del carrito</h2>
+    <p>Es el resumen que cierra el proyecto: el desempeño medido en el simulador (y, con el Módulo 7, en la pista), contra los requisitos del Módulo 0, con todas las decisiones de la ficha.</p>
+    <div class="hoja">
+      <h3 id="f8Nombre"></h3>
+      <p class="small muted" style="margin:0">Carrito seguidor de línea de tracción diferencial · desempeño simulado en la pista de competencia</p>
+      <div class="kpi" id="f8Kpi"></div>
+      <h4 style="margin:6px 0 8px">Comparación de perfiles (mismo simulador, misma pista)</h4>
+      <div class="scroll"><table class="stack" id="f8Comp"><thead><tr><th>Dato</th><th class="num" id="f8CompA"></th><th class="num" id="f8CompB"></th></tr></thead><tbody></tbody></table></div>
+      <h4 style="margin:18px 0 8px">Requisitos del perfil activo</h4>
+      <div class="scroll"><table class="stack" id="f8Req"><thead><tr><th>Requisito (Módulo 0)</th><th class="num">Objetivo</th><th class="num">Logrado</th><th>Cumple</th></tr></thead><tbody></tbody></table></div>
+      <details style="margin-top:16px"><summary style="cursor:pointer;font-weight:600">Ficha técnica completa</summary><div class="scroll" style="margin-top:10px"><table class="stack" id="f8Ficha"><thead><tr><th>Módulo</th><th>Parámetro</th><th class="num">Valor</th></tr></thead><tbody></tbody></table></div></details>
+      <div class="botones"><button type="button" id="f8CopiarFicha">Copiar ficha (JSON)</button><span class="small" id="f8MsgFicha" role="status"></span></div>
+    </div>
+    <h2 style="margin-top:36px">Actividad final</h2>
+    <ol>
+      <li>Actualicen los precios de la lista con los de su proveedor y justifiquen cualquier componente que rebase el presupuesto.</li>
+      <li>Midan la corriente promedio del carrito real durante una vuelta y compárenla con la sección 2. ¿Qué consume más de lo que predijo el modelo?</li>
+      <li>Propongan una modificación que reduzca la energía por vuelta al menos 20 % sin aumentar el tiempo de vuelta, y verifíquenla.</li>
+      <li>Entreguen la hoja de datos de su versión congelada (Módulo 7) junto con el CSV del plan de pruebas.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<script>
+{
+  const raiz = document.querySelector(".m8");
+  const $ = s => raiz.querySelector(s);
+  let ficha = window.Ficha.leer();
+  const color = n => { const e = document.createElement("span"); e.style.color = "var(" + n + ")"; document.body.append(e); const c = getComputedStyle(e).color; e.remove(); return c; };
+  const tarjetas = (sel, items) => { $(sel).innerHTML = items.map(x => `<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join(""); };
+  const est = (c, t) => `<span class="est ${c}">${c === "ok" ? "✓" : c === "warn" ? "!" : "✗"} ${t}</span>`;
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const mxn = x => "$" + fmt(x, 0);
+  const CLAVE = "seguidor_precios_v1";
+  let precios = {};
+  try { precios = JSON.parse(localStorage.getItem(CLAVE) || "{}") || {}; } catch (e) { precios = {}; }
+  const guardarP = () => { try { localStorage.setItem(CLAVE, JSON.stringify(precios)); } catch (e) {} };
+
+  /* ================= 3 (datos). MATERIALES ================= */
+  const MATS = {
+    MDF: { n: "MDF 3 mm (corte láser)", masa: 27, precio: 60 },
+    Acrilico: { n: "Acrílico 3 mm (corte láser)", masa: 43, precio: 110 },
+    PLA: { n: "PLA impreso (20 % relleno)", masa: 30, precio: 80 },
+    FR4: { n: "Placa FR4 (PCB como chasis)", masa: 36, precio: 250 }
+  };
+  const CRIT = [
+    { k: "costo", n: "Costo", p: 3, s: { MDF: 5, Acrilico: 3, PLA: 4, FR4: 2 } },
+    { k: "masa", n: "Masa ligera", p: 3, s: { MDF: 4, Acrilico: 2, PLA: 4, FR4: 3 } },
+    { k: "rigidez", n: "Rigidez", p: 2, s: { MDF: 3, Acrilico: 4, PLA: 3, FR4: 5 } },
+    { k: "fin", n: "Fin de vida / reciclaje", p: 2, s: { MDF: 3, Acrilico: 2, PLA: 3, FR4: 1 } },
+    { k: "fab", n: "Fabricación en el laboratorio", p: 2, s: { MDF: 4, Acrilico: 4, PLA: 5, FR4: 2 } },
+    { k: "elec", n: "Integra las conexiones", p: 1, s: { MDF: 1, Acrilico: 1, PLA: 1, FR4: 5 } }
+  ];
+
+  /* ================= 1. BOM ================= */
+  function lista() {
+    const f = ficha, n = Math.round(f.nSens);
+    const drv = { "L298N": 85, "TB6612FNG": 95, "DRV8833": 60 }[f.driver] || 95;
+    const reg = { "7805": 12, "AMS1117": 25, "Buck": 45 }[f.regulador] || 25;
+    const mat = MATS[f.material] || MATS.MDF;
+    const L = f.perfilId === "especifico01" ? [
+      ["pcb", "ele", "PCB TB6612 + Arduino Nano, sirve de chasis (precio de la tienda)", "Módulo 3", 1, 175],
+      ["drv", "ele", "Driver TB6612FNG (ya viene soldado en la PCB)", "Módulo 3", 1, 0],
+      ["mcu", "prg", "Arduino Nano (compatible)", "Módulo 6", 1, 180],
+      ["mot", "mec", "Motor planetario 5:1, 5000 rpm, 12 V (precio estimado)", "Módulo 1", 2, 450],
+      ["rue", "mec", "Llantas 20 × 20 mm (par; verificar modelo en la tienda)", "Módulo 1", 1, 310],
+      ["barra", "sen", "Barra 16sMuxHS de 16 sensores (precio estimado)", "Módulo 2", 1, 450],
+      ["fcc", "sen", "Convertidores FCC 0.5 mm a header con cable plano (precio de la tienda)", "Módulo 2", 1, 145],
+      ["brazos", "mec", "Brazos para la barra (impresos o en PCB)", "Módulo 1", 1, 60],
+      ["patin", "mec", "Patines o deslizadores bajo la barra", "Módulo 1", 2, 10],
+      ["bat", "ele", "Batería LiPo 2S " + f.bateriaMah + " mAh", "Módulo 3", 1, Math.round(150 + 0.12 * f.bateriaMah)],
+      ["int", "prg", "Botón y LED (el interruptor viene en la PCB)", "Módulo 6", 1, 15],
+      ["div", "ele", "Divisor de V_bat (2 resistencias 10 kΩ)", "Módulo 3", 2, 1],
+      ["tor", "mec", "Tornillería, separadores y cables", "Módulo 1", 1, 50]
+    ] : [
+      ["mcu", "prg", "Arduino Nano (compatible)", "Módulo 6", 1, 180],
+      ["drv", "ele", "Módulo puente H " + f.driver, "Módulo 3", 1, drv],
+      ["mot", "mec", "Motorreductor micro metálico 1:" + f.reduccion + " (tipo N20)", "Módulo 1", 2, 160],
+      ["rue", "mec", "Ruedas de " + fmt(f.radioRueda * 2000, 0, "mm") + " (par)", "Módulo 1", 1, 70],
+      ["loca", "mec", "Rueda loca de bola", "Módulo 1", 1, 35],
+      ["chas", "mec", "Chasis: " + mat.n, "Módulo 8", 1, mat.precio],
+      ["sens", "sen", "Sensor reflectivo TCRT5000", "Módulo 2", n, 10],
+      ["res", "sen", "Resistencias del arreglo (" + f.rLed + " Ω y " + (f.rPullup >= 1000 ? fmt(f.rPullup / 1000, 1) + " kΩ" : f.rPullup + " Ω") + ")", "Módulo 2", 2 * n, 1],
+      ["pcbs", "sen", "Placa perforada para el arreglo", "Módulo 2", 1, 40],
+      ["bat", "ele", "Batería LiPo 2S " + f.bateriaMah + " mAh", "Módulo 3", 1, Math.round(150 + 0.12 * f.bateriaMah)],
+      ["reg", "ele", "Regulador 5 V " + f.regulador, "Módulo 3", 1, reg],
+      ["cap", "ele", "Capacitores (100 nF ×4, 470 µF ×1)", "Módulo 3", 1, 25],
+      ["int", "prg", "Interruptor, botón y LED", "Módulo 6", 1, 25],
+      ["con", "int", "Conectores, tiras de pines y cables", "Módulo 7", 1, 50],
+      ["tor", "mec", "Tornillería y separadores", "Módulo 1", 1, 40]
+    ];
+    if (n <= 7 && f.perfilId !== "especifico01") L.push(["div", "ele", "Divisor de V_bat (2 resistencias 10 kΩ)", "Módulo 3", 2, 1]);
+    L.push(["enc", "ctl", "Encoder magnético para los motores (pruebas del Módulo 4)", "Módulo 4", 2, 60, true]);
+    L.push(["carg", "int", "Cargador balanceador LiPo (equipo compartido)", "Módulo 3", 1, 250, true]);
+    return L.map(r => { const k = r[0], p = precios[k]; return { k, sub: r[1], n: r[2], de: r[3], q: r[4], pu: p && p.pu !== undefined ? +p.pu : r[5], opc: !!r[6], inc: p && p.inc !== undefined ? p.inc : !r[6] }; });
+  }
+  const NOM = { mec: "Mecánica", sen: "Sensado", ele: "Potencia", ctl: "Control", prg: "Firmware", int: "Sistema" };
+  function bom() {
+    const L = lista();
+    $("#f8Bom tbody").innerHTML = L.map(r => `<tr class="${r.inc ? "" : "excl"}" data-k="${r.k}"><td>${r.opc ? `<input type="checkbox" aria-label="Incluir ${esc(r.n)}" ${r.inc ? "checked" : ""}>` : ""}</td><td>${esc(r.n)}${r.opc ? ' <span class="small muted">(opcional)</span>' : ""}</td><td><span class="tag t-${r.sub}">${r.de}</span></td><td class="num">${r.q}</td><td class="num"><input type="number" min="0" step="1" value="${r.pu}" aria-label="Precio de ${esc(r.n)}"></td><td class="num">${mxn(r.q * r.pu)}</td></tr>`).join("");
+    resumenBom();
+  }
+  function resumenBom() {
+    const L = lista().filter(r => r.inc), tot = L.reduce((a, r) => a + r.q * r.pu, 0);
+    const sub = {}; for (const r of L) sub[r.sub] = (sub[r.sub] || 0) + r.q * r.pu;
+    const max = Math.max(...Object.values(sub), 1);
+    $("#f8Barras").innerHTML = Object.entries(sub).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="f"><span>${NOM[k]}</span><div class="t"><span style="width:${v / max * 100}%;background:var(--${k})"></span></div><b>${mxn(v)}</b></div>`).join("");
+    tarjetas("#f8ResBom", [["Costo total", mxn(tot)], ["Presupuesto", mxn(ficha.presupuesto)], ["Diferencia", (tot <= ficha.presupuesto ? "−" : "+") + mxn(Math.abs(ficha.presupuesto - tot))], ["Renglones", String(L.length)]]);
+    $("#f8VerBom").innerHTML = tot <= 0.9 * ficha.presupuesto ? est("ok", "Dentro del presupuesto con margen para imprevistos.") : tot <= ficha.presupuesto ? est("warn", "Dentro del presupuesto, pero sin margen: cualquier pieza dañada lo rebasa.") : est("bad", "Rebasa el presupuesto: revisen los renglones más caros o los opcionales.");
+    st.costo = tot;
+    return tot;
+  }
+  const st = { costo: 0, pesos: Object.fromEntries(CRIT.map(c => [c.k, c.p])) };
+  $("#f8Bom").addEventListener("input", e => {
+    const tr = e.target.closest("tr[data-k]"); if (!tr) return;
+    const k = tr.dataset.k; precios[k] = precios[k] || {};
+    if (e.target.type === "number") precios[k].pu = Math.max(0, parseFloat(e.target.value) || 0);
+    if (e.target.type === "checkbox") { precios[k].inc = e.target.checked; tr.classList.toggle("excl", !e.target.checked); }
+    guardarP();
+    const r = lista().find(x => x.k === k); tr.lastElementChild.textContent = mxn(r.q * r.pu);
+    resumenBom(); hoja();
+  });
+  $("#f8RestPrecios").addEventListener("click", () => { precios = {}; guardarP(); bom(); hoja(); });
+  $("#f8CopiarBom").addEventListener("click", async () => {
+    const L = lista().filter(r => r.inc);
+    const csv = [["componente", "subsistema", "cantidad", "precio_unitario_mxn", "subtotal_mxn"], ...L.map(r => [r.n, NOM[r.sub], r.q, r.pu, r.q * r.pu])].map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(",")).join("\n");
+    try { await navigator.clipboard.writeText(csv); $("#f8MsgBom").textContent = "Lista copiada."; } catch (e) { $("#f8MsgBom").textContent = "El navegador no permitió copiar."; }
+    setTimeout(() => { $("#f8MsgBom").textContent = ""; }, 2500);
+  });
+
+  /* ================= 2. ENERGÍA ================= */
+  const I0 = 0.06;
+  function vuelta(vb, fBase) {
+    const fb = fBase || ficha;
+    const over = vb === null || vb === undefined || typeof vb !== "number" ? {} : { vBase: vb, kp: Math.max(fb.kp, 0.8 + (vb - 0.5) * 2), kd: Math.max(fb.kd, 0.03 + (vb - 0.5) * 0.07) };
+    const p = Object.assign({}, fb, over); Object.assign(p, window.Ficha.derivar(p));
+    const S = window.SimCore.crearSim(p, "competencia");
+    const Vm = window.Ficha.vMotor(p), R = p.vNom / p.iStall, w0 = p.rpmMax * 2 * Math.PI / 60 * Vm / p.vNom, dt = S.dtFis;
+    let Em = 0, Ed = 0;
+    while (S.vueltas < 1 && S.t < 40 && S.estado !== "fuera") {
+      S.paso();
+      for (const [d, w] of [[S.dutyL, S.wL], [S.dutyR, S.wR]]) {
+        const ad = Math.abs(d); if (ad < 1e-3) continue;
+        const i = Math.max(0, Vm / R * (ad - Math.abs(w) / w0)) + (p.i0Motor || I0);
+        const Is = ad * i;
+        Em += Vm * Is * dt; Ed += (p.caidaDriver || 0) * Is * dt;
+      }
+    }
+    const I5 = p.nSens * (5 - 1.25) / p.rLed + p.nSens * 0.0005 + 0.047;
+    const reg = p.regulador === "Buck" ? 5 * I5 / 0.85 : p.vBat * I5;
+    const El = reg * S.t;
+    const E = Em + Ed + El;
+    const Ebat = 0.8 * p.bateriaMah / 1000 * 3600 * p.vBat;
+    return { vb: p.vBase, ok: S.vueltas >= 1, t: S.t, Em, Ed, El, E, vueltas: Ebat / E, rms: S.errorRMS(), I: E / p.vBat / S.t, p };
+  }
+  let visible = false, energias = [], propia = null, otra = null;
+  function energia() {
+    if (!visible) return;
+    $("#f8Bat").textContent = ficha.bateriaMah + " mAh";
+    energias = [0.35, 0.5, 0.65, 0.8].map(v => vuelta(v));
+    propia = vuelta(null);
+    otra = vuelta(null, window.Ficha.leer(window.Ficha.otroPerfil()));
+    const ink2 = color("--ink2"), line = color("--line"), mec = color("--mec"), bad = color("--int"), sen = color("--sen"), ink = color("--ink");
+    const x0 = 70, W = 540, y0 = 250, H = 210, maxE = Math.max(...energias.map(e => e.E)) * 1.15;
+    const bw = W / energias.length * 0.55, Y = e => y0 - e / maxE * H;
+    let h = "";
+    const paso = maxE > 60 ? 20 : maxE > 30 ? 10 : 5;
+    for (let e = 0; e <= maxE; e += paso) h += `<line x1="${x0}" y1="${Y(e)}" x2="${x0 + W}" y2="${Y(e)}" stroke="${line}"/><text x="${x0 - 8}" y="${Y(e) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${e} J</text>`;
+    energias.forEach((e, i) => {
+      const xc = x0 + (i + 0.5) * W / energias.length, x = xc - bw / 2;
+      let y = y0;
+      for (const [v, c] of [[e.El, sen], [e.Ed, bad], [e.Em, mec]]) { const hh = v / maxE * H; h += `<rect x="${x}" y="${y - hh}" width="${bw}" height="${hh}" fill="${c}"/>`; y -= hh; }
+      h += `<text x="${xc}" y="${y - 8}" text-anchor="middle" font-size="13" font-weight="700" fill="${ink}">${fmt(e.E, 1, "J")}</text>`;
+      h += `<text x="${xc}" y="${y0 + 18}" text-anchor="middle" font-size="12.5" fill="${ink2}">${fmt(e.vb * 100, 0, "%")} · ${e.ok ? fmt(e.t, 1, "s") : "no terminó"}</text>`;
+    });
+    h += `<text x="${x0 + W}" y="${y0 + 38}" text-anchor="end" font-size="12.5" fill="${ink2}">velocidad base · tiempo de vuelta</text><text x="${x0}" y="20" font-size="12.5" fill="${ink2}">energía de la batería en una vuelta</text>`;
+    $("#f8SvgE").innerHTML = h;
+    $("#f8TabE tbody").innerHTML = energias.map(e => `<tr><td class="num">${fmt(e.vb * 100, 0, "%")}</td><td class="num">${e.ok ? fmt(e.t, 1, "s") : "—"}</td><td class="num">${fmt(e.E, 1, "J")} (${fmt(e.E / 3.6, 1, "mWh")})</td><td class="num">${fmt(e.vueltas, 0)}</td></tr>`).join("");
+    const m = energias[1], frac = m.El / m.E;
+    $("#f8VerE").innerHTML = frac > 0.5 ? est("warn", `A ${fmt(m.vb * 100, 0, "%")} de velocidad, la lógica y los LEDs de los sensores gastan el ${fmt(frac * 100, 0, "%")} de la energía: más que los motores. Ir más rápido reduce la energía por vuelta porque la lógica consume lo mismo por segundo, aunque los motores gasten más.`) : est("ok", "Los motores son el consumo principal.");
+    hoja();
+  }
+
+  /* ================= 3. MATERIAL ================= */
+  function pesos() {
+    $("#f8Pesos").innerHTML = CRIT.map(c => `<div class="ctl"><label for="f8p_${c.k}">Peso: ${c.n}</label><output id="f8po_${c.k}">${st.pesos[c.k]}</output><input type="range" id="f8p_${c.k}" min="0" max="5" step="1" value="${st.pesos[c.k]}"></div>`).join("");
+  }
+  $("#f8Pesos").addEventListener("input", e => { const k = e.target.id.replace("f8p_", ""); st.pesos[k] = +e.target.value; $("#f8po_" + k).textContent = e.target.value; matriz(); });
+  function matriz() {
+    const ks = Object.keys(MATS);
+    const tot = Object.fromEntries(ks.map(k => [k, CRIT.reduce((a, c) => a + st.pesos[c.k] * c.s[k], 0)]));
+    const maxP = CRIT.reduce((a, c) => a + st.pesos[c.k] * 5, 0) || 1;
+    const gan = ks.slice().sort((a, b) => tot[b] - tot[a])[0];
+    $("#f8Mat thead").innerHTML = `<tr><th>Criterio</th><th class="num">Peso</th>${ks.map(k => `<th class="num">${MATS[k].n.split(" (")[0]}</th>`).join("")}</tr>`;
+    $("#f8Mat tbody").innerHTML = CRIT.map(c => `<tr><td>${c.n}</td><td class="num">${st.pesos[c.k]}</td>${ks.map(k => `<td class="num">${c.s[k]}</td>`).join("")}</tr>`).join("") +
+      `<tr><td><b>Masa estimada</b></td><td></td>${ks.map(k => `<td class="num">${MATS[k].masa} g</td>`).join("")}</tr>` +
+      `<tr><td><b>Total ponderado</b></td><td></td>${ks.map(k => `<td class="num"${k === gan ? ' style="background:var(--ir-suave)"' : ""}><b>${tot[k]}</b></td>`).join("")}</tr>`;
+    tarjetas("#f8ResMat", [["Ganador", MATS[gan].n.split(" (")[0]], ["Puntaje", tot[gan] + " de " + maxP], ["En la ficha", (MATS[ficha.material] || MATS.MDF).n.split(" (")[0]]]);
+    const orden = ks.slice().sort((a, b) => tot[b] - tot[a]);
+    $("#f8VerMat").innerHTML = tot[orden[0]] - tot[orden[1]] <= 2 ? est("warn", `Empate técnico entre ${MATS[orden[0]].n.split(" (")[0]} y ${MATS[orden[1]].n.split(" (")[0]}: la decisión depende de un criterio que la matriz no captura. Hay que discutirlo.`) : est("ok", `${MATS[gan].n.split(" (")[0]} gana con claridad con estas prioridades.`);
+    st.gan = gan;
+  }
+  $("#f8AplicarMat").addEventListener("click", () => {
+    ficha = window.Ficha.guardar({ material: st.gan });
+    $("#f8MsgMat").textContent = "Listo: la lista de materiales usa " + MATS[st.gan].n + ".";
+    bom(); matriz(); hoja();
+  });
+
+  /* ================= 5. HOJA DE DATOS ================= */
+  const GRUPOS = [
+    ["Requisitos", ["anchoLinea", "radioMin", "vObjetivo", "longPista", "masaMax", "presupuesto"]],
+    ["Mecánica", ["masa", "radioRueda", "trocha", "lookahead", "mu", "fTraccion", "posBateria", "masaBateria", "material"]],
+    ["Motorreductor", ["reduccion", "n0Motor", "tauStall", "iStall", "eta", "rpmMax", "tauMotor", "factorTau"]],
+    ["Sensado", ["nSens", "pasoSens", "alturaSens", "digital", "rLed", "rPullup", "ruido"]],
+    ["Potencia", ["vBat", "vNom", "driver", "caidaDriver", "iTrabajo", "bateriaMah", "regulador", "compensarV"]],
+    ["Control", ["kp", "ki", "kd", "vBase", "filtroD", "antiWindup", "periodo"]],
+    ["Firmware", ["baud", "telemCada"]]
+  ];
+  function comparacion() {
+    if (!propia || !otra) { $("#f8Comp tbody").innerHTML = '<tr><td colspan="3" class="muted">Se calcula al llegar a esta sección…</td></tr>'; return; }
+    const A = propia, B = otra, fa = A.p, fb = B.p;
+    $("#f8CompA").textContent = fa.version; $("#f8CompB").textContent = fb.version;
+    const lp = window.SimCore.crearPista("competencia").longitud;
+    const vmax = f => f.rpmMax * 2 * Math.PI / 60 * f.radioRueda * window.Ficha.vMotor(f) / f.vNom;
+    const filas = [
+      ["Velocidad máxima (batería llena)", f => fmt(vmax(f), 2, "m/s")],
+      ["Constante de tiempo τ", f => fmt(f.tauMotor * 1000, 0, "ms")],
+      ["Anticipación L / v a la velocidad base", f => fmt(f.lookahead / (vmax(f) * f.vBase) * 1000, 0, "ms")],
+      ["Sensores", f => f.nSens + (f.barraForma === "curva" ? " en arco" : " en línea") + (f.mux ? ", multiplexados" : "")],
+      ["Masa", f => fmt(f.masa * 1000, 0, "g")]
+    ].map(r => `<tr><td>${r[0]}</td><td class="num">${r[1](fa)}</td><td class="num">${r[1](fb)}</td></tr>`);
+    const sim = [
+      ["Tiempo de vuelta (sim.)", e => e.ok ? fmt(e.t, 2, "s") : "no terminó"],
+      ["Velocidad media", e => e.ok ? fmt(lp / e.t, 2, "m/s") : "—"],
+      ["Error RMS", e => fmt(e.rms * 1000, 1, "mm")],
+      ["Energía por vuelta", e => fmt(e.E, 1, "J")],
+      ["Autonomía", e => fmt(e.vueltas * e.t / 60, 0, "min")]
+    ].map(r => `<tr><td>${r[0]}</td><td class="num"><b>${r[1](A)}</b></td><td class="num"><b>${r[1](B)}</b></td></tr>`);
+    $("#f8Comp tbody").innerHTML = filas.concat(sim).join("");
+  }
+  function hoja() {
+    comparacion();
+    $("#f8Nombre").textContent = "Hoja de datos · " + ficha.version;
+    const e = propia;
+    const tot = st.costo || resumenBom();
+    const vm = e && e.ok ? window.SimCore.crearPista("competencia").longitud / e.t : 0;
+    $("#f8Kpi").innerHTML = [
+      ["Tiempo de vuelta (sim.)", e ? (e.ok ? fmt(e.t, 2, "s") : "no terminó") : "…"],
+      ["Velocidad media", e && e.ok ? fmt(vm, 2, "m/s") : "…"],
+      ["Error RMS", e ? fmt(e.rms * 1000, 1, "mm") : "…"],
+      ["Energía por vuelta", e ? fmt(e.E, 1, "J") : "…"],
+      ["Autonomía", e ? fmt(e.vueltas * e.t / 60, 0, "min") : "…"],
+      ["Masa", fmt(ficha.masa * 1000, 0, "g")],
+      ["Costo", mxn(tot)]
+    ].map(k => `<div><span>${k[0]}</span><b>${k[1]}</b></div>`).join("");
+    const filas = [
+      ["Velocidad media", fmt(ficha.vObjetivo, 2, "m/s"), e && e.ok ? fmt(vm, 2, "m/s") : "—", e && e.ok ? vm >= ficha.vObjetivo : null],
+      ["Masa máxima", fmt(ficha.masaMax * 1000, 0, "g"), fmt(ficha.masa * 1000, 0, "g"), ficha.masa <= ficha.masaMax],
+      ["Presupuesto", mxn(ficha.presupuesto), mxn(tot), tot <= ficha.presupuesto],
+      ["Separación de sensores ≤ ancho de cinta", fmt(ficha.anchoLinea * 1000, 0, "mm"), fmt(ficha.pasoSens * 1000, 1, "mm"), ficha.pasoSens <= ficha.anchoLinea],
+      ["Seguimiento (error RMS ≤ media cinta)", fmt(ficha.anchoLinea * 500, 1, "mm"), e ? fmt(e.rms * 1000, 1, "mm") : "—", e ? e.rms <= ficha.anchoLinea / 2 : null]
+    ];
+    $("#f8Req tbody").innerHTML = filas.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num"><b>${r[2]}</b></td><td>${r[3] === null ? '<span class="muted">pendiente</span>' : r[3] ? est("ok", "Sí") : est("bad", "No")}</td></tr>`).join("");
+    $("#f8Ficha tbody").innerHTML = GRUPOS.flatMap(([g, ks]) => ks.filter(k => k in ficha).map(k => `<tr><td>${g}</td><td><code>${k}</code></td><td class="num">${esc(typeof ficha[k] === "number" ? +ficha[k].toPrecision(4) : ficha[k])}</td></tr>`)).join("");
+  }
+  $("#f8CopiarFicha").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(JSON.stringify(ficha, null, 2)); $("#f8MsgFicha").textContent = "Ficha copiada."; } catch (e) { $("#f8MsgFicha").textContent = "El navegador no permitió copiar."; }
+    setTimeout(() => { $("#f8MsgFicha").textContent = ""; }, 2500);
+  });
+
+  window.addEventListener("ficha-cambiada", e => { ficha = e.detail; bom(); matriz(); if (visible) energia(); else hoja(); });
+  const io = new IntersectionObserver(ents => { if (!visible && ents.some(x => x.isIntersecting)) { visible = true; io.disconnect(); energia(); } });
+  ["#f8-bom", "#f8-energia", "#f8-hoja"].forEach(s => io.observe($(s)));
+  bom(); pesos(); matriz(); hoja();
+  document.addEventListener("cambio-tema", () => { if (visible) energia(); });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Módulo 2 · Sensado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.m2 .lab{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:900px){.m2 .lab{grid-template-columns:minmax(0,1fr)}}
+.m2 .lienzo{background:var(--card);border:1px solid var(--line);border-radius:var(--radio);padding:8px;overflow-x:auto}
+.m2 .lienzo svg{display:block;width:100%;height:auto;min-width:500px}
+.m2 .lienzo text{font-family:Barlow,sans-serif}
+.m2 .lienzo + .lienzo{margin-top:12px}
+.m2 .ctl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:center;padding:3px 0}
+.m2 .ctl output{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.m2 .ctl input{grid-column:1/3}
+.m2 .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:10px;margin-top:12px}
+.m2 .res div{background:var(--bg2);border-radius:8px;padding:8px 12px}
+.m2 .res b{display:block;font-size:21px;font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.m2 .res span{font-size:13px;color:var(--ink2)}
+.m2 .formula{font-family:"JetBrains Mono",monospace;font-size:14px;background:var(--bg2);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.m2 .veredicto{margin-top:12px;font-weight:600}
+.m2 .veredicto .est{white-space:normal}
+.m2 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0}
+.m2 .seg button{border:0;border-radius:0;min-height:40px}
+.m2 .ley{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.m2 .ley i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.m2 .codigo{position:relative}
+.m2 .codigo button{position:absolute;top:8px;right:8px;min-height:36px;font-size:14px}
+.m2 .codigo pre{padding-top:48px}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/sim-core.js"></script>
+</head>
+<body data-pagina="m2">
+<main class="m2">
+<section class="band">
+  <div class="wrap">
+    <p><span class="tag t-sen">Módulo 2 · Sensado</span></p>
+    <h1>Sensado: de un poco de luz infrarroja a un número para el PID</h1>
+    <p class="muted" style="font-size:18px">El controlador sólo es tan bueno como la medición que recibe. Este módulo sigue la cadena completa: el circuito de cada sensor, la altura a la que va, cómo se combinan varios sensores en una posición, la calibración y el tiempo que tarda el microcontrolador en leerlos.</p>
+    <nav class="scroll" aria-label="Secciones del módulo" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <a class="btn" href="#circuito">1. El circuito</a>
+      <a class="btn" href="#arreglo">2. Del arreglo a la posición</a>
+      <a class="btn" href="#calibracion">3. Calibración</a>
+      <a class="btn" href="#tiempo">4. Tiempo de lectura</a>
+      <a class="btn" href="#codigo">5. Código</a>
+      <a class="btn" href="#f2-curva">6. Recta contra curva</a>
+      <a class="btn" href="#decisiones-sen">7. Decisiones</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============ 1. CIRCUITO ============ -->
+<section class="band alt" id="circuito">
+  <div class="wrap">
+    <h2>1. Un sensor reflectivo: LED infrarrojo + fototransistor</h2>
+    <p>Un TCRT5000 o un QRE1113 tiene dentro un LED infrarrojo y un fototransistor viendo hacia el mismo lado. Sobre el blanco, mucha luz regresa, el fototransistor conduce y la salida baja. Sobre la cinta negra casi no regresa luz, el transistor no conduce y la resistencia de carga sube la salida a casi 5 V. El diseño consiste en escoger dos resistencias y una altura para que la diferencia entre blanco y negro (el <b>contraste</b>) sea la mayor posible.</p>
+    <div class="formula">I<sub>F</sub> = (V<sub>cc</sub> − V<sub>F</sub>)/R<sub>LED</sub> &nbsp;&nbsp; I<sub>C</sub> ≈ CTR·I<sub>F</sub>·ρ·k(h) &nbsp;&nbsp; V<sub>out</sub> = V<sub>cc</sub> − I<sub>C</sub>·R<sub>carga</sub> &nbsp;(≥ V<sub>CE,sat</sub>)</div>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="svgCto" viewBox="0 0 640 300" role="img" aria-label="Circuito del sensor reflectivo"></svg></div>
+        <div class="lienzo"><svg id="svgVout" viewBox="0 0 640 280" role="img" aria-label="Voltaje de salida contra resistencia de carga"></svg></div>
+        <div class="ley"><span><i style="background:var(--cinta)"></i>sobre la cinta negra</span><span><i style="background:var(--ink2);opacity:.45"></i>sobre el blanco</span><span><i style="background:var(--ir)"></i>resistencia elegida</span></div>
+      </div>
+      <div class="card">
+        <div class="ctl"><label for="c_rled">R del LED</label><output id="o_rled"></output><input type="range" id="c_rled" min="68" max="1000" step="1"></div>
+        <div class="ctl"><label for="c_rpu">R de carga del fototransistor</label><output id="o_rpu"></output><input type="range" id="c_rpu" min="3" max="5.3" step="0.01"></div>
+        <div class="ctl"><label for="c_h">Altura sobre el piso</label><output id="o_h"></output><input type="range" id="c_h" min="0.0005" max="0.012" step="0.0005"></div>
+        <div class="res" id="resCto"></div>
+        <p class="veredicto" id="verCto"></p>
+        <p class="small muted" style="margin:10px 0 0">Modelo simplificado con V<sub>F</sub> = 1.25 V, CTR efectivo de 4.5 % y reflectancias de 0.90 (blanco) y 0.08 (cinta). k(h) es la fracción de luz que regresa: máxima cerca de 2.5 mm y menor si el sensor está muy pegado o muy lejos. Los valores reales salen de la hoja de datos y de medir con el multímetro.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. ARREGLO ============ -->
+<section class="band" id="arreglo">
+  <div class="wrap">
+    <h2>2. Del arreglo de sensores a la posición de la línea</h2>
+    <p>Un solo sensor sólo dice "negro" o "blanco". Con varios, ya calibrados entre 0 y 1, se calcula un <b>centroide</b>: el promedio de las posiciones de los sensores pesado por lo que lee cada uno. Así se obtiene una posición continua aunque los sensores estén separados. La calidad de esa estimación depende de la separación, del tamaño del punto iluminado (que crece con la altura) y de si se lee en analógico o con un umbral.</p>
+    <div class="formula">y<sub>est</sub> = Σ vᵢ·yᵢ / Σ vᵢ &nbsp;&nbsp; e = y<sub>est</sub> / (medio ancho del arreglo) ∈ [−1, 1]</div>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="svgResp" viewBox="0 0 640 300" role="img" aria-label="Respuesta de cada sensor contra la posición de la línea"></svg></div>
+        <div class="lienzo"><svg id="svgEst" viewBox="0 0 640 300" role="img" aria-label="Posición estimada contra posición real"></svg></div>
+        <div class="ley"><span><i style="background:var(--ctl)"></i>posición estimada</span><span><i style="background:var(--ink2);opacity:.5"></i>ideal (estimada = real)</span><span><i style="background:var(--bad);opacity:.35"></i>línea perdida</span></div>
+      </div>
+      <div class="card">
+        <div class="seg" role="group" aria-label="Tipo de lectura"><button type="button" id="mAna" aria-pressed="true">Analógica</button><button type="button" id="mDig" aria-pressed="false">Digital (umbral)</button></div>
+        <div class="ctl"><label for="c_n">Número de sensores</label><output id="o_n"></output><input type="range" id="c_n" min="2" max="16" step="1"></div>
+        <div class="ctl"><label for="c_p">Separación entre sensores</label><output id="o_p"></output><input type="range" id="c_p" min="0.004" max="0.025" step="0.0005"></div>
+        <div class="ctl"><label for="c_h2">Altura (tamaño del punto)</label><output id="o_h2"></output><input type="range" id="c_h2" min="0.0005" max="0.012" step="0.0005"></div>
+        <div class="ctl"><label for="c_x">Mover la línea bajo el arreglo</label><output id="o_x"></output><input type="range" id="c_x" min="-0.06" max="0.06" step="0.0005"></div>
+        <div class="res" id="resArr"></div>
+        <p class="veredicto" id="verArr"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. CALIBRACIÓN ============ -->
+<section class="band alt" id="calibracion">
+  <div class="wrap">
+    <h2>3. Calibración: ningún sensor lee igual que otro</h2>
+    <p>Por tolerancias de fabricación, montaje y luz ambiente, cada sensor da cuentas distintas del ADC sobre el mismo blanco y el mismo negro. Si se usan crudos, el centroide se va hacia los sensores "más sensibles". La solución es una rutina de calibración: al arrancar, el carrito gira sobre su eje unos segundos, pasa todos los sensores por blanco y negro, y guarda el mínimo y el máximo de cada uno. Después cada lectura se normaliza.</p>
+    <div class="formula">vᵢ = (crudoᵢ − minᵢ) / (maxᵢ − minᵢ) &nbsp;&nbsp; recortado a [0, 1]</div>
+    <div class="lab">
+      <div class="lienzo"><svg id="svgCal" viewBox="0 0 640 300" role="img" aria-label="Lecturas de cada sensor sobre blanco y sobre negro"></svg></div>
+      <div class="card">
+        <div class="seg" role="group" aria-label="Vista"><button type="button" id="vCrudo" aria-pressed="true">Crudo (cuentas ADC)</button><button type="button" id="vCal" aria-pressed="false">Calibrado (0–1)</button></div>
+        <div class="ctl"><label for="c_amb">Luz ambiente (sol de la ventana, lámparas)</label><output id="o_amb"></output><input type="range" id="c_amb" min="0" max="300" step="5"></div>
+        <button type="button" class="pri" id="btnCalibrar" style="margin-top:8px">Calibrar ahora (girar sobre su eje)</button>
+        <div class="res" id="resCal"></div>
+        <p class="veredicto" id="verCal"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. TIEMPO ============ -->
+<section class="band" id="tiempo">
+  <div class="wrap dos">
+    <div>
+      <h2>4. Leer también cuesta tiempo</h2>
+      <p>En un Arduino Uno, cada <code>analogRead()</code> tarda alrededor de 112 µs (ADC de 10 bits con el preescalador de fábrica). Leer todo el arreglo tiene que caber, con holgura, dentro del periodo del lazo de control. Si no cabe, el periodo real se alarga y el controlador trabaja con datos viejos, que es un retardo puro, el peor enemigo de la estabilidad.</p>
+      <div class="formula">t<sub>lectura</sub> = n · t<sub>ADC</sub> &nbsp;&nbsp; resolución = V<sub>ref</sub> / 2<sup>bits</sup></div>
+      <p class="small muted">Si el microcontrolador no tiene suficientes entradas analógicas, se usa un multiplexor (CD74HC4067, como el de la barra 16sMuxHS) o un ADC externo por I²C/SPI. Con multiplexor se escribe la dirección S0–S3, se esperan unos microsegundos a que la señal se asiente y luego se convierte: 16 sensores leídos así tardan casi 2 ms. Bajar el preescalador del ADC a 16 deja cada conversión en ≈ 16 µs con 8 bits efectivos, suficiente para un seguidor.</p>
+    </div>
+    <div class="card">
+      <div class="res" id="resTiempo"></div>
+      <p class="veredicto" id="verTiempo"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. CÓDIGO ============ -->
+<section class="band alt" id="codigo">
+  <div class="wrap">
+    <h2>5. Así se ve en el firmware</h2>
+    <p>La calibración, la normalización, el umbral para ignorar el blanco, el centroide y la memoria de hacia dónde se fue la línea son las mismas ecuaciones de las secciones anteriores. El Módulo 6 lo integra con el PID y la máquina de estados.</p>
+    <div class="codigo">
+      <button type="button" id="btnCopiarCod">Copiar</button>
+<pre id="cod"><code>const uint8_t N = 8;
+const uint8_t PIN[N] = {A0, A1, A2, A3, A4, A5, A6, A7};
+const float PASO_MM = 9.5;          // separación entre sensores
+int minS[N], maxS[N];
+float ultimoSigno = 1;
+
+void calibrar(unsigned long ms) {     // llamar con el carrito girando sobre su eje
+  for (uint8_t i = 0; i &lt; N; i++) { minS[i] = 1023; maxS[i] = 0; }
+  unsigned long t0 = millis();
+  while (millis() - t0 &lt; ms) {
+    for (uint8_t i = 0; i &lt; N; i++) {
+      int c = analogRead(PIN[i]);
+      if (c &lt; minS[i]) minS[i] = c;
+      if (c &gt; maxS[i]) maxS[i] = c;
+    }
+  }
+}
+
+// Devuelve el error normalizado: -1 (línea a la derecha) … +1 (a la izquierda)
+float leerError() {
+  float suma = 0, sumaY = 0, maximo = 0;
+  for (uint8_t i = 0; i &lt; N; i++) {
+    float v = (analogRead(PIN[i]) - minS[i]) / float(maxS[i] - minS[i]);
+    v = constrain(v, 0.0, 1.0);
+    maximo = max(maximo, v);
+    if (v &lt; 0.2) v = 0;                         // ignorar el blanco
+    float y = ((N - 1) / 2.0 - i) * PASO_MM;     // sensor 0 = izquierda
+    suma += v;  sumaY += v * y;
+  }
+  if (maximo &lt; 0.35 || suma == 0)               // línea perdida
+    return 1.2 * ultimoSigno;                    // recordar hacia dónde se fue
+  float e = (sumaY / suma) / ((N - 1) / 2.0 * PASO_MM);
+  if (fabs(e) &gt; 0.15) ultimoSigno = (e &gt; 0) ? 1 : -1;
+  return e;
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. RECTA CONTRA CURVA ============ -->
+<section class="band alt" id="f2-curva">
+  <div class="wrap">
+    <h2>6. Barra recta contra barra curva</h2>
+    <p>En los robots de competencia es común que la barra de sensores sea un <b>arco</b>, como la 16sMuxHS. Con el mismo número de sensores y el mismo ancho, los sensores de las orillas quedan unos milímetros más cerca del eje. Cuando la pista se curva, la línea se aleja de lado conforme se avanza (d ≈ x²/2R), así que esos sensores "retrasados" la alcanzan en curvas más cerradas. El costo es que la posición lateral ya no crece pareja: hacia las orillas los sensores quedan más juntos de lado, y el centroide se calcula con su posición lateral real, R·sen φ.</p>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;background:var(--bg2);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap">sensor k en el arco: φ = s/R, &nbsp; y = R·sen φ, &nbsp; x = L − R·(1 − cos φ) &nbsp;&nbsp; curva más cerrada que se ve: R<sub>pista</sub> = (x² + y²) / (2y) en el sensor de la orilla</div>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="f2Svg" viewBox="0 0 640 330" role="img" aria-label="Barra recta y barra curva sobre una curva de la pista"></svg></div>
+        <div class="ley"><span><i style="background:var(--ink2);opacity:.6"></i>barra recta</span><span><i style="background:var(--sen)"></i>barra curva</span><span><i style="background:var(--cinta)"></i>línea de la pista</span></div>
+      </div>
+      <div class="card">
+        <div class="ctl"><label for="f2_R">Radio del arco de la barra</label><output id="f2o_R"></output><input type="range" id="f2_R" min="0.06" max="0.5" step="0.005"></div>
+        <div class="ctl"><label for="f2_Rt">Radio de la curva de la pista</label><output id="f2o_Rt"></output><input type="range" id="f2_Rt" min="0.05" max="0.6" step="0.005"></div>
+        <div class="res" id="f2Res"></div>
+        <p class="veredicto" id="f2Ver"></p>
+        <p class="small muted" style="margin:8px 0 0">Geometría del perfil activo: <span id="f2Geo"></span>.</p>
+      </div>
+    </div>
+    <h3 style="margin-top:22px">En el simulador</h3>
+    <p class="small muted">Mismo carrito, misma velocidad y ganancias, sólo cambia la forma de la barra.</p>
+    <div class="scroll"><table class="stack" id="f2Tab"><thead><tr><th>Pista</th><th>Barra</th><th class="num">Error RMS</th><th class="num">Primera vuelta</th><th class="num">Veces que perdió la línea</th><th>Resultado</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<!-- ============ 7. DECISIONES ============ -->
+<section class="band" id="decisiones-sen">
+  <div class="wrap">
+    <h2>7. Decisiones de sensado para la ficha</h2>
+    <div class="scroll"><table class="stack" id="tabDecS"><thead><tr><th>Decisión</th><th class="num">En la ficha</th><th class="num">Propuesta</th><th>Consecuencia</th></tr></thead><tbody></tbody></table></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px">
+      <button class="pri" type="button" id="btnAplicarS">Aplicar al carrito</button>
+      <a class="btn" href="simulador.html">Probarlo en el simulador</a>
+      <span class="small" id="msgDecS" role="status"></span>
+    </div>
+    <h2 style="margin-top:36px">Actividad</h2>
+    <ol>
+      <li>Con el multímetro, midan V<sub>out</sub> de un sensor real sobre blanco y sobre negro a 1, 3, 6 y 10 mm de altura. Compárenlo con la sección 1. ¿Qué R de carga les da más contraste?</li>
+      <li>En la sección 2, encuentren una separación con la que aparezcan "huecos" en lectura digital pero no en analógica. Expliquen por qué.</li>
+      <li>En la sección 3, calibren, suban la luz ambiente sin recalibrar y describan qué le pasa al centroide.</li>
+      <li>En el simulador, activen "Lectura digital" con separación de 22 mm y comparen el error RMS contra la lectura analógica.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<script>
+{
+  const $ = s => document.querySelector(s);
+  const OPT = window.SimCore.OPTICA;
+  const ficha = window.Ficha.leer();
+  const st = {
+    rled: ficha.rLed, lrpu: Math.log10(ficha.rPullup), h: ficha.alturaSens,
+    n: ficha.nSens, p: ficha.pasoSens, x: 0.004, dig: ficha.digital ? 1 : 0, amb: 0, vista: "crudo"
+  };
+  const color = n => { const e = document.createElement("span"); e.style.color = "var(" + n + ")"; document.body.append(e); const c = getComputedStyle(e).color; e.remove(); return c; };
+  const tarjetas = (sel, items) => { $(sel).innerHTML = items.map(x => `<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join(""); };
+  const est = (c, t) => `<span class="est ${c}">${c === "ok" ? "✓" : c === "warn" ? "!" : "✗"} ${t}</span>`;
+  function slider(id, clave, fmtf, alCambiar) {
+    const i = $("#c_" + id), o = $("#o_" + id);
+    i.value = st[clave];
+    const pinta = () => { o.textContent = fmtf(st[clave]); };
+    i.addEventListener("input", () => { st[clave] = parseFloat(i.value); pinta(); alCambiar(); });
+    pinta();
+    return () => { i.value = st[clave]; pinta(); };
+  }
+  const fmtR = r => r >= 1000 ? fmt(r / 1000, r >= 10000 ? 0 : 1, "kΩ") : fmt(r, 0, "Ω");
+
+  /* ================= 1. CIRCUITO ================= */
+  const VCC = 5, VF = 1.25, CTR = 0.045, RHO_B = 0.90, RHO_N = 0.08, VSAT = 0.2;
+  function electrico(rled, rpu, h) {
+    const If = Math.max(0, (VCC - VF) / rled), k = OPT.amplitud(h);
+    const icB = CTR * If * RHO_B * k + 2e-6, icN = CTR * If * RHO_N * k + 2e-6;
+    const vB = Math.max(VSAT, VCC - icB * rpu), vN = Math.max(VSAT, VCC - icN * rpu);
+    return { If, k, icB, icN, vB, vN, c: vN - vB };
+  }
+  function dibujarCto() {
+    const rpu = 10 ** st.lrpu, E = electrico(st.rled, rpu, st.h);
+    const ink = color("--ink"), ink2 = color("--ink2"), ir = color("--ir"), sen = color("--sen"), ele = color("--ele"), line = color("--line");
+    // --- esquema ---
+    let h = "";
+    const L = (x1, y1, x2, y2, c = ink, w = 2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}"/>`;
+    const res = (x, y1, y2, et, val) => {
+      let d = `M${x} ${y1} V${y1 + 10}`; for (let i = 0; i < 6; i++) d += ` L${x + (i % 2 ? -8 : 8)} ${y1 + 14 + i * 7}`; d += ` L${x} ${y1 + 56} V${y2}`;
+      return `<path d="${d}" fill="none" stroke="${ink}" stroke-width="2"/><text x="${x + 16}" y="${y1 + 30}" font-size="14" fill="${ink}" font-weight="600">${et}</text><text x="${x + 16}" y="${y1 + 48}" font-size="13" fill="${ink2}">${val}</text>`;
+    };
+    h += L(80, 30, 420, 30) + `<text x="20" y="35" font-size="14" font-weight="700" fill="${ink}">+5 V</text>`;
+    h += L(80, 270, 420, 270) + `<text x="20" y="275" font-size="14" font-weight="700" fill="${ink}">GND</text>`;
+    // rama LED
+    h += res(140, 30, 120, "R<tspan font-size='11' dy='3'>LED</tspan>", fmtR(st.rled));
+    h += `<path d="M126 120 H154 L140 148 Z" fill="${sen}" opacity=".85"/>` + L(126, 148, 154, 148, ink) + L(140, 148, 140, 270);
+    h += `<text x="40" y="140" font-size="13" fill="${ink2}">LED IR</text>`;
+    // flechas IR
+    for (const dy of [0, 14]) h += `<path d="M162 ${128 + dy} q 60 40 130 ${8 - dy}" fill="none" stroke="${ir}" stroke-width="1.8" stroke-dasharray="4 4"/><path d="M286 ${136 - dy * 0} l8 0 l-5 -6" fill="none" stroke="${ir}" stroke-width="1.8"/>`;
+    h += `<text x="196" y="208" font-size="12.5" fill="${ir}">reflexión en el piso</text>`;
+    // rama fototransistor
+    h += res(340, 30, 110, "R<tspan font-size='11' dy='3'>carga</tspan>", fmtR(rpu));
+    h += `<circle cx="340" cy="150" r="24" fill="none" stroke="${ink}" stroke-width="2"/>` + L(330, 136, 330, 164) + L(340, 110, 340, 126) + L(330, 142, 346, 128) + L(330, 158, 346, 172) + L(346, 172, 340, 176) + L(340, 176, 340, 270);
+    h += `<text x="372" y="190" font-size="13" fill="${ink2}">fototransistor</text>`;
+    // salida
+    h += L(340, 118, 470, 118, ele, 2.5) + `<circle cx="340" cy="118" r="4" fill="${ele}"/>`;
+    h += `<rect x="470" y="96" width="140" height="44" rx="6" fill="none" stroke="${ele}" stroke-width="2"/><text x="540" y="116" text-anchor="middle" font-size="14" font-weight="700" fill="${ele}">V<tspan font-size="11" dy="3">out</tspan><tspan dy="-3"> → ADC</tspan></text><text x="540" y="133" text-anchor="middle" font-size="12" fill="${ink2}">entrada analógica</text>`;
+    h += `<text x="470" y="170" font-size="13" fill="${ink}">negro: <tspan font-weight="700">${fmt(E.vN, 2, "V")}</tspan></text><text x="470" y="190" font-size="13" fill="${ink}">blanco: <tspan font-weight="700">${fmt(E.vB, 2, "V")}</tspan></text>`;
+    $("#svgCto").innerHTML = h;
+    // --- gráfica Vout vs Rcarga ---
+    const x0 = 56, y0 = 236, W = 560, H = 200, lx0 = 3, lx1 = 5.3;
+    const X = lr => x0 + (lr - lx0) / (lx1 - lx0) * W, Y = v => y0 - v / 5 * H;
+    let g = "";
+    for (let v = 0; v <= 5; v++) g += `<line x1="${x0}" y1="${Y(v)}" x2="${x0 + W}" y2="${Y(v)}" stroke="${line}"/><text x="${x0 - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="13" fill="${ink2}">${v} V</text>`;
+    for (const r of [1e3, 3e3, 1e4, 3e4, 1e5]) g += `<line x1="${X(Math.log10(r))}" y1="${y0}" x2="${X(Math.log10(r))}" y2="${y0 - H}" stroke="${line}"/><text x="${X(Math.log10(r))}" y="${y0 + 18}" text-anchor="middle" font-size="13" fill="${ink2}">${fmtR(r)}</text>`;
+    let pb = "", pn = "";
+    for (let lr = lx0; lr <= lx1 + 1e-9; lr += 0.02) { const e = electrico(st.rled, 10 ** lr, st.h); pb += `${X(lr).toFixed(1)},${Y(e.vB).toFixed(1)} `; pn += `${X(lr).toFixed(1)},${Y(e.vN).toFixed(1)} `; }
+    g += `<polyline points="${pb}" fill="none" stroke="${ink2}" stroke-width="3" opacity=".5"/><polyline points="${pn}" fill="none" stroke="${color("--cinta")}" stroke-width="3"/>`;
+    g += `<line x1="${X(st.lrpu)}" y1="${Y(E.vB)}" x2="${X(st.lrpu)}" y2="${Y(E.vN)}" stroke="${ir}" stroke-width="4"/>`;
+    g += `<text x="${Math.min(X(st.lrpu) + 8, x0 + W - 120)}" y="${(Y(E.vB) + Y(E.vN)) / 2 + 4}" font-size="13.5" font-weight="700" fill="${ir}">contraste ${fmt(E.c, 2, "V")}</text>`;
+    g += `<text x="${x0}" y="${y0 - H - 10}" font-size="13" fill="${ink2}">V<tspan font-size="10" dy="3">out</tspan><tspan dy="-3"> según la resistencia de carga (escala logarítmica)</tspan></text>`;
+    $("#svgVout").innerHTML = g;
+    // --- resultados ---
+    const cuentas = v => Math.round(v / 5 * 1023);
+    tarjetas("#resCto", [["Corriente del LED", fmt(E.If * 1000, 1, "mA")], ["8 LEDs juntos", fmt(8 * E.If * 1000, 0, "mA")], ["Señal relativa k(h)", fmt(E.k * 100, 0, "%")], ["ADC negro / blanco", cuentas(E.vN) + " / " + cuentas(E.vB)], ["Contraste", fmt(E.c, 2, "V")]]);
+    let v;
+    if (E.If > 0.05) v = est("bad", "Corriente del LED excesiva: el máximo del TCRT5000 es 60 mA y se calienta. Sube R del LED.");
+    else if (E.c < 1) v = est("bad", E.vN <= VSAT + 0.05 ? "Ambas lecturas se saturan abajo: R de carga demasiado grande o sensor muy bien acoplado." : "Contraste muy bajo: el ruido se va a comer la señal.");
+    else if (E.c < 2.5) v = est("warn", "Contraste aceptable, pero se puede mejorar con la R de carga o la altura.");
+    else v = est("ok", "Buen contraste: blanco y negro bien separados en el ADC.");
+    $("#verCto").innerHTML = v;
+    decisiones();
+  }
+  slider("rled", "rled", fmtR, dibujarCto);
+  slider("rpu", "lrpu", x => fmtR(10 ** x), dibujarCto);
+  const refH = slider("h", "h", x => fmt(x * 1000, 1, "mm"), () => { st.h = +st.h; refH2(); dibujarCto(); dibujarArr(); });
+
+  /* ================= 2. ARREGLO ================= */
+  function lecturas(xL) {
+    const s = OPT.radioSpot(st.h), out = [];
+    for (let k = 0; k < st.n; k++) {
+      const y = ((st.n - 1) / 2 - k) * st.p;
+      let v = OPT.cobertura(Math.abs(xL - y), ficha.anchoLinea, s);
+      if (st.dig) v = v > 0.5 ? 1 : 0;
+      out.push([y, v]);
+    }
+    return out;
+  }
+  function estimar(xL) {
+    const L = lecturas(xL); let sv = 0, sy = 0, mx = 0;
+    for (const [y, v] of L) { mx = Math.max(mx, v); const vv = v > 0.2 ? v : 0; sv += vv; sy += vv * y; }
+    return (mx < 0.35 || sv === 0) ? null : sy / sv;
+  }
+  function dibujarArr() {
+    const ink = color("--ink"), ink2 = color("--ink2"), ctl = color("--ctl"), sen = color("--sen"), bad = color("--bad"), line = color("--line"), cinta = color("--cinta");
+    const half = (st.n - 1) / 2 * st.p, w = ficha.anchoLinea, s = OPT.radioSpot(st.h);
+    const XR = Math.max(0.03, half + w / 2 + 0.012);
+    const inp = $("#c_x"); inp.min = -XR; inp.max = XR; if (Math.abs(st.x) > XR) { st.x = Math.sign(st.x) * XR; }
+    $("#o_x").textContent = fmt(st.x * 1000, 1, "mm");
+    // --- respuesta ---
+    const x0 = 50, W = 570, y0 = 262, H = 150, X = x => x0 + (x + XR) / (2 * XR) * W, Y = v => y0 - v * H;
+    let g = "";
+    for (let mm = -Math.floor(XR * 100) * 10; mm <= XR * 1000; mm += 10) g += `<line x1="${X(mm / 1000)}" y1="${y0}" x2="${X(mm / 1000)}" y2="${y0 - H}" stroke="${line}"/><text x="${X(mm / 1000)}" y="${y0 + 18}" text-anchor="middle" font-size="12.5" fill="${ink2}">${mm}</text>`;
+    for (const v of [0, 0.5, 1]) g += `<line x1="${x0}" y1="${Y(v)}" x2="${x0 + W}" y2="${Y(v)}" stroke="${line}"/><text x="${x0 - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${v}</text>`;
+    // vista superior: arreglo y línea
+    const yTop = 36, esc = W / (2 * XR);
+    g += `<rect x="${X(st.x - w / 2)}" y="${yTop - 22}" width="${w * esc}" height="44" fill="${cinta}"/>`;
+    g += `<rect x="${X(-half) - 8}" y="${yTop - 6}" width="${2 * half * esc + 16}" height="12" rx="3" fill="#1d6b47" opacity=".9"/>`;
+    const Lact = lecturas(st.x);
+    for (const [y, v] of Lact) g += `<circle cx="${X(y)}" cy="${yTop}" r="${Math.max(2, s * esc)}" fill="${sen}" fill-opacity="${0.15 + 0.7 * v}" stroke="${sen}" stroke-width="1.2"/>`;
+    // curvas por sensor
+    for (let k = 0; k < st.n; k++) {
+      let pts = "";
+      for (let x = -XR; x <= XR + 1e-9; x += XR / 200) { const L = lecturas(x); pts += `${X(x).toFixed(1)},${Y(L[k][1]).toFixed(1)} `; }
+      g += `<polyline points="${pts}" fill="none" stroke="${sen}" stroke-width="2" opacity="${0.45 + 0.55 * (k % 2)}"/>`;
+    }
+    g += `<line x1="${X(st.x)}" y1="${y0}" x2="${X(st.x)}" y2="${yTop + 24}" stroke="${ink}" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+    g += `<text x="${x0 + W}" y="${y0 + 36}" text-anchor="end" font-size="12.5" fill="${ink2}">posición de la línea (mm); 0 = centro del arreglo</text>`;
+    g += `<text x="${x0}" y="${y0 - H - 8}" font-size="12.5" fill="${ink2}">lectura calibrada de cada sensor</text>`;
+    $("#svgResp").innerHTML = g;
+    // --- estimada vs real ---
+    const y1 = 270, H2 = 230, Y2 = v => y1 - (v + XR) / (2 * XR) * H2;
+    let e = "";
+    for (let mm = -Math.floor(XR * 100) * 10; mm <= XR * 1000; mm += 10) { e += `<line x1="${X(mm / 1000)}" y1="${y1}" x2="${X(mm / 1000)}" y2="${y1 - H2}" stroke="${line}"/><text x="${X(mm / 1000)}" y="${y1 + 18}" text-anchor="middle" font-size="12.5" fill="${ink2}">${mm}</text>`; }
+    for (let mm = -Math.floor(XR * 100) * 10; mm <= XR * 1000; mm += 10) e += `<text x="${x0 - 8}" y="${Y2(mm / 1000) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${mm}</text>`;
+    let pts = "", perd = [], ini = null, errMax = 0, nPerdDentro = 0, nDentro = 0;
+    for (let x = -XR; x <= XR + 1e-9; x += XR / 300) {
+      const ye = estimar(x);
+      if (Math.abs(x) <= half) { nDentro++; if (ye === null) nPerdDentro++; }
+      if (ye === null) { if (ini === null) ini = x; if (pts) { e += `<polyline points="${pts}" fill="none" stroke="${ctl}" stroke-width="2.5"/>`; pts = ""; } }
+      else { if (ini !== null) { perd.push([ini, x]); ini = null; } pts += `${X(x).toFixed(1)},${Y2(ye).toFixed(1)} `; if (Math.abs(x) <= half) errMax = Math.max(errMax, Math.abs(ye - x)); }
+    }
+    if (ini !== null) perd.push([ini, XR]);
+    if (pts) e += `<polyline points="${pts}" fill="none" stroke="${ctl}" stroke-width="2.5"/>`;
+    const sombras = perd.map(([a, b]) => `<rect x="${X(a)}" y="${y1 - H2}" width="${Math.max(1, X(b) - X(a))}" height="${H2}" fill="${bad}" opacity=".14"/>`).join("");
+    e = sombras + e;
+    e += `<line x1="${X(-XR)}" y1="${Y2(-XR)}" x2="${X(XR)}" y2="${Y2(XR)}" stroke="${ink2}" stroke-width="1.5" stroke-dasharray="6 5" opacity=".7"/>`;
+    const yeAct = estimar(st.x);
+    if (yeAct !== null) e += `<circle cx="${X(st.x)}" cy="${Y2(yeAct)}" r="6" fill="${ctl}"/>`;
+    e += `<text x="${x0 + 4}" y="${y1 - H2 + 14}" font-size="12.5" fill="${ink2}">posición estimada (mm)</text>`;
+    $("#svgEst").innerHTML = e;
+    const resol = st.dig ? st.p / 2 : null;
+    tarjetas("#resArr", [["Ancho del arreglo", fmt(2 * half * 1000, 0, "mm")], ["Radio del punto", fmt(s * 1000, 1, "mm")], ["Estimada ahora", yeAct === null ? "línea perdida" : fmt(yeAct * 1000, 1, "mm")], ["Error máx. dentro del arreglo", fmt(errMax * 1000, 1, "mm")], ["Zonas ciegas dentro", fmt(nDentro ? nPerdDentro / nDentro * 100 : 0, 0, "%")]]);
+    let v;
+    if (nPerdDentro > 0) v = est("bad", "Hay huecos: en algunas posiciones ningún sensor ve la línea aunque esté bajo el arreglo.");
+    else if (errMax > st.p * 0.35) v = est("warn", "Sin huecos, pero la estimación es escalonada o no lineal: el PID verá saltos.");
+    else v = est("ok", "Estimación continua y casi lineal en todo el arreglo.");
+    $("#verArr").innerHTML = v;
+    decisiones();
+  }
+  const segm = (a, b, clave, vA, vB, f) => {
+    const pinta = () => { $(a).setAttribute("aria-pressed", st[clave] === vA); $(b).setAttribute("aria-pressed", st[clave] === vB); };
+    $(a).addEventListener("click", () => { st[clave] = vA; pinta(); f(); });
+    $(b).addEventListener("click", () => { st[clave] = vB; pinta(); f(); });
+    pinta();
+  };
+  segm("#mAna", "#mDig", "dig", 0, 1, dibujarArr);
+  slider("n", "n", x => String(x), dibujarArr);
+  slider("p", "p", x => fmt(x * 1000, 1, "mm"), dibujarArr);
+  const refH2 = slider("h2", "h", x => fmt(x * 1000, 1, "mm"), () => { refH(); dibujarCto(); dibujarArr(); });
+  slider("x", "x", x => fmt(x * 1000, 1, "mm"), dibujarArr);
+
+  /* ================= 3. CALIBRACIÓN ================= */
+  // ganancias y desfases de fabricación (fijos para que todos vean lo mismo)
+  const GAN = [0.82, 1.08, 0.95, 1.15, 0.78, 1.02, 0.90, 1.12], OFS = [40, 95, 60, 30, 110, 70, 50, 85];
+  let cal = null;
+  const crudo = (i, negro) => Math.min(1023, OFS[i % 8] + st.amb * (0.8 + 0.05 * (i % 3)) + GAN[i % 8] * (negro ? 820 : 70));
+  function calibrarAhora() {
+    cal = { min: [], max: [] };
+    for (let i = 0; i < 8; i++) { cal.min.push(crudo(i, false)); cal.max.push(crudo(i, true)); }
+    cal.amb = st.amb;
+  }
+  function dibujarCal() {
+    const ink2 = color("--ink2"), line = color("--line"), cinta = color("--cinta"), ctl = color("--ctl"), bad = color("--bad");
+    const x0 = 56, y0 = 250, H = 200, W = 570, gw = W / 8;
+    const enCal = st.vista === "cal" && cal;
+    const val = (i, n) => { const c = crudo(i, n); return enCal ? Math.max(0, Math.min(1, (c - cal.min[i]) / (cal.max[i] - cal.min[i]))) : c; };
+    const top = enCal ? 1 : 1023, Y = v => y0 - v / top * H;
+    let g = "";
+    const marcas = enCal ? [0, 0.5, 1] : [0, 256, 512, 768, 1023];
+    for (const m of marcas) g += `<line x1="${x0}" y1="${Y(m)}" x2="${x0 + W}" y2="${Y(m)}" stroke="${line}"/><text x="${x0 - 8}" y="${Y(m) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${m}</text>`;
+    for (let i = 0; i < 8; i++) {
+      const xb = x0 + i * gw + gw * 0.15, bw = gw * 0.32;
+      for (const [n, dx, c, op] of [[false, 0, ink2, 0.45], [true, bw + 4, cinta, 1]]) {
+        const v = val(i, n);
+        g += `<rect x="${xb + dx}" y="${Y(v)}" width="${bw}" height="${Math.max(1, y0 - Y(v))}" rx="2" fill="${c}" opacity="${op}"/>`;
+      }
+      g += `<text x="${xb + bw + 2}" y="${y0 + 18}" text-anchor="middle" font-size="12.5" fill="${ink2}">S${i + 1}</text>`;
+    }
+    g += `<text x="${x0}" y="${y0 - H - 14}" font-size="12.5" fill="${ink2}">${enCal ? "lectura normalizada (gris = sobre blanco, negro = sobre la cinta)" : "cuentas del ADC de 10 bits (gris = sobre blanco, negro = sobre la cinta)"}</text>`;
+    if (st.vista === "cal" && !cal) g += `<text x="${x0 + W / 2}" y="${y0 - H / 2}" text-anchor="middle" font-size="16" font-weight="700" fill="${bad}">Primero presiona "Calibrar ahora"</text>`;
+    $("#svgCal").innerHTML = g;
+    // métricas
+    let dispB = [], dispN = [];
+    for (let i = 0; i < 8; i++) { dispB.push(val(i, false)); dispN.push(val(i, true)); }
+    const rango = a => Math.max(...a) - Math.min(...a);
+    const peorBlanco = Math.max(...dispB);
+    tarjetas("#resCal", enCal
+      ? [["Blanco más alto", fmt(peorBlanco, 2)], ["Dispersión en negro", fmt(rango(dispN), 2)], ["Calibrado con luz", fmt(cal.amb, 0) + " cuentas"]]
+      : [["Dispersión en blanco", fmt(rango(dispB), 0) + " cuentas"], ["Dispersión en negro", fmt(rango(dispN), 0) + " cuentas"], ["Calibración", cal ? "guardada" : "sin hacer"]]);
+    let v;
+    if (!enCal) v = est("warn", "Crudo: cada sensor tiene su propio cero y su propia escala. Así, el centroide sale sesgado.");
+    else if (peorBlanco > 0.2) v = est("bad", "La luz cambió desde la calibración: el blanco ya no da 0 y el umbral de 0.2 deja pasar el blanco. Recalibra.");
+    else v = est("ok", "Calibrado: todos los sensores dan ≈ 0 en blanco y ≈ 1 en negro.");
+    $("#verCal").innerHTML = v;
+  }
+  segm("#vCrudo", "#vCal", "vista", "crudo", "cal", dibujarCal);
+  slider("amb", "amb", x => fmt(x, 0, "cuentas"), dibujarCal);
+  $("#btnCalibrar").addEventListener("click", () => { calibrarAhora(); st.vista = "cal"; $("#vCrudo").setAttribute("aria-pressed", false); $("#vCal").setAttribute("aria-pressed", true); dibujarCal(); });
+
+  /* ================= 4. TIEMPO ================= */
+  function tiempo() {
+    const mux = ficha.mux ? 6e-6 : 0, tADC = (ficha.tAdcUs || 112) * 1e-6, tL = st.n * (tADC + mux), T = ficha.periodo;
+    tarjetas("#resTiempo", [["t por conversión", fmt(tADC * 1e6, 0, "µs") + (mux ? " + 6 µs del mux" : "")], ["Sensores", String(st.n) + (ficha.mux ? " (multiplexados)" : "")], ["Leer el arreglo", fmt(tL * 1000, 2, "ms")], ["Periodo del lazo (ficha)", fmt(T * 1000, 0, "ms")], ["Ocupación del periodo", fmt(tL / T * 100, 0, "%")], ["Resolución (5 V, 10 bits)", fmt(5 / 1024 * 1000, 1, "mV")]]);
+    $("#verTiempo").innerHTML = tL / T < 0.3 ? est("ok", "Sobra tiempo para calcular el PID y mandar telemetría.") : tL / T < 0.7 ? est("warn", "Cabe, pero queda poco tiempo para lo demás.") : est("bad", "No cabe: el periodo real del lazo será mayor que el programado.");
+  }
+
+  /* ================= 6. DECISIONES ================= */
+  function decisiones() {
+    if (!$("#tabDecS")) return;
+    const f = window.Ficha.leer();
+    const filas = [
+      ["Número de sensores", String(f.nSens), String(st.n), "Ancho del arreglo: " + fmt((st.n - 1) * st.p * 1000, 0, "mm")],
+      ["Separación", fmt(f.pasoSens * 1000, 1, "mm"), fmt(st.p * 1000, 1, "mm"), st.p > f.anchoLinea ? "Mayor que la cinta: riesgo de huecos" : "Menor que la cinta"],
+      ["Altura", fmt(f.alturaSens * 1000, 1, "mm"), fmt(st.h * 1000, 1, "mm"), "Punto de " + fmt(OPT.radioSpot(st.h) * 2000, 1, "mm") + " de diámetro, señal " + fmt(OPT.amplitud(st.h) * 100, 0, "%")],
+      ["Tipo de lectura", f.digital ? "Digital" : "Analógica", st.dig ? "Digital" : "Analógica", st.dig ? "Más simple, posición escalonada" : "Posición continua (centroide)"],
+      ["Forma de la barra", f.barraForma === "curva" ? "Curva, R " + fmt(f.radioBarra * 1000, 0, "mm") : "Recta", f.barraForma === "curva" ? "Curva, R " + fmt((st.Rb || f.radioBarra) * 1000, 0, "mm") : "Recta", "Se elige en la sección 6"],
+      ["R del LED", fmtR(f.rLed), fmtR(st.rled), fmt(st.n * (VCC - VF) / st.rled * 1000, 0, "mA") + " para todo el arreglo (Módulo 3)"],
+      ["R de carga", fmtR(f.rPullup), fmtR(10 ** st.lrpu), "Contraste " + fmt(electrico(st.rled, 10 ** st.lrpu, st.h).c, 2, "V")]
+    ];
+    $("#tabDecS tbody").innerHTML = filas.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num"><b>${r[2]}</b></td><td>${r[3]}</td></tr>`).join("");
+    tiempo();
+  }
+  $("#btnAplicarS").addEventListener("click", () => {
+    const rpu = Math.round(10 ** st.lrpu / 100) * 100;
+    const nueva = window.Ficha.guardar({ nSens: st.n, pasoSens: st.p, alturaSens: st.h, digital: st.dig, rLed: Math.round(st.rled), rPullup: rpu, radioBarra: st.Rb || ficha.radioBarra });
+    Object.assign(ficha, nueva); decisiones();
+    const m = $("#msgDecS"); m.style.color = "var(--ok)"; m.textContent = "Listo: el simulador ya usa estos sensores.";
+  });
+  $("#btnCopiarCod").addEventListener("click", async () => {
+    const b = $("#btnCopiarCod");
+    try { await navigator.clipboard.writeText($("#cod").textContent); b.textContent = "Copiado"; } catch (e) { b.textContent = "No se pudo copiar"; }
+    setTimeout(() => { b.textContent = "Copiar"; }, 2000);
+  });
+
+
+  /* ================= 6. RECTA CONTRA CURVA ================= */
+  st.Rb = ficha.radioBarra || 0.2; st.Rt = 0.2;
+  const geo = forma => window.SimCore.geomSensores(Object.assign({}, ficha, { nSens: st.n, pasoSens: st.p, radioBarra: st.Rb, barraForma: forma }));
+  const rMinVista = G => { const x = G.xf[0], y = Math.abs(G.yl[0]); return (x * x + y * y) / (2 * y); };
+  function curva() {
+    const ink2 = color("--ink2"), sen = color("--sen"), cinta = color("--cinta"), ok = color("--ok"), bad = color("--bad"), line = color("--line");
+    const Gr = geo("recta"), Gc = geo("curva");
+    const K = 2000, ax = 320, ay = 300, X = y => ax - y * K, Y = x => ay - x * K;   // vista superior: avance hacia arriba
+    let h = "";
+    // línea de la pista: arco tangente al eje, curvando a la izquierda
+    let pts = ""; for (let i = 0; i <= 120; i++) { const a = i / 120 * Math.min(Math.PI / 2, 0.2 / st.Rt); const x = st.Rt * Math.sin(a), y = st.Rt * (1 - Math.cos(a)); pts += `${X(y).toFixed(1)},${Y(x).toFixed(1)} `; }
+    h += `<polyline points="${X(0)},${ay + 20} ${pts}" fill="none" stroke="${cinta}" stroke-width="${Math.max(3, ficha.anchoLinea * K)}" stroke-linejoin="round" opacity=".9"/>`;
+    // carrito (eje)
+    const b = ficha.trocha * K;
+    h += `<rect x="${ax - b / 2}" y="${ay - 10}" width="${b}" height="20" rx="6" fill="#555" opacity=".35"/><line x1="${ax}" y1="${ay}" x2="${ax}" y2="${Y(ficha.lookahead) + 10}" stroke="${ink2}" stroke-dasharray="4 4"/>`;
+    const barra = (G, c, op) => { let d = ""; G.xf.forEach((x, k) => { d += (k ? "L" : "M") + X(G.yl[k]).toFixed(1) + " " + Y(x).toFixed(1); }); let o = `<path d="${d}" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round" opacity="${op}"/>`; G.xf.forEach((x, k) => { o += `<circle cx="${X(G.yl[k])}" cy="${Y(x)}" r="3" fill="${c}"/>`; }); return o; };
+    h += barra(Gr, ink2, 0.55) + barra(Gc, sen, 0.95);
+    // ¿dónde está la línea bajo cada barra?
+    const dLinea = x => st.Rt - Math.sqrt(Math.max(0, st.Rt * st.Rt - x * x));
+    const ve = G => G.xf.some((x, k) => Math.abs(dLinea(x) - G.yl[k]) < ficha.anchoLinea / 2 + 0.002 && x < st.Rt);
+    const vr = ve(Gr), vc = ve(Gc);
+    h += `<text x="20" y="24" font-size="13" fill="${vr ? ok : bad}">barra recta: ${vr ? "ve la línea" : "la línea quedó fuera"}</text>`;
+    h += `<text x="20" y="44" font-size="13" fill="${vc ? ok : bad}">barra curva: ${vc ? "ve la línea" : "la línea quedó fuera"}</text>`;
+    h += `<text x="${ax + b / 2 + 8}" y="${ay + 4}" font-size="12.5" fill="${ink2}">eje</text>`;
+    $("#f2Svg").innerHTML = h;
+    const rr = rMinVista(Gr), rc = rMinVista(Gc), sagita = Gc.xf[Math.floor(Gc.xf.length / 2)] - Gc.xf[0];
+    const sepCentro = Math.abs(Gc.yl[Math.floor(Gc.yl.length / 2) - 1] - Gc.yl[Math.floor(Gc.yl.length / 2)]), sepOrilla = Math.abs(Gc.yl[0] - Gc.yl[1]);
+    tarjetas("#f2Res", [["Curva más cerrada · recta", fmt(rr * 100, 1, "cm")], ["Curva más cerrada · curva", fmt(rc * 100, 1, "cm")], ["Orillas más cerca del eje", fmt(sagita * 1000, 1, "mm")], ["Ancho lateral (recta / curva)", fmt(2 * Gr.half * 1000, 0) + " / " + fmt(2 * Gc.half * 1000, 0, "mm")], ["Separación lateral centro / orilla", fmt(sepCentro * 1000, 1) + " / " + fmt(sepOrilla * 1000, 1, "mm")]]);
+    $("#f2Ver").innerHTML = rc < rr * 0.97 ? est("ok", `La barra curva sigue curvas hasta ${fmt((1 - rc / rr) * 100, 0, "%")} más cerradas que la recta, a cambio de un arreglo ${fmt((1 - Gc.half / Gr.half) * 100, 0, "%")} más angosto de lado.`) : est("warn", "Con este radio de arco la diferencia contra la barra recta es casi nula.");
+    $("#f2Geo").textContent = `${st.n} sensores cada ${fmt(st.p * 1000, 1, "mm")}, lookahead ${fmt(ficha.lookahead * 1000, 0, "mm")}`;
+  }
+  const f2s = (id, clave, ff) => { const i = $("#f2_" + id), o = $("#f2o_" + id); i.value = st[clave]; o.textContent = ff(st[clave]); i.addEventListener("input", () => { st[clave] = +i.value; o.textContent = ff(st[clave]); curva(); clearTimeout(st.tc); st.tc = setTimeout(simCurva, 300); }); };
+  f2s("R", "Rb", x => fmt(x * 1000, 0, "mm"));
+  f2s("Rt", "Rt", x => fmt(x * 100, 1, "cm"));
+  let visibleC = false;
+  function simCurva() {
+    if (!visibleC) return;
+    const filas = [];
+    for (const pista of ["competencia", "esquinas"]) for (const forma of ["recta", "curva"]) {
+      const p = Object.assign({}, ficha, { nSens: st.n, pasoSens: st.p, radioBarra: st.Rb, barraForma: forma }); Object.assign(p, window.Ficha.derivar(p));
+      const S = window.SimCore.crearSim(p, pista); S.registrar = true; S.avanzar(15);
+      let perd = 0; for (let i = 1; i < S.log.length; i++) if (S.log[i].perdida && !S.log[i - 1].perdida) perd++;
+      filas.push(`<tr><td>${window.SimCore.PISTAS[pista].nombre}</td><td>${forma === "curva" ? "Curva" : "Recta"}</td><td class="num">${fmt(S.errorRMS() * 1000, 1, "mm")}</td><td class="num">${S.tVueltas[0] ? fmt(S.tVueltas[0], 2, "s") : "—"}</td><td class="num">${perd}</td><td>${S.estado === "fuera" ? est("bad", "se salió") : est("ok", "terminó")}</td></tr>`);
+    }
+    $("#f2Tab tbody").innerHTML = filas.join("");
+  }
+  const ioC = new IntersectionObserver(e => { if (!visibleC && e.some(x => x.isIntersecting)) { visibleC = true; ioC.disconnect(); simCurva(); } });
+  ioC.observe($("#f2-curva"));
+  function todo() { dibujarCto(); dibujarArr(); dibujarCal(); decisiones(); curva(); }
+  todo();
+  document.addEventListener("cambio-tema", todo);
+  window.addEventListener("ficha-cambiada", e => { Object.assign(ficha, e.detail); tiempo(); });
+}
+</script>
+</body>
+</html>

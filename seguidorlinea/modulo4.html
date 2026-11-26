@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Módulo 4 · Modelado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.m4 .lab{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:900px){.m4 .lab{grid-template-columns:minmax(0,1fr)}}
+.m4 .lienzo{background:var(--card);border:1px solid var(--line);border-radius:var(--radio);padding:8px;overflow-x:auto}
+.m4 .lienzo svg{display:block;width:100%;height:auto;min-width:500px}
+.m4 .lienzo text{font-family:Barlow,sans-serif}
+.m4 .lienzo + .lienzo{margin-top:12px}
+.m4 .ctl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:center;padding:3px 0}
+.m4 .ctl output{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.m4 .ctl input{grid-column:1/3}
+.m4 .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:10px;margin-top:12px}
+.m4 .res div{background:var(--bg2);border-radius:8px;padding:8px 12px}
+.m4 .res b{display:block;font-size:20px;font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.m4 .res span{font-size:13px;color:var(--ink2)}
+.m4 .formula{font-family:"JetBrains Mono",monospace;font-size:14px;background:var(--bg2);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap;line-height:1.8}
+.m4 .veredicto{margin-top:12px;font-weight:600}
+.m4 .veredicto .est{white-space:normal}
+.m4 .ley{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.m4 .ley i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.m4 .fila-btn{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.m4 .clave{border:2px solid var(--ctl);border-radius:var(--radio);padding:14px 18px;background:var(--card);margin:16px 0;max-width:75ch}
+.m4 .clave b{color:var(--ctl)}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/sim-core.js"></script>
+</head>
+<body data-pagina="m4">
+<main class="m4">
+<section class="band">
+  <div class="wrap">
+    <p><span class="tag t-ctl">Módulo 4 · Modelado</span></p>
+    <h1>Modelado: escribir el carrito como una función de transferencia</h1>
+    <p class="muted" style="font-size:18px">Hasta aquí cada módulo dejó un número en la ficha. Ahora se juntan en un solo modelo: de la señal que manda el controlador al error que leen los sensores. Con él se puede saber, antes de probar en la pista, si un controlador va a oscilar, y por qué.</p>
+    <nav class="scroll" aria-label="Secciones del módulo" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <a class="btn" href="#cadena">1. La cadena de bloques</a>
+      <a class="btn" href="#escalon">2. Prueba escalón</a>
+      <a class="btn" href="#lateral">3. Modelo lateral y estabilidad</a>
+      <a class="btn" href="#muestreo">4. Muestreo y retardo</a>
+      <a class="btn" href="#decisiones-mod">5. Decisiones</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============ 1. CADENA ============ -->
+<section class="band alt" id="cadena">
+  <div class="wrap">
+    <h2>1. Cada bloque viene de un módulo anterior</h2>
+    <p>El controlador manda una corrección <i>u</i>: cuánto más rápido debe ir una rueda que la otra. Esa orden pasa por los motores (que tardan τ en responder), se convierte en giro del chasis, el giro desplaza al carrito de lado y los sensores, que van adelante, leen ese desplazamiento. Si todo se linealiza para errores pequeños, cada paso es un bloque con su función de transferencia.</p>
+    <div class="lienzo"><svg id="svgCadena" viewBox="0 0 1000 220" role="img" aria-label="Cadena de bloques del modelo lateral"></svg></div>
+    <div class="formula">
+      Motores: τ·dΔv/dt + Δv = 2·v<sub>w</sub>·u &nbsp;&nbsp;(Δv = v<sub>R</sub> − v<sub>L</sub>, v<sub>w</sub> = velocidad de rueda a PWM 100 %)<br>
+      Chasis: dθ/dt = Δv / b &nbsp;&nbsp; dy/dt = v·sen θ ≈ v·θ<br>
+      Sensores: y<sub>s</sub> = y + L·θ &nbsp;&nbsp; e = −y<sub>s</sub> / (medio ancho del arreglo)<br>
+      ⇒ &nbsp; G(s) = E(s)/U(s) = − K<sub>0</sub> · (L·s + v) / ( s²·(τ·s + 1) ), &nbsp;&nbsp; K<sub>0</sub> = 2·v<sub>w</sub> / (b · medio ancho)
+    </div>
+    <div class="clave">El término <b>(L·s + v)</b> es un <b>cero</b> que aparece sólo porque los sensores van adelante del eje. Es la "acción derivativa gratis" del Módulo 1: los sensores ven el giro (θ) antes de que el carrito se desplace. Sin lookahead (L = 0), la planta sería un doble integrador con retardo, muy difícil de estabilizar.</div>
+    <div class="res" id="resCadena"></div>
+  </div>
+</section>
+
+<!-- ============ 2. ESCALÓN ============ -->
+<section class="band" id="escalon">
+  <div class="wrap">
+    <h2>2. Prueba escalón: medir τ en lugar de suponerlo</h2>
+    <p>En el Módulo 1, τ salió de la física (τ = m·v₀/F₀), pero ese cálculo ignora la inercia del rotor, de los engranes y de las ruedas. Para conocer el τ real se hace una <b>prueba escalón</b>: con el carrito sobre un soporte (ruedas al aire) o en el piso, se aplica de golpe un PWM fijo y se registra la velocidad de la rueda con un encoder. Se ajusta el modelo de primer orden a los datos.</p>
+    <div class="formula">n(t) = K · (1 − e<sup>−(t − t₀)/τ</sup>), &nbsp; t ≥ t₀ &nbsp;&nbsp; Método del 63.2 %: en t = t₀ + τ, la respuesta vale 0.632·K</div>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="svgEsc" viewBox="0 0 640 320" role="img" aria-label="Respuesta al escalón medida y modelo ajustado"></svg></div>
+        <div class="ley"><span><i style="background:var(--ink2)"></i>mediciones del encoder</span><span><i style="background:var(--ctl)"></i>modelo K, τ</span><span><i style="background:var(--ir)"></i>63.2 % de K</span></div>
+      </div>
+      <div class="card">
+        <div class="ctl"><label for="c_K">Ganancia K (rpm en estado estable)</label><output id="o_K"></output><input type="range" id="c_K" min="50" max="1200" step="1"></div>
+        <div class="ctl"><label for="c_tau">Constante de tiempo τ</label><output id="o_tau"></output><input type="range" id="c_tau" min="0.02" max="0.6" step="0.001"></div>
+        <div class="ctl"><label for="c_t0">Instante del escalón t₀</label><output id="o_t0"></output><input type="range" id="c_t0" min="0" max="0.5" step="0.005"></div>
+        <div class="fila-btn">
+          <button type="button" class="pri" id="btnAjuste">Ajuste por mínimos cuadrados</button>
+          <label class="btn" for="archivo" style="cursor:pointer">Cargar sus datos (CSV)</label>
+          <input type="file" id="archivo" accept=".csv,.txt" style="position:absolute;width:1px;height:1px;opacity:0">
+          <button type="button" id="btnDemo">Datos de ejemplo</button>
+        </div>
+        <p class="small muted" id="fuente" style="margin:8px 0 0"></p>
+        <div class="res" id="resEsc"></div>
+        <p class="veredicto" id="verEsc"></p>
+      </div>
+    </div>
+    <p class="small muted">Formato del CSV: dos columnas, tiempo en segundos y velocidad en rpm (o en cuentas por periodo, sólo cambia la escala de K), separadas por coma, punto y coma o tabulador. Una fila de encabezado se ignora. Los datos de ejemplo se generaron con un τ real distinto al teórico, como pasaría en un carrito de verdad.</p>
+  </div>
+</section>
+
+<!-- ============ 3. LATERAL ============ -->
+<section class="band alt" id="lateral">
+  <div class="wrap">
+    <h2>3. Cerrar el lazo: ¿oscila o no oscila?</h2>
+    <p>Con un controlador PD, C(s) = K<sub>p</sub> + K<sub>d</sub>·s, el polinomio característico del lazo cerrado es de tercer grado. El criterio de Routh–Hurwitz dice cuándo todas sus raíces quedan en el semiplano izquierdo, es decir, cuándo el carrito no oscila sin control.</p>
+    <div class="formula">
+      τ·s³ + (1 + K<sub>0</sub>K<sub>d</sub>L)·s² + K<sub>0</sub>(K<sub>p</sub>L + K<sub>d</sub>v)·s + K<sub>0</sub>K<sub>p</sub>v = 0<br>
+      Routh (a₂·a₁ &gt; a₃·a₀): &nbsp; (1 + K<sub>0</sub>K<sub>d</sub>L)·(K<sub>p</sub>L + K<sub>d</sub>v) &gt; τ·K<sub>p</sub>·v
+    </div>
+    <div class="clave">Con sólo P (K<sub>d</sub> = 0), la condición se reduce a <b>L / v &gt; τ</b>: el tiempo que los sensores "ven hacia adelante" debe ser mayor que lo que tardan los motores en responder, <b>sin importar K<sub>p</sub></b>. Por eso en el simulador el ajuste "Sólo P" oscila: con la ficha genérica, L/v ≈ 0.12 s y τ ≈ 0.12 s, justo en el límite. Subir K<sub>p</sub> no lo arregla. Hay que agregar K<sub>d</sub>, alargar L, bajar la velocidad o aligerar el carrito.</div>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="svgResp4" viewBox="0 0 640 300" role="img" aria-label="Respuesta del error lateral: modelo lineal contra simulador"></svg></div>
+        <div class="ley"><span><i style="background:var(--ctl)"></i>modelo lineal</span><span><i style="background:var(--ir)"></i>simulador completo (no lineal)</span></div>
+        <div class="lienzo"><svg id="svgPlano" viewBox="0 0 640 300" role="img" aria-label="Polos y cero en el plano s"></svg></div>
+        <div class="ley"><span>× polos del lazo cerrado</span><span>○ cero del lookahead</span></div>
+      </div>
+      <div class="card">
+        <div class="ctl"><label for="c_kp4">K<sub>p</sub></label><output id="o_kp4"></output><input type="range" id="c_kp4" min="0" max="4" step="0.05"></div>
+        <div class="ctl"><label for="c_kd4">K<sub>d</sub></label><output id="o_kd4"></output><input type="range" id="c_kd4" min="0" max="0.15" step="0.005"></div>
+        <div class="ctl"><label for="c_vb4">Velocidad base (PWM)</label><output id="o_vb4"></output><input type="range" id="c_vb4" min="0.1" max="1" step="0.01"></div>
+        <div class="ctl"><label for="c_L4">Lookahead L</label><output id="o_L4"></output><input type="range" id="c_L4" min="0.01" max="0.14" step="0.005"></div>
+        <div class="ctl"><label for="c_tl">τ de los motores</label><output id="o_tl"></output><input type="range" id="c_tl" min="0.03" max="0.4" step="0.005"></div>
+        <div class="res" id="resLat"></div>
+        <p class="veredicto" id="verLat"></p>
+        <p class="small muted" style="margin:10px 0 0">El carrito arranca 10 mm desplazado de la línea, en una recta. La curva roja es el simulador con todo incluido: sensores reales, PWM de 8 bits, periodo de control y saturación. Donde se separan las curvas es donde el modelo lineal deja de ser válido.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. MUESTREO ============ -->
+<section class="band" id="muestreo">
+  <div class="wrap dos">
+    <div>
+      <h2>4. Lo que el modelo continuo no ve: muestreo y retardo</h2>
+      <p>El modelo supone que el controlador reacciona al instante. En el microcontrolador, el error se lee una vez cada periodo <i>T</i> y la corrección se mantiene hasta el siguiente. En promedio, eso equivale a un <b>retardo de T/2</b>, más el tiempo de lectura de los sensores. Un retardo resta fase y acerca el lazo a la oscilación, igual que un τ mayor.</p>
+      <p>Regla práctica: el periodo de control debe ser al menos 10 veces menor que la constante de tiempo más rápida que se quiere controlar. En el Módulo 6 se ve cómo garantizar un periodo fijo en el código.</p>
+    </div>
+    <div class="card">
+      <div class="res" id="resMuestreo"></div>
+      <p class="veredicto" id="verMuestreo"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. DECISIONES ============ -->
+<section class="band alt" id="decisiones-mod">
+  <div class="wrap">
+    <h2>5. Lo que el modelo deja en la ficha</h2>
+    <div class="scroll"><table class="stack" id="tabDecM"><thead><tr><th>Dato</th><th class="num">En la ficha</th><th class="num">Propuesta</th><th>Consecuencia</th></tr></thead><tbody></tbody></table></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px">
+      <button class="pri" type="button" id="btnAplicarM">Aplicar al carrito</button>
+      <a class="btn" href="simulador.html">Probarlo en el simulador</a>
+      <span class="small" id="msgDecM" role="status"></span>
+    </div>
+    <p class="small muted" style="margin-top:10px">Se guarda el <b>factor de corrección de τ</b> (τ medido / τ teórico), no τ directamente. Así, si después cambia la masa o la reducción, τ se recalcula con la física del Módulo 1 y se corrige con lo medido.</p>
+    <h2 style="margin-top:36px">Actividad</h2>
+    <ol>
+      <li>Hagan la prueba escalón con el carrito real: PWM de 0 a 60 % y registro del encoder cada 10 ms por el monitor serial. Carguen el CSV en la sección 2 y obtengan K y τ.</li>
+      <li>Comparen su τ con el teórico del Módulo 1. ¿Qué tan grande es el factor de corrección? ¿A qué lo atribuyen?</li>
+      <li>En la sección 3, con K<sub>d</sub> = 0, encuentren la velocidad base a partir de la cual el carrito empieza a oscilar. Comprueben que coincide con L/v = τ.</li>
+      <li>Encuentren un caso donde el modelo lineal y el simulador difieran mucho y expliquen qué no linealidad lo causa.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<script>
+{
+  const $ = s => document.querySelector(s);
+  const ficha = window.Ficha.leer();
+  const color = n => { const e = document.createElement("span"); e.style.color = "var(" + n + ")"; document.body.append(e); const c = getComputedStyle(e).color; e.remove(); return c; };
+  const tarjetas = (sel, items) => { $(sel).innerHTML = items.map(x => `<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join(""); };
+  const est = (c, t) => `<span class="est ${c}">${c === "ok" ? "✓" : c === "warn" ? "!" : "✗"} ${t}</span>`;
+  const st = { K: 300, tau: 0.1, t0: 0.1, kp: ficha.kp, kd: ficha.kd, vb: ficha.vBase, L: ficha.lookahead, tl: ficha.tauMotor, fuente: "demo" };
+  function slider(id, clave, fmtf, alCambiar) {
+    const i = $("#c_" + id), o = $("#o_" + id);
+    const pinta = () => { i.value = st[clave]; o.textContent = fmtf(st[clave]); };
+    i.addEventListener("input", () => { st[clave] = parseFloat(i.value); pinta(); alCambiar(); });
+    pinta();
+    return pinta;
+  }
+  const vw = () => ficha.rpmMax * 2 * Math.PI / 60 * ficha.radioRueda * window.Ficha.vMotor(ficha) / ficha.vNom;
+  const half = () => (ficha.nSens - 1) / 2 * ficha.pasoSens;
+  const tauTeo = () => ficha.tauMotor / (ficha.factorTau || 1);
+
+  /* ================= 1. CADENA ================= */
+  function cadena() {
+    const ink = color("--ink"), ink2 = color("--ink2");
+    const B = [["ele", "Motores", "2·v_w / (τs + 1)", "Módulos 1 y 3"], ["mec", "Giro del chasis", "1 / (b·s)", "Módulo 1"], ["mec", "Avance lateral", "(L·s + v) / s", "Módulo 1"], ["sen", "Sensores", "−1 / medio ancho", "Módulo 2"]];
+    const S = ["u", "Δv", "θ", "yₛ", "e"];
+    let h = `<defs><marker id="fc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="${ink}"/></marker></defs>`;
+    const w = 180, gap = 52, x0 = 40;
+    B.forEach((b, i) => {
+      const x = x0 + i * (w + gap) + 20, c = color("--" + b[0]);
+      h += `<rect x="${x}" y="60" width="${w}" height="84" rx="10" fill="none" stroke="${c}" stroke-width="2.4"/>`;
+      h += `<text x="${x + w / 2}" y="88" text-anchor="middle" font-size="15" font-weight="700" fill="${ink}">${b[1]}</text>`;
+      h += `<text x="${x + w / 2}" y="113" text-anchor="middle" font-size="14" font-family="JetBrains Mono,monospace" fill="${ink}">${b[2]}</text>`;
+      h += `<text x="${x + w / 2}" y="168" text-anchor="middle" font-size="12.5" fill="${c}">${b[3]}</text>`;
+      const xa = i === 0 ? x0 - 30 : x - gap;
+      h += `<line x1="${xa}" y1="102" x2="${x - 2}" y2="102" stroke="${ink}" stroke-width="2" marker-end="url(#fc)"/>`;
+      h += `<text x="${(xa + x) / 2}" y="92" text-anchor="middle" font-size="15" font-weight="700" fill="${ink2}">${S[i]}</text>`;
+    });
+    const xe = x0 + 4 * (w + gap) + 20 - gap;
+    h += `<line x1="${xe}" y1="102" x2="${xe + 46}" y2="102" stroke="${ink}" stroke-width="2" marker-end="url(#fc)"/><text x="${xe + 24}" y="92" text-anchor="middle" font-size="15" font-weight="700" fill="${ink2}">e</text>`;
+    $("#svgCadena").innerHTML = h;
+    const v = ficha.vBase * vw(), K0 = 2 * vw() / (ficha.trocha * half());
+    tarjetas("#resCadena", [["v_w (rueda a 100 %)", fmt(vw(), 2, "m/s")], ["v (a la velocidad base)", fmt(v, 2, "m/s")], ["b", fmt(ficha.trocha * 1000, 0, "mm")], ["L", fmt(ficha.lookahead * 1000, 0, "mm")], ["τ (ficha)", fmt(ficha.tauMotor * 1000, 0, "ms")], ["K₀", fmt(K0, 0, "1/s")], ["Cero en s =", fmt(-v / ficha.lookahead, 2, "1/s")]]);
+  }
+
+  /* ================= 2. ESCALÓN ================= */
+  let datos = [];
+  function demo() {
+    // "carrito real": τ 30 % mayor que el teórico, 4 % menos de ganancia, 10 ms de retardo, encoder de 10 rpm
+    let a = 12345; const u = () => { a = (a * 1103515245 + 12345) & 0x7fffffff; return a / 0x7fffffff; };
+    const n = () => Math.sqrt(-2 * Math.log(u() + 1e-9)) * Math.cos(2 * Math.PI * u());
+    const Kr = 0.6 * ficha.rpmMax * window.Ficha.vMotor(ficha) / ficha.vNom * 0.96, tr = 1.3 * tauTeo(), t0 = 0.1, td = 0.01;
+    datos = [];
+    for (let t = 0; t <= Math.max(0.8, 7 * tr); t += 0.01) {
+      const y = t < t0 + td ? 0 : Kr * (1 - Math.exp(-(t - t0 - td) / tr));
+      datos.push([+t.toFixed(3), Math.max(0, Math.round((y + 4 * n()) / 10) * 10)]);
+    }
+    st.fuente = "demo";
+    $("#fuente").textContent = "Datos de ejemplo: PWM de 0 a 60 % en t = 0.1 s, encoder leído cada 10 ms.";
+    st.t0 = 0.1; st.K = Math.round(Kr * 0.8); st.tau = +(tauTeo() * 0.8).toFixed(3);
+    ajustarRangos(); pintaK(); pintaT(); pintaT0(); escalon();
+  }
+  function ajustarRangos() {
+    const ymax = Math.max(...datos.map(d => d[1]), 10), tmax = datos[datos.length - 1][0];
+    $("#c_K").max = Math.ceil(ymax * 1.5); $("#c_K").step = ymax > 50 ? 1 : 0.01;
+    $("#c_tau").max = Math.max(0.2, tmax / 2); $("#c_t0").max = Math.max(0.05, tmax / 2);
+  }
+  function sse(K, tau, t0) { let s = 0; for (const [t, y] of datos) { const m = t < t0 ? 0 : K * (1 - Math.exp(-(t - t0) / tau)); s += (y - m) ** 2; } return s; }
+  function ajuste() {
+    let best = [Infinity, st.K, st.tau];
+    const tmax = datos[datos.length - 1][0];
+    for (let tau = 0.005; tau <= tmax; tau *= 1.01) {
+      let num = 0, den = 0;
+      for (const [t, y] of datos) { const f = t < st.t0 ? 0 : 1 - Math.exp(-(t - st.t0) / tau); num += y * f; den += f * f; }
+      const K = den > 0 ? num / den : 0, e = sse(K, tau, st.t0);
+      if (e < best[0]) best = [e, K, tau];
+    }
+    st.K = +best[1].toFixed(2); st.tau = +best[2].toFixed(4);
+    pintaK(); pintaT(); escalon();
+  }
+  function escalon() {
+    if (!datos.length) return;
+    const ink2 = color("--ink2"), ctl = color("--ctl"), ir = color("--ir"), line = color("--line"), ink = color("--ink");
+    const tmax = datos[datos.length - 1][0], ymax = Math.max(st.K, ...datos.map(d => d[1])) * 1.12 || 1;
+    const x0 = 64, W = 556, y0 = 280, H = 250, X = t => x0 + t / tmax * W, Y = v => y0 - v / ymax * H;
+    let h = "";
+    const pasoY = ymax > 600 ? 200 : ymax > 300 ? 100 : ymax > 60 ? 20 : ymax > 6 ? 2 : 0.5;
+    for (let v = 0; v <= ymax; v += pasoY) h += `<line x1="${x0}" y1="${Y(v)}" x2="${x0 + W}" y2="${Y(v)}" stroke="${line}"/><text x="${x0 - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${fmt(v, pasoY < 1 ? 1 : 0)}</text>`;
+    const pasoT = tmax > 2 ? 0.5 : tmax > 0.8 ? 0.2 : 0.1;
+    for (let t = 0; t <= tmax + 1e-9; t += pasoT) h += `<text x="${X(t)}" y="${y0 + 18}" text-anchor="middle" font-size="12.5" fill="${ink2}">${fmt(t, 1)}</text>`;
+    h += `<text x="${x0 + W}" y="${y0 + 36}" text-anchor="end" font-size="12.5" fill="${ink2}">tiempo (s)</text><text x="${x0}" y="16" font-size="12.5" fill="${ink2}">velocidad de la rueda</text>`;
+    // 63.2 %
+    const y63 = 0.632 * st.K, t63 = st.t0 + st.tau;
+    h += `<line x1="${x0}" y1="${Y(y63)}" x2="${X(t63)}" y2="${Y(y63)}" stroke="${ir}" stroke-width="1.5" stroke-dasharray="5 4"/><line x1="${X(t63)}" y1="${Y(y63)}" x2="${X(t63)}" y2="${y0}" stroke="${ir}" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    h += `<text x="${X(t63) + 6}" y="${y0 - 8}" font-size="13" font-weight="700" fill="${ir}">t₀ + τ</text>`;
+    for (const [t, y] of datos) h += `<circle cx="${X(t).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="2.6" fill="${ink2}"/>`;
+    let pm = ""; for (let t = 0; t <= tmax; t += tmax / 300) { const m = t < st.t0 ? 0 : st.K * (1 - Math.exp(-(t - st.t0) / st.tau)); pm += `${X(t).toFixed(1)},${Y(m).toFixed(1)} `; }
+    h += `<polyline points="${pm}" fill="none" stroke="${ctl}" stroke-width="2.6"/>`;
+    $("#svgEsc").innerHTML = h;
+    const rmse = Math.sqrt(sse(st.K, st.tau, st.t0) / datos.length);
+    const fac = st.tau / tauTeo();
+    const items = [["Error RMS del ajuste", fmt(rmse, 1)], ["τ identificado", fmt(st.tau * 1000, 0, "ms")]];
+    if (st.fuente === "demo") items.push(["τ teórico (Módulo 1)", fmt(tauTeo() * 1000, 0, "ms")], ["Factor τ medido/teórico", fmt(fac, 2)]);
+    else items.push(["Factor vs. teórico", fmt(fac, 2)]);
+    tarjetas("#resEsc", items);
+    $("#verEsc").innerHTML = rmse > 0.08 * Math.max(st.K, 1) ? est("warn", "El modelo todavía no se parece a los datos: mueve K y τ, o usa el ajuste automático.")
+      : fac > 1.05 ? est("ok", `Buen ajuste. El carrito real es ${fmt((fac - 1) * 100, 0, "%")} más lento de lo que predijo la física: inercia del rotor y engranes que el Módulo 1 no consideró.`)
+      : est("ok", "Buen ajuste.");
+    decisiones();
+  }
+  const pintaK = slider("K", "K", x => fmt(x, x > 50 ? 0 : 2), escalon);
+  const pintaT = slider("tau", "tau", x => fmt(x * 1000, 0, "ms"), escalon);
+  const pintaT0 = slider("t0", "t0", x => fmt(x * 1000, 0, "ms"), escalon);
+  $("#btnAjuste").addEventListener("click", ajuste);
+  $("#btnDemo").addEventListener("click", demo);
+  $("#archivo").addEventListener("change", async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const txt = await f.text();
+    const filas = txt.split(/\r?\n/).map(l => l.trim().split(/[,;\t ]+/).map(Number)).filter(r => r.length >= 2 && isFinite(r[0]) && isFinite(r[1]));
+    if (filas.length < 5) { $("#fuente").textContent = "No se encontraron al menos 5 filas numéricas con dos columnas."; return; }
+    datos = filas.map(r => [r[0], r[1]]).sort((a, b) => a[0] - b[0]);
+    const t0 = datos[0][0]; datos = datos.map(d => [d[0] - t0, d[1]]);
+    st.fuente = "csv"; $("#fuente").textContent = "Datos cargados: " + datos.length + " puntos del archivo " + f.name + ".";
+    ajustarRangos();
+    const ymax = Math.max(...datos.map(d => d[1])), i10 = datos.findIndex(d => d[1] > 0.1 * ymax);
+    st.t0 = i10 > 0 ? datos[i10 - 1][0] : 0; pintaT0();
+    ajuste();
+  });
+
+  /* ================= 3. LATERAL ================= */
+  function raices(a3, a2, a1, a0) {
+    // Durand–Kerner para el polinomio mónico s³ + b2 s² + b1 s + b0
+    const b2 = a2 / a3, b1 = a1 / a3, b0 = a0 / a3;
+    const mul = (a, b) => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
+    const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
+    const div = (a, b) => { const d = b[0] * b[0] + b[1] * b[1] || 1e-30; return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]; };
+    const p = z => { const z2 = mul(z, z), z3 = mul(z2, z); return [z3[0] + b2 * z2[0] + b1 * z[0] + b0, z3[1] + b2 * z2[1] + b1 * z[1]]; };
+    const R = 1 + Math.max(Math.abs(b2), Math.abs(b1), Math.abs(b0));
+    let r = [[0.4 * R, 0.9 * R], [-0.7 * R, 0.3 * R], [0.2 * R, -0.8 * R]];
+    for (let it = 0; it < 300; it++) r = r.map((ri, i) => { let d = [1, 0]; r.forEach((rj, j) => { if (j !== i) d = mul(d, sub(ri, rj)); }); return sub(ri, div(p(ri), d)); });
+    return r.map(z => [z[0], Math.abs(z[1]) < 1e-6 ? 0 : z[1]]);
+  }
+  function modeloLineal(kp, kd, v, L, tau, T) {
+    const Vw = vw(), h0 = half(), b = ficha.trocha, dt = 2e-4;
+    let y = 0.01, th = 0, D = 0, eP = null; const out = [];
+    for (let k = 0; k * dt <= T; k++) {
+      const ys = y + L * th, e = -ys / h0, de = eP === null ? 0 : (e - eP) / dt; eP = e;
+      const u = kp * e + kd * de;
+      D += (-D + 2 * Vw * u) / tau * dt; th += D / b * dt; y += v * th * dt;
+      if (k % 25 === 0) out.push([k * dt, ys]);
+    }
+    return out;
+  }
+  function simulador(kp, kd, vb, L, tau, T) {
+    const p = Object.assign({}, ficha, { kp, kd, vBase: vb, lookahead: L, ruido: 0, ki: 0 });
+    Object.assign(p, window.Ficha.derivar(p)); p.tauMotor = tau;
+    const S = window.SimCore.crearSim(p, "recta");
+    const kv = window.Ficha.vMotor(p) / p.vNom, w0 = vb * p.rpmMax * 2 * Math.PI / 60 * kv;
+    S.wL = w0; S.wR = w0; S.y += 0.01;
+    const out = [];
+    for (let k = 0; k * S.dtFis <= T; k++) {
+      if (k % 5 === 0) out.push([S.t, S.y + L * Math.sin(S.th)]);
+      S.paso(); if (S.estado === "fuera") break;
+    }
+    return out;
+  }
+  function lateral() {
+    const ink2 = color("--ink2"), ink = color("--ink"), ctl = color("--ctl"), ir = color("--ir"), line = color("--line"), bad = color("--bad"), ok = color("--ok");
+    const Vw = vw(), v = st.vb * Vw, K0 = 2 * Vw / (ficha.trocha * half()), L = st.L, tau = st.tl;
+    const a3 = tau, a2 = 1 + K0 * st.kd * L, a1 = K0 * (st.kp * L + st.kd * v), a0 = K0 * st.kp * v;
+    const routh = a2 * a1 - a3 * a0;
+    const polos = st.kp > 0 ? raices(a3, a2, a1, a0) : [];
+    const T = 2.5;
+    const lin = modeloLineal(st.kp, st.kd, v, L, tau, T), nl = simulador(st.kp, st.kd, st.vb, L, tau, T);
+    // --- respuesta temporal ---
+    const x0 = 60, W = 560, yc = 150, Hh = 120, ymax = 0.025;
+    const X = t => x0 + t / T * W, Y = y => yc - Math.max(-ymax, Math.min(ymax, y)) / ymax * Hh;
+    let h = "";
+    for (const mm of [-20, -10, 0, 10, 20]) h += `<line x1="${x0}" y1="${Y(mm / 1000)}" x2="${x0 + W}" y2="${Y(mm / 1000)}" stroke="${mm === 0 ? ink2 : line}"/><text x="${x0 - 8}" y="${Y(mm / 1000) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${mm} mm</text>`;
+    for (let t = 0; t <= T + 1e-9; t += 0.5) h += `<text x="${X(t)}" y="${yc + Hh + 20}" text-anchor="middle" font-size="12.5" fill="${ink2}">${fmt(t, 1)} s</text>`;
+    h += `<text x="${x0}" y="18" font-size="12.5" fill="${ink2}">desplazamiento de la línea bajo los sensores</text>`;
+    const pl = a => a.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+    h += `<polyline points="${pl(nl)}" fill="none" stroke="${ir}" stroke-width="2.4"/><polyline points="${pl(lin)}" fill="none" stroke="${ctl}" stroke-width="2.4" stroke-dasharray="7 4"/>`;
+    $("#svgResp4").innerHTML = h;
+    // --- plano s ---
+    const z = -v / L;
+    const ext = Math.max(10, ...polos.map(p => Math.abs(p[0])), Math.abs(z)) * 1.15, exti = Math.max(10, ...polos.map(p => Math.abs(p[1]))) * 1.15;
+    const cx = 380, cy = 150, sx = 340 / ext, sy = 120 / exti;
+    const PX = re => cx + re * sx, PY = im => cy - im * sy;
+    let g = `<rect x="${cx}" y="20" width="${640 - cx - 10}" height="260" fill="${bad}" opacity=".08"/><text x="${cx + 8}" y="36" font-size="12.5" fill="${bad}">inestable (Re &gt; 0)</text>`;
+    g += `<line x1="20" y1="${cy}" x2="630" y2="${cy}" stroke="${ink2}"/><line x1="${cx}" y1="20" x2="${cx}" y2="280" stroke="${ink2}"/>`;
+    g += `<text x="626" y="${cy - 6}" text-anchor="end" font-size="12.5" fill="${ink2}">Re</text><text x="${cx + 6}" y="30" font-size="12.5" fill="${ink2}">Im</text>`;
+    const pasoR = ext > 60 ? 20 : ext > 25 ? 10 : 5;
+    for (let r = -pasoR; PX(r) > 30; r -= pasoR) g += `<line x1="${PX(r)}" y1="${cy - 4}" x2="${PX(r)}" y2="${cy + 4}" stroke="${ink2}"/><text x="${PX(r)}" y="${cy + 18}" text-anchor="middle" font-size="12" fill="${ink2}">${r}</text>`;
+    g += `<circle cx="${PX(z)}" cy="${cy}" r="7" fill="none" stroke="${ink}" stroke-width="2.2"/>`;
+    for (const [re, im] of polos) { const c = re > 0 ? bad : ok, x = PX(Math.max(-ext, re)), y = PY(Math.max(-exti, Math.min(exti, im))); g += `<path d="M${x - 7} ${y - 7}L${x + 7} ${y + 7}M${x - 7} ${y + 7}L${x + 7} ${y - 7}" stroke="${c}" stroke-width="3"/>`; }
+    $("#svgPlano").innerHTML = g;
+    // --- métricas ---
+    const comp = polos.filter(p => p[1] > 0).sort((a, b) => b[0] - a[0])[0];
+    const zeta = comp ? -comp[0] / Math.hypot(comp[0], comp[1]) : 1;
+    const dom = polos.length ? Math.max(...polos.map(p => p[0])) : 0;
+    tarjetas("#resLat", [["v", fmt(v, 2, "m/s")], ["L / v", fmt(L / v * 1000, 0, "ms")], ["τ", fmt(tau * 1000, 0, "ms")], ["Routh a₂a₁ − a₃a₀", fmt(routh, 0)], ["ζ del par dominante", comp ? fmt(zeta, 2) : "sin oscilación"], ["Tiempo de asentamiento", dom < 0 ? fmt(4 / -dom, 2, "s") : "∞"]]);
+    let ver;
+    if (st.kp <= 0) ver = est("bad", "Sin Kp no hay corrección: el carrito no vuelve a la línea.");
+    else if (routh <= 0) ver = est("bad", st.kd === 0 ? `Inestable: con sólo P se necesita L/v > τ y aquí ${fmt(L / v * 1000, 0, "ms")} ≤ ${fmt(tau * 1000, 0, "ms")}.` : "Inestable: hay polos con parte real positiva. Aumenta Kd o baja la velocidad.");
+    else if (zeta < 0.3) ver = est("warn", "Estable pero muy poco amortiguado: oscila bastante antes de asentarse.");
+    else ver = est("ok", "Estable y razonablemente amortiguado.");
+    $("#verLat").innerHTML = ver;
+    decisiones();
+  }
+  slider("kp4", "kp", x => fmt(x, 2), lateral);
+  slider("kd4", "kd", x => fmt(x, 3), lateral);
+  slider("vb4", "vb", x => fmt(x * 100, 0, "%"), lateral);
+  slider("L4", "L", x => fmt(x * 1000, 0, "mm"), lateral);
+  const pintaTl = slider("tl", "tl", x => fmt(x * 1000, 0, "ms"), lateral);
+
+  /* ================= 4. MUESTREO ================= */
+  function muestreo() {
+    const T = ficha.periodo, tL = ficha.nSens * 112e-6, ret = T / 2 + tL;
+    tarjetas("#resMuestreo", [["Periodo de control T", fmt(T * 1000, 0, "ms")], ["Retardo equivalente", fmt(ret * 1000, 1, "ms")], ["τ de la ficha", fmt(ficha.tauMotor * 1000, 0, "ms")], ["τ / T", fmt(ficha.tauMotor / T, 0)]]);
+    $("#verMuestreo").innerHTML = ficha.tauMotor / T >= 10 ? est("ok", "El periodo es suficientemente corto: el modelo continuo es una buena aproximación.") : est("warn", "Periodo largo comparado con τ: el retardo ya pesa y conviene modelarlo.");
+  }
+
+  /* ================= 5. DECISIONES ================= */
+  function decisiones() {
+    if (!$("#tabDecM")) return;
+    const f = window.Ficha.leer(), fac = st.tau / tauTeo();
+    const v = f.vBase * vw();
+    const filas = [
+      ["Factor de corrección de τ", fmt(f.factorTau || 1, 2), fmt(fac, 2), "τ efectivo: " + fmt(tauTeo() * fac * 1000, 0, "ms")],
+      ["Anticipación L / v (ficha)", fmt(f.lookahead / v * 1000, 0, "ms"), "—", "Con sólo P se requiere L/v > τ"]
+    ];
+    $("#tabDecM tbody").innerHTML = filas.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num"><b>${r[2]}</b></td><td>${r[3]}</td></tr>`).join("");
+  }
+  $("#btnAplicarM").addEventListener("click", () => {
+    const fac = +(st.tau / tauTeo()).toFixed(3);
+    const m = $("#msgDecM");
+    if (st.fuente === "csv" && st.K > 0 && Math.abs(st.K - 0.6 * ficha.rpmMax) / (0.6 * ficha.rpmMax) > 0.6) { m.style.color = "var(--warn)"; m.textContent = "Ojo: K no se parece al de la ficha; revisen unidades o PWM de la prueba. Se guardó de todos modos."; }
+    else { m.style.color = "var(--ok)"; m.textContent = "Listo: el simulador ya usa el τ corregido. Las ganancias se ajustan en el Módulo 5."; }
+    const nueva = window.Ficha.guardar({ factorTau: fac });
+    Object.assign(ficha, nueva); st.tl = ficha.tauMotor; pintaTl();
+    cadena(); lateral(); muestreo(); decisiones();
+  });
+
+  function todo() { cadena(); if (!datos.length) demo(); else escalon(); lateral(); muestreo(); decisiones(); }
+  todo();
+  document.addEventListener("cambio-tema", todo);
+}
+</script>
+</body>
+</html>

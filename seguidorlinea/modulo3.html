@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Módulo 3 · Potencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.m3 .lab{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:900px){.m3 .lab{grid-template-columns:minmax(0,1fr)}}
+.m3 .lienzo{background:var(--card);border:1px solid var(--line);border-radius:var(--radio);padding:8px;overflow-x:auto}
+.m3 .lienzo svg{display:block;width:100%;height:auto;min-width:500px}
+.m3 .lienzo text{font-family:Barlow,sans-serif}
+.m3 .lienzo + .lienzo{margin-top:12px}
+.m3 .ctl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:center;padding:3px 0}
+.m3 .ctl output{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.m3 .ctl input{grid-column:1/3}
+.m3 .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:10px;margin-top:12px}
+.m3 .res div{background:var(--bg2);border-radius:8px;padding:8px 12px}
+.m3 .res b{display:block;font-size:21px;font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.m3 .res span{font-size:13px;color:var(--ink2)}
+.m3 .formula{font-family:"JetBrains Mono",monospace;font-size:14px;background:var(--bg2);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.m3 .veredicto{margin-top:12px;font-weight:600}
+.m3 .veredicto .est,.m3 td .est{white-space:normal}
+.m3 .botones{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+.m3 .botones button{font-size:14.5px}
+.m3 tr.sel td{background:var(--ir-suave)}
+.m3 .chk{display:grid;gap:8px}
+.m3 .chk label{display:flex;gap:10px;align-items:flex-start;font-size:15.5px}
+.m3 .chk input{min-height:0;width:20px;height:20px;flex:none;margin-top:2px;accent-color:var(--ele)}
+.m3 .tres{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.m3 .tres .card h3{font-size:19px}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+</head>
+<body data-pagina="m3">
+<main class="m3">
+<section class="band">
+  <div class="wrap">
+    <p><span class="tag t-ele">Módulo 3 · Electrónica y potencia</span></p>
+    <h1>Potencia: llevar la energía de la batería a los motores sin perderla en el camino</h1>
+    <p class="muted" style="font-size:18px">El microcontrolador decide, pero no puede mover un motor: sus pines dan unos 20 mA y un motor arranca pidiendo más de 1 A. Entre la batería, la lógica y los motores hay un puente H, un regulador, cables y capacitores, y cada uno puede quitarle velocidad al carrito o meterle ruido a los sensores.</p>
+    <nav class="scroll" aria-label="Secciones del módulo" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <a class="btn" href="#arbol">1. Árbol de potencia</a>
+      <a class="btn" href="#puente-h">2. Puente H</a>
+      <a class="btn" href="#pwm">3. PWM</a>
+      <a class="btn" href="#driver">4. Elegir el driver</a>
+      <a class="btn" href="#bateria">5. Batería y regulador</a>
+      <a class="btn" href="#ruido">6. Ruido</a>
+      <a class="btn" href="#decisiones-ele">7. Decisiones</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============ 1. ÁRBOL ============ -->
+<section class="band alt" id="arbol">
+  <div class="wrap">
+    <h2>1. El árbol de potencia: de dónde sale cada miliampere</h2>
+    <p>La batería alimenta dos mundos distintos. Los motores, ruidosos y con corrientes grandes, reciben el voltaje de la batería a través del puente H. La lógica (microcontrolador y sensores) necesita 5 V limpios, que salen de un regulador. Los dos mundos comparten la <b>tierra</b>, y por ahí se cuela casi todo el ruido.</p>
+    <div class="lienzo"><svg id="svgArbol" viewBox="0 0 980 300" role="img" aria-label="Árbol de potencia del carrito"></svg></div>
+    <div class="scroll" style="margin-top:16px"><table class="stack" id="tabCons"><thead><tr><th>Consumidor</th><th>Se alimenta de</th><th class="num">Corriente típica</th><th class="num">Corriente pico</th><th>De dónde sale el dato</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<!-- ============ 2. PUENTE H ============ -->
+<section class="band" id="puente-h">
+  <div class="wrap">
+    <h2>2. El puente H: cuatro interruptores para dos sentidos de giro</h2>
+    <p>Con cuatro transistores en forma de H, el motor puede recibir el voltaje en un sentido o en el otro. Cerrar los dos interruptores de un mismo lado provoca un <b>cortocircuito directo de la batería</b> (en inglés, <i>shoot-through</i>); los drivers integrados lo impiden por diseño. Elige un estado y sigue el camino de la corriente.</p>
+    <div class="lab">
+      <div class="lienzo"><svg id="svgH" viewBox="0 0 640 330" role="img" aria-label="Puente H con el camino de la corriente"></svg></div>
+      <div class="card">
+        <div class="botones" id="estadosH" role="group" aria-label="Estado del puente H"></div>
+        <p id="txtH" style="margin:0"></p>
+        <h3 style="margin-top:16px;font-size:18px">Cómo se pide cada estado a un TB6612FNG</h3>
+        <div class="scroll"><table id="tabVerdad"><thead><tr><th>IN1</th><th>IN2</th><th>PWM</th><th>Resultado</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. PWM ============ -->
+<section class="band alt" id="pwm">
+  <div class="wrap">
+    <h2>3. PWM: regular la velocidad prendiendo y apagando muy rápido</h2>
+    <p>El puente H no da "medio voltaje": conmuta entre el voltaje completo y cero. El motor tiene inductancia y la corriente no puede cambiar de golpe, así que, si la conmutación es suficientemente rápida comparada con su constante eléctrica τ<sub>e</sub> = L/R, el motor "promedia" y responde al <b>ciclo de trabajo</b> D. Si es lenta, la corriente sube y baja en cada periodo: más pérdidas, más ruido eléctrico y un zumbido audible.</p>
+    <div class="formula">L·di/dt = v(t) − R·i − E &nbsp;&nbsp; V<sub>prom</sub> = D·V<sub>motor</sub> &nbsp;&nbsp; τ<sub>e</sub> = L/R</div>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="svgPwm" viewBox="0 0 640 330" role="img" aria-label="Voltaje PWM y corriente del motor"></svg></div>
+        <p class="small muted">Arriba: voltaje aplicado al motor. Abajo: corriente del motor (línea verde) y su promedio (punteada). Se muestran tres periodos.</p>
+      </div>
+      <div class="card">
+        <div class="botones" id="frecs" role="group" aria-label="Frecuencia de PWM"></div>
+        <div class="ctl"><label for="c_D">Ciclo de trabajo D</label><output id="o_D"></output><input type="range" id="c_D" min="0.05" max="0.95" step="0.01"></div>
+        <div class="res" id="resPwm"></div>
+        <p class="veredicto" id="verPwm"></p>
+        <p class="small muted" style="margin:10px 0 0">Motor modelado con R = 4.6 Ω (7.4 V / 1.6 A de arranque), L = 0.6 mH y la fuerza contraelectromotriz E del motor girando a velocidad estable. Durante el apagado, el driver pone el motor en freno lento (ambos transistores bajos), como el TB6612.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. DRIVER ============ -->
+<section class="band" id="driver">
+  <div class="wrap">
+    <h2>4. Elegir el driver: el voltaje que se queda en el camino</h2>
+    <p class="nota" id="m3NotaV" hidden></p>
+    <p>Todo puente H tiene una caída de voltaje: en el L298N, con transistores bipolares, es de casi 2 V; en los de MOSFET (TB6612FNG, DRV8833) es una resistencia pequeña, R<sub>on</sub>·I. Ese voltaje no llega al motor, así que el carrito pierde velocidad máxima y el driver se calienta.</p>
+    <div class="lab">
+      <div>
+        <div class="scroll"><table class="stack" id="tabDrv"><thead><tr><th>Driver</th><th class="num">V motor</th><th class="num">I continua / pico</th><th class="num">Caída a I trabajo</th><th class="num">Llega al motor</th><th class="num">Calor (2 motores)</th><th>Diagnóstico</th></tr></thead><tbody></tbody></table></div>
+        <p class="small muted">Haz clic en una fila para elegir el driver. Valores típicos de las hojas de datos de cada fabricante; antes de comprar, verifica la versión exacta del módulo.</p>
+      </div>
+      <div class="card">
+        <div class="ctl"><label for="c_I">Corriente de trabajo por motor</label><output id="o_I"></output><input type="range" id="c_I" min="0.1" max="1.6" step="0.05"></div>
+        <div class="res" id="resDrv"></div>
+        <p class="veredicto" id="verDrv"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. BATERÍA ============ -->
+<section class="band alt" id="bateria">
+  <div class="wrap">
+    <h2>5. Batería y regulador: el voltaje no es constante</h2>
+    <p>Una LiPo de 2 celdas (2S) da 8.4 V recién cargada, alrededor de 7.4 V a media carga y no debe bajar de unos 6.6 V. Si el PWM es fijo, el carrito <b>va más lento conforme se descarga la batería</b>, y las ganancias del PID dejan de corresponder. La solución típica es medir V<sub>bat</sub> con un divisor resistivo y escalar el PWM en el firmware: es una <b>compensación por prealimentación</b>.</p>
+    <div class="formula">D<sub>aplicado</sub> = D<sub>PID</sub> · V<sub>ref</sub> / V<sub>motor</sub> &nbsp;&nbsp; V<sub>ADC</sub> = V<sub>bat</sub>·R2/(R1+R2) &nbsp;&nbsp; P<sub>regulador lineal</sub> = (V<sub>bat</sub> − 5 V)·I<sub>5V</sub></div>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="svgBat" viewBox="0 0 640 300" role="img" aria-label="Voltaje de la batería según su carga y velocidad resultante"></svg></div>
+        <p class="small muted">Línea gris: voltaje de la LiPo 2S. Línea verde: velocidad máxima del carrito, en % de la de batería llena, sin compensar. Línea azul: con compensación en el firmware.</p>
+      </div>
+      <div class="card">
+        <div class="ctl"><label for="c_soc">Estado de carga</label><output id="o_soc"></output><input type="range" id="c_soc" min="0" max="100" step="1"></div>
+        <div class="ctl"><label for="c_mah">Capacidad de la batería</label><output id="o_mah"></output><input type="range" id="c_mah" min="150" max="2200" step="50"></div>
+        <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="c_comp" style="min-height:0;width:20px;height:20px"> Compensar el voltaje en el firmware</label>
+        <label for="c_reg" style="display:block;margin-top:6px">Regulador de 5 V</label>
+        <select id="c_reg" style="width:100%;margin-top:4px"></select>
+        <div class="res" id="resBat"></div>
+        <p class="veredicto" id="verBat"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. RUIDO ============ -->
+<section class="band" id="ruido">
+  <div class="wrap">
+    <h2>6. Ruido: cuando los motores "hablan" con los sensores</h2>
+    <p>Cada conmutación del PWM y cada chispa en las escobillas del motor generan picos de corriente. Si comparten cables y tierra con los sensores, esos picos aparecen como ruido en el ADC, y luego en el término derivativo del PID, que lo amplifica. Esta es la lista mínima antes de echar a andar el carrito:</p>
+    <div class="dos">
+      <div class="chk" id="chkRuido"></div>
+      <div class="tres" style="grid-template-columns:minmax(0,1fr)">
+        <div class="card"><h3>¿Por qué un capacitor en el motor?</h3><p class="small" style="margin:0">Un cerámico de 100 nF soldado entre las terminales del motor da un camino corto a los picos de alta frecuencia de las escobillas, que si no viajarían por los cables y se acoplarían a los sensores.</p></div>
+        <div class="card"><h3>¿Por qué tierra en estrella?</h3><p class="small" style="margin:0">Si la corriente de los motores regresa por la misma pista que la tierra de los sensores, la caída de voltaje en esa pista (I·R) se suma a la lectura. Llevar cada tierra por separado a un solo punto, junto a la batería, evita que una corriente "ensucie" la referencia de la otra.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. DECISIONES ============ -->
+<section class="band alt" id="decisiones-ele">
+  <div class="wrap">
+    <h2>7. Decisiones eléctricas para la ficha</h2>
+    <div class="scroll"><table class="stack" id="tabDecE"><thead><tr><th>Decisión</th><th class="num">En la ficha</th><th class="num">Propuesta</th><th>Consecuencia</th></tr></thead><tbody></tbody></table></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px">
+      <button class="pri" type="button" id="btnAplicarE">Aplicar al carrito</button>
+      <a class="btn" href="simulador.html">Probarlo en el simulador</a>
+      <span class="small" id="msgDecE" role="status"></span>
+    </div>
+    <h2 style="margin-top:36px">Actividad</h2>
+    <ol>
+      <li>Con el osciloscopio, midan el voltaje en las terminales del motor con PWM a 490 Hz y a 20 kHz. Compárenlo con la sección 3 y anoten si se escucha el zumbido.</li>
+      <li>Midan la caída real del driver: voltaje de batería menos voltaje en el motor, con el motor frenado con la mano (con cuidado) y libre.</li>
+      <li>En el simulador, elijan L298N (caída ≈ 2 V) y luego TB6612. ¿Cuánto cambia el tiempo de vuelta?</li>
+      <li>Activen la falla "Batería baja" en el simulador con y sin compensación de voltaje. Expliquen por qué la compensación deja de funcionar cuando el PWM se satura.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<script>
+{
+  const $ = s => document.querySelector(s);
+  const ficha = window.Ficha.leer();
+  const color = n => { const e = document.createElement("span"); e.style.color = "var(" + n + ")"; document.body.append(e); const c = getComputedStyle(e).color; e.remove(); return c; };
+  const tarjetas = (sel, items) => { $(sel).innerHTML = items.map(x => `<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join(""); };
+  const est = (c, t) => `<span class="est ${c}">${c === "ok" ? "✓" : c === "warn" ? "!" : "✗"} ${t}</span>`;
+  const DRIVERS = {
+    "L298N":     { vmin: 4.5, vmax: 46,   icont: 2.0, ipico: 3.0, caida: I => 1.4 + 0.45 * I, tipo: "Bipolar, módulo grande con disipador" },
+    "TB6612FNG": { vmin: 2.5, vmax: 13.5, icont: 1.2, ipico: 3.2, caida: I => 0.5 * I,        tipo: "MOSFET, R_on ≈ 0.5 Ω (alto + bajo)" },
+    "DRV8833":   { vmin: 2.7, vmax: 10.8, icont: 1.5, ipico: 2.0, caida: I => 0.36 * I,       tipo: "MOSFET, R_on ≈ 0.36 Ω (alto + bajo)" }
+  };
+  const REGS = {
+    "7805":    { n: "7805 lineal (TO-220)", drop: 2.0, tja: 50, buck: false },
+    "AMS1117": { n: "AMS1117-5.0 lineal (SOT-223)", drop: 1.1, tja: 90, buck: false },
+    "Buck":    { n: "Convertidor conmutado (buck)", drop: 0.8, tja: 0, buck: true, eta: 0.85 }
+  };
+  const st = { estadoH: "adelante", f: 490, D: 0.5, I: ficha.iTrabajo, drv: DRIVERS[ficha.driver] ? ficha.driver : "TB6612FNG", soc: 70, mah: ficha.bateriaMah, comp: !!ficha.compensarV, reg: REGS[ficha.regulador] ? ficha.regulador : "AMS1117" };
+  const If = () => (5 - 1.25) / ficha.rLed;
+  const I5 = () => ficha.nSens * If() + 0.045 + 0.002 + ficha.nSens * 0.0005;
+  function slider(id, clave, fmtf, alCambiar) {
+    const i = $("#c_" + id), o = $("#o_" + id);
+    i.value = st[clave];
+    const pinta = () => { o.textContent = fmtf(st[clave]); };
+    i.addEventListener("input", () => { st[clave] = parseFloat(i.value); pinta(); alCambiar(); });
+    pinta();
+  }
+
+  /* ================= 1. ÁRBOL ================= */
+  function arbol() {
+    const ink = color("--ink"), ink2 = color("--ink2"), ele = color("--ele"), sen = color("--sen"), prg = color("--prg"), mec = color("--mec"), int = color("--int");
+    const caja = (x, y, w, h, c, t1, t2) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="9" fill="none" stroke="${c}" stroke-width="2.2"/><text x="${x + w / 2}" y="${y + h / 2 - 3}" text-anchor="middle" font-size="15" font-weight="700" fill="${ink}">${t1}</text><text x="${x + w / 2}" y="${y + h / 2 + 15}" text-anchor="middle" font-size="12.5" fill="${ink2}">${t2}</text>`;
+    const fl = (d, c, w = 2.5) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" marker-end="url(#fa)"/>`;
+    const drv = DRIVERS[st.drv], reg = REGS[st.reg];
+    let h = `<defs><marker id="fa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="${ink2}"/></marker></defs>`;
+    h += caja(20, 110, 150, 70, ele, "Batería LiPo 2S", "6.6 – 8.4 V · " + st.mah + " mAh");
+    h += caja(210, 110, 120, 70, int, "Interruptor", "y fusible");
+    h += caja(390, 30, 170, 70, ele, "Puente H", st.drv);
+    h += caja(390, 190, 170, 70, ele, "Regulador 5 V", reg.n.split(" (")[0]);
+    h += caja(630, 20, 150, 50, mec, "Motor izquierdo", "");
+    h += caja(630, 80, 150, 50, mec, "Motor derecho", "");
+    h += caja(630, 170, 150, 50, prg, "Microcontrolador", "≈ 45 mA");
+    h += caja(630, 230, 150, 50, sen, ficha.nSens + " sensores IR", fmt(ficha.nSens * If() * 1000, 0, "mA") + " en LEDs");
+    h += caja(820, 110, 140, 70, prg, "Divisor V_bat", "→ entrada ADC");
+    h += fl("M170 145 H206", ink2);
+    h += fl("M330 135 C 360 135, 360 65, 386 65", ele, 3);
+    h += fl("M330 155 C 360 155, 360 225, 386 225", ink2);
+    h += fl("M560 55 H626", mec, 3) + fl("M560 75 C 595 75, 595 105, 626 105", mec, 3);
+    h += fl("M560 215 C 595 215, 595 195, 626 195", ink2) + fl("M560 235 C 595 235, 595 255, 626 255", ink2);
+    h += fl("M780 195 C 800 195, 800 170, 816 160", prg, 1.6);
+    h += fl("M705 168 V 136", prg, 1.6);
+    h += `<text x="364" y="96" font-size="12.5" fill="${ele}" text-anchor="end">V_bat</text><text x="364" y="214" font-size="12.5" fill="${ink2}" text-anchor="end">V_bat</text>`;
+    h += `<text x="594" y="292" font-size="12.5" fill="${ink2}" text-anchor="middle">PWM</text>`;
+    h += `<line x1="20" y1="292" x2="560" y2="292" stroke="${ink2}" stroke-width="1.5" stroke-dasharray="5 5"/><text x="20" y="286" font-size="12.5" fill="${ink2}">tierra común (GND) para todo el sistema</text>`;
+    $("#svgArbol").innerHTML = h;
+    const filas = [
+      ["2 motores (siguiendo la línea)", "Batería → puente H", fmt(2 * st.I, 2, "A"), fmt(2 * ficha.iStall, 1, "A"), "Módulo 1: corriente de arranque del motor"],
+      [ficha.nSens + " LEDs infrarrojos", "5 V regulados", fmt(ficha.nSens * If() * 1000, 0, "mA"), fmt(ficha.nSens * If() * 1000, 0, "mA"), "Módulo 2: R del LED = " + ficha.rLed + " Ω"],
+      [ficha.nSens + " fototransistores", "5 V regulados", fmt(ficha.nSens * 0.5, 0, "mA"), fmt(ficha.nSens * 0.5, 0, "mA"), "Módulo 2: V/R de carga"],
+      ["Microcontrolador (Arduino Nano/Uno)", "5 V regulados", "45 mA", "60 mA", "Hoja de datos de la tarjeta"],
+      ["Lógica del puente H", "5 V regulados", "2 mA", "2 mA", "Hoja de datos del driver"]
+    ];
+    $("#tabCons tbody").innerHTML = filas.map(r => `<tr>${r.map((c, i) => `<td${i === 2 || i === 3 ? ' class="num"' : ""}>${c}</td>`).join("")}</tr>`).join("") +
+      `<tr><td><b>Total</b></td><td></td><td class="num"><b>${fmt(2 * st.I + I5(), 2, "A")}</b></td><td class="num"><b>${fmt(2 * ficha.iStall + I5(), 2, "A")}</b></td><td></td></tr>`;
+  }
+
+  /* ================= 2. PUENTE H ================= */
+  const ESTADOS = {
+    adelante: { t: "Adelante", q: [1, 0, 0, 1], txt: "Q1 y Q4 cerrados: la corriente entra por la terminal izquierda del motor y sale por la derecha. El motor gira hacia adelante.", camino: "fwd" },
+    atras:    { t: "Atrás",    q: [0, 1, 1, 0], txt: "Q3 y Q2 cerrados: la corriente cruza el motor en sentido contrario y el giro se invierte.", camino: "rev" },
+    freno:    { t: "Freno",    q: [0, 1, 0, 1], txt: "Los dos transistores de abajo cerrados: las terminales del motor quedan en corto. La fuerza contraelectromotriz hace circular corriente que lo frena rápido. Es el estado que usa el TB6612 cuando PWM = 0.", camino: "brk" },
+    libre:    { t: "Libre",    q: [0, 0, 0, 0], txt: "Todo abierto: el motor queda desconectado y se detiene solo, por fricción. Frena mucho más lento.", camino: "" },
+    corto:    { t: "Q1 + Q2 (¡prohibido!)", q: [1, 1, 0, 0], txt: "Q1 y Q2 cerrados a la vez conectan la batería directamente a tierra a través del transistor: la corriente sólo la limitan las resistencias internas y el driver se destruye. Los drivers integrados insertan un \"tiempo muerto\" para que nunca ocurra.", camino: "short" }
+  };
+  $("#estadosH").innerHTML = Object.keys(ESTADOS).map(k => `<button type="button" data-k="${k}">${ESTADOS[k].t}</button>`).join("");
+  $("#estadosH").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { st.estadoH = b.dataset.k; puenteH(); } });
+  $("#tabVerdad tbody").innerHTML = [["H", "L", "H", "Adelante", "adelante"], ["L", "H", "H", "Atrás", "atras"], ["H", "H", "—", "Freno (corto)", "freno"], ["H/L", "L/H", "L", "Freno (corto) durante el apagado del PWM", "freno"], ["L", "L", "H", "Libre (alta impedancia)", "libre"]]
+    .map(r => `<tr data-k="${r[4]}"><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join("");
+  function puenteH() {
+    const E = ESTADOS[st.estadoH];
+    document.querySelectorAll("#estadosH button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === st.estadoH));
+    document.querySelectorAll("#tabVerdad tbody tr").forEach(tr => tr.classList.toggle("sel", tr.dataset.k === st.estadoH));
+    const ink = color("--ink"), ink2 = color("--ink2"), ele = color("--ele"), ir = color("--ir"), bad = color("--bad"), card = color("--card");
+    const xL = 170, xR = 470, yT = 40, yB = 300, yM = 170;
+    let h = `<defs><marker id="fh" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="${E.camino === "short" ? bad : ir}"/></marker></defs>`;
+    h += `<line x1="${xL}" y1="${yT}" x2="${xR}" y2="${yT}" stroke="${ink}" stroke-width="2.5"/><line x1="${xL}" y1="${yB}" x2="${xR}" y2="${yB}" stroke="${ink}" stroke-width="2.5"/>`;
+    h += `<line x1="320" y1="${yT}" x2="320" y2="10" stroke="${ink}" stroke-width="2.5"/><text x="330" y="22" font-size="14" font-weight="700" fill="${ink}">+V motor (${fmt(ficha.vBat, 1, "V")})</text>`;
+    h += `<line x1="320" y1="${yB}" x2="320" y2="322" stroke="${ink}" stroke-width="2.5"/><text x="330" y="320" font-size="14" font-weight="700" fill="${ink}">GND</text>`;
+    for (const x of [xL, xR]) h += `<line x1="${x}" y1="${yT}" x2="${x}" y2="${yB}" stroke="${ink}" stroke-width="2.5"/>`;
+    // interruptores
+    const Q = [[xL, 105, "Q1"], [xL, 235, "Q2"], [xR, 105, "Q3"], [xR, 235, "Q4"]];
+    Q.forEach(([x, y, n], i) => {
+      const on = E.q[i];
+      h += `<rect x="${x - 26}" y="${y - 24}" width="52" height="48" rx="8" fill="${on ? ele : card}" stroke="${on ? ele : ink2}" stroke-width="2"/>`;
+      h += `<text x="${x}" y="${y - 2}" text-anchor="middle" font-size="15" font-weight="700" fill="${on ? card : ink}">${n}</text><text x="${x}" y="${y + 15}" text-anchor="middle" font-size="11.5" fill="${on ? card : ink2}">${on ? "cerrado" : "abierto"}</text>`;
+    });
+    // motor
+    h += `<line x1="${xL}" y1="${yM}" x2="285" y2="${yM}" stroke="${ink}" stroke-width="2.5"/><line x1="355" y1="${yM}" x2="${xR}" y2="${yM}" stroke="${ink}" stroke-width="2.5"/>`;
+    h += `<circle cx="320" cy="${yM}" r="35" fill="${card}" stroke="${ink}" stroke-width="2.5"/><text x="320" y="${yM + 7}" text-anchor="middle" font-size="22" font-weight="700" fill="${ink}">M</text>`;
+    h += `<text x="${xL - 40}" y="${yM + 5}" text-anchor="end" font-size="13" fill="${ink2}">A</text><text x="${xR + 40}" y="${yM + 5}" font-size="13" fill="${ink2}">B</text>`;
+    // camino de corriente
+    const cam = {
+      fwd: [[xL + 40, yT + 14], [xL + 40, yM - 16], [xR - 40, yM - 16], [xR - 40, yB - 14]],
+      rev: [[xR - 40, yT + 14], [xR - 40, yM + 16], [xL + 40, yM + 16], [xL + 40, yB - 14]],
+      brk: [[xR - 40, yB - 14], [xR - 40, yM + 16], [xL + 40, yM + 16], [xL + 40, yB - 14], [xR - 40, yB - 14]],
+      short: [[xL - 46, yT + 10], [xL - 46, yB - 10]]
+    }[E.camino];
+    if (cam) {
+      const c = E.camino === "short" ? bad : ir;
+      h += `<polyline points="${cam.map(p => p.join(",")).join(" ")}" fill="none" stroke="${c}" stroke-width="4" stroke-dasharray="10 7" marker-end="url(#fh)" opacity=".9"/>`;
+      if (E.camino === "short") h += `<text x="20" y="${yM}" font-size="15" font-weight="700" fill="${bad}">¡corto!</text>`;
+    }
+    $("#svgH").innerHTML = h;
+    $("#txtH").textContent = E.txt;
+  }
+
+  /* ================= 3. PWM ================= */
+  const FRECS = [[490, "490 Hz (Arduino, pines 3, 9, 10, 11)"], [980, "980 Hz (pines 5 y 6)"], [4000, "4 kHz"], [20000, "20 kHz"]];
+  $("#frecs").innerHTML = FRECS.map(f => `<button type="button" data-f="${f[0]}">${f[1]}</button>`).join("");
+  $("#frecs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { st.f = +b.dataset.f; pwm(); } });
+  function pwm() {
+    document.querySelectorAll("#frecs button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.f === st.f));
+    const R = 4.6, L = 0.6e-3, V = window.Ficha.vMotor(ficha), T = 1 / st.f, D = st.D, E = D * V * 0.85;
+    const n = 600, dt = T / n, per = 8;
+    let i = (D * V - E) / R; const pts = [];
+    for (let k = 0; k < per * n; k++) {
+      const t = k * dt, on = (t % T) < D * T, v = on ? V : 0;
+      i += (v - R * i - E) / L * dt;
+      if (k >= (per - 3) * n) pts.push([t - (per - 3) * T, v, i]);
+    }
+    const iav = pts.reduce((a, p) => a + p[2], 0) / pts.length;
+    const irms = Math.sqrt(pts.reduce((a, p) => a + p[2] * p[2], 0) / pts.length);
+    const imax = Math.max(...pts.map(p => p[2])), imin = Math.min(...pts.map(p => p[2]));
+    const ink2 = color("--ink2"), ink = color("--ink"), ele = color("--ele"), line = color("--line"), bad = color("--bad");
+    const x0 = 64, W = 556, X = t => x0 + t / (3 * T) * W;
+    const yV0 = 110, HV = 80, YV = v => yV0 - v / V * HV;
+    const ilo = Math.min(-0.2, imin * 1.1), ihi = Math.max(0.6, imax * 1.1);
+    const yI0 = 300, HI = 150, YI = c => yI0 - (c - ilo) / (ihi - ilo) * HI;
+    let h = `<text x="${x0}" y="20" font-size="13" fill="${ink2}">v(t) aplicado al motor</text>`;
+    h += `<line x1="${x0}" y1="${yV0}" x2="${x0 + W}" y2="${yV0}" stroke="${line}"/><text x="${x0 - 8}" y="${YV(V) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${fmt(V, 1, "V")}</text><text x="${x0 - 8}" y="${yV0 + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">0 V</text>`;
+    h += `<polyline points="${pts.filter((_, k) => k % 2 === 0).map(p => X(p[0]).toFixed(1) + "," + YV(p[1]).toFixed(1)).join(" ")}" fill="none" stroke="${ink}" stroke-width="2"/>`;
+    h += `<text x="${x0}" y="${yI0 - HI - 10}" font-size="13" fill="${ink2}">i(t) del motor</text>`;
+    const pasoI = (ihi - ilo) > 2 ? 0.5 : (ihi - ilo) > 1 ? 0.25 : 0.1;
+    for (let c = Math.ceil(ilo / pasoI) * pasoI; c <= ihi; c += pasoI) h += `<line x1="${x0}" y1="${YI(c)}" x2="${x0 + W}" y2="${YI(c)}" stroke="${line}"/><text x="${x0 - 8}" y="${YI(c) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${fmt(c, 2, "A")}</text>`;
+    h += `<line x1="${x0}" y1="${YI(0)}" x2="${x0 + W}" y2="${YI(0)}" stroke="${ink2}" stroke-width="1.2"/>`;
+    h += `<polyline points="${pts.filter((_, k) => k % 2 === 0).map(p => X(p[0]).toFixed(1) + "," + YI(p[2]).toFixed(1)).join(" ")}" fill="none" stroke="${ele}" stroke-width="2.5"/>`;
+    h += `<line x1="${x0}" y1="${YI(iav)}" x2="${x0 + W}" y2="${YI(iav)}" stroke="${ele}" stroke-width="1.5" stroke-dasharray="6 5"/>`;
+    h += `<text x="${x0 + W}" y="${yI0 + 22}" text-anchor="end" font-size="12.5" fill="${ink2}">3 periodos = ${fmt(3 * T * 1000, 3, "ms")}</text>`;
+    $("#svgPwm").innerHTML = h;
+    const rizo = imax - imin, tauE = L / R;
+    tarjetas("#resPwm", [["Periodo T", fmt(T * 1e6, 0, "µs")], ["τe = L/R", fmt(tauE * 1e6, 0, "µs")], ["V promedio", fmt(D * V, 2, "V")], ["Rizo de corriente", fmt(rizo, 2, "A")], ["I promedio / RMS", fmt(iav, 2) + " / " + fmt(irms, 2, "A")], ["Pérdida extra en R", fmt(((irms * irms) / Math.max(iav * iav, 1e-6) - 1) * 100, 0, "%")]]);
+    $("#verPwm").innerHTML = T > 3 * tauE ? est("bad", "T ≫ τe: la corriente sube y baja por completo en cada periodo, e incluso se invierte (frena). Pérdidas altas y zumbido audible.")
+      : st.f < 16000 ? est("warn", "Rizo moderado, pero la frecuencia es audible: el carrito va a chillar.")
+      : est("ok", "Corriente casi constante y frecuencia fuera del rango audible.");
+  }
+  slider("D", "D", x => fmt(x * 100, 0, "%"), pwm);
+
+  /* ================= 4. DRIVER ================= */
+  function driver() {
+    const vmaxBat = 8.4, filas = Object.keys(DRIVERS).map(k => {
+      const d = DRIVERS[k], c = d.caida(st.I), vm = ficha.vBat - c, calor = 2 * c * st.I;
+      let dg;
+      if (vmaxBat > d.vmax) dg = ["bad", "La batería llena excede su voltaje máximo"];
+      else if (ficha.iStall > d.ipico) dg = ["bad", "La corriente de arranque excede su pico"];
+      else if (st.I > d.icont) dg = ["bad", "Corriente de trabajo arriba de su límite continuo"];
+      else if (c > 1) dg = ["warn", "Pierde " + fmt(c / ficha.vBat * 100, 0, "%") + " del voltaje y se calienta"];
+      else dg = ["ok", "Adecuado"];
+      return { k, d, c, vm, calor, dg };
+    });
+    $("#tabDrv tbody").innerHTML = filas.map(f => `<tr data-k="${f.k}" class="${f.k === st.drv ? "sel" : ""}" style="cursor:pointer"><td><b>${f.k}</b><br><span class="small muted">${f.d.tipo}</span></td><td class="num">${f.d.vmin}–${f.d.vmax} V</td><td class="num">${fmt(f.d.icont, 1)} / ${fmt(f.d.ipico, 1, "A")}</td><td class="num">${fmt(f.c, 2, "V")}</td><td class="num">${fmt(f.vm, 2, "V")}</td><td class="num">${fmt(f.calor, 2, "W")}</td><td><span class="est ${f.dg[0]}">${f.dg[1]}</span></td></tr>`).join("");
+    const f = filas.find(x => x.k === st.drv);
+    const perdidaV = 1 - f.vm / ficha.vBat;
+    tarjetas("#resDrv", [["Driver elegido", st.drv], ["Caída", fmt(f.c, 2, "V")], ["Velocidad máxima perdida", fmt(perdidaV * 100, 0, "%")], ["Calor en el driver", fmt(f.calor, 2, "W")]]);
+    $("#verDrv").innerHTML = est(f.dg[0], f.dg[1] === "Adecuado" ? "Adecuado para este carrito." : f.dg[1] + ".");
+    decisiones(); arbol();
+  }
+  $("#tabDrv tbody").addEventListener("click", e => { const tr = e.target.closest("tr[data-k]"); if (tr) { st.drv = tr.dataset.k; driver(); bateria(); } });
+  slider("I", "I", x => fmt(x, 2, "A"), () => { driver(); bateria(); });
+
+  /* ================= 5. BATERÍA ================= */
+  const CURVA = [[0, 3.30], [5, 3.50], [10, 3.60], [20, 3.70], [40, 3.77], [60, 3.85], [80, 3.97], [100, 4.20]];
+  const vCelda = s => { for (let i = 1; i < CURVA.length; i++) if (s <= CURVA[i][0]) { const [a, va] = CURVA[i - 1], [b, vb] = CURVA[i]; return va + (vb - va) * (s - a) / (b - a); } return 4.2; };
+  $("#c_reg").innerHTML = Object.keys(REGS).map(k => `<option value="${k}">${REGS[k].n}</option>`).join("");
+  $("#c_reg").value = st.reg;
+  $("#c_reg").addEventListener("change", () => { st.reg = $("#c_reg").value; bateria(); decisiones(); arbol(); });
+  $("#c_comp").checked = st.comp;
+  $("#c_comp").addEventListener("change", () => { st.comp = $("#c_comp").checked; bateria(); decisiones(); });
+  function bateria() {
+    const ink2 = color("--ink2"), ink = color("--ink"), ele = color("--ele"), ctl = color("--ctl"), line = color("--line"), bad = color("--bad"), ir = color("--ir");
+    const c = DRIVERS[st.drv].caida(st.I), vFull = 8.4 - c, KREF = Math.min(0.9 * ficha.vNom, 0.89 * ficha.vBat - c);
+    const vel = (vb, comp) => { const vm = Math.max(0, vb - c); return comp ? Math.min(vm, KREF) / Math.min(vFull, KREF) : vm / vFull; };
+    const x0 = 60, W = 520, y0 = 250, H = 210, X = s => x0 + s / 100 * W;
+    const YV = v => y0 - (v - 6) / (8.6 - 6) * H, YP = p => y0 - p / 110 * H;
+    let h = "";
+    for (const v of [6, 6.5, 7, 7.5, 8, 8.5]) h += `<line x1="${x0}" y1="${YV(v)}" x2="${x0 + W}" y2="${YV(v)}" stroke="${line}"/><text x="${x0 - 8}" y="${YV(v) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${fmt(v, 1, "V")}</text>`;
+    for (const p of [0, 25, 50, 75, 100]) h += `<text x="${x0 + W + 8}" y="${YP(p) + 4}" font-size="12.5" fill="${ele}">${p}%</text>`;
+    for (let s = 0; s <= 100; s += 20) h += `<text x="${X(s)}" y="${y0 + 18}" text-anchor="middle" font-size="12.5" fill="${ink2}">${s}%</text>`;
+    h += `<text x="${x0 + W}" y="${y0 + 36}" text-anchor="end" font-size="12.5" fill="${ink2}">estado de carga</text>`;
+    h += `<rect x="${X(0)}" y="${YV(6.6)}" width="${X(12) - X(0)}" height="${y0 - YV(6.6)}" fill="${bad}" opacity=".12"/><text x="${X(1)}" y="${YV(6.6) - 6}" font-size="12" fill="${bad}">no descargar más (6.6 V)</text>`;
+    let pv = "", pn = "", pc = "";
+    for (let s = 0; s <= 100; s += 1) { const vb = 2 * vCelda(s); pv += `${X(s)},${YV(vb).toFixed(1)} `; pn += `${X(s)},${YP(vel(vb, false) * 100).toFixed(1)} `; pc += `${X(s)},${YP(vel(vb, true) * 100).toFixed(1)} `; }
+    h += `<polyline points="${pv}" fill="none" stroke="${ink2}" stroke-width="3" opacity=".6"/><polyline points="${pn}" fill="none" stroke="${ele}" stroke-width="2.5"/><polyline points="${pc}" fill="none" stroke="${ctl}" stroke-width="2.5" stroke-dasharray="7 5"/>`;
+    const vb = 2 * vCelda(st.soc);
+    h += `<line x1="${X(st.soc)}" y1="${y0}" x2="${X(st.soc)}" y2="${y0 - H}" stroke="${ir}" stroke-width="2"/><circle cx="${X(st.soc)}" cy="${YV(vb)}" r="5" fill="${ink}"/>`;
+    $("#svgBat").innerHTML = h;
+    // regulador y autonomía
+    const reg = REGS[st.reg], i5 = I5();
+    const pReg = reg.buck ? 5 * i5 * (1 / reg.eta - 1) : (vb - 5) * i5, dT = reg.buck ? 0 : pReg * reg.tja;
+    const iTot = 2 * st.I + (reg.buck ? 5 * i5 / (reg.eta * vb) : i5);
+    const aut = 0.8 * st.mah / 1000 / iTot * 60;
+    const v100 = vel(vb, st.comp) * 100;
+    tarjetas("#resBat", [["V batería", fmt(vb, 2, "V")], ["Velocidad máx. vs. llena", fmt(v100, 0, "%")], ["Consumo total", fmt(iTot, 2, "A")], ["Autonomía (80 %)", fmt(aut, 0, "min")], ["Calor en regulador", fmt(pReg, 2, "W")], reg.buck ? ["Eficiencia", "≈ 85 %"] : ["Aumento de temperatura", fmt(dT, 0, "°C")], ["Divisor 10 k/10 k → ADC", fmt(vb / 2, 2, "V") + " (" + Math.round(vb / 2 / 5 * 1023) + ")"]]);
+    let v;
+    if (vb - reg.drop < 5) v = est("bad", `Con ${fmt(vb, 2, "V")} el ${reg.n.split(" (")[0]} ya no puede dar 5 V (necesita ${fmt(reg.drop, 1, "V")} de margen): la lógica se reinicia.`);
+    else if (dT > 60) v = est("warn", "El regulador se calienta demasiado: ponle disipador o usa uno conmutado.");
+    else if (!st.comp && v100 < 90) v = est("warn", "Sin compensación, el carrito ya va " + fmt(100 - v100, 0, "%") + " más lento que con la batería llena: el PID sintonizado ya no corresponde.");
+    else v = est("ok", st.comp ? "La compensación mantiene la velocidad mientras el PWM no se sature." : "Batería con buena carga.");
+    $("#verBat").innerHTML = v;
+    arbol(); decisiones();
+  }
+  slider("soc", "soc", x => fmt(x, 0, "%"), bateria);
+  slider("mah", "mah", x => fmt(x, 0, "mAh"), bateria);
+
+  /* ================= 6. RUIDO ================= */
+  const CHK = ["Capacitor cerámico de 100 nF soldado en las terminales de cada motor.", "Capacitor electrolítico de 100–470 µF junto a la entrada de potencia del puente H.", "100 nF de desacoplo junto a cada circuito integrado (microcontrolador, driver, regulador).", "Tierras de motores y de lógica unidas en un solo punto, junto a la batería.", "Cables de motor cortos y trenzados, lejos de las señales de los sensores.", "Frecuencia de PWM arriba de 16 kHz, o aceptar el zumbido sabiendo por qué ocurre.", "Divisor resistivo para medir V<sub>bat</sub> con un capacitor de 100 nF al ADC."];
+  $("#chkRuido").innerHTML = CHK.map((t, i) => `<label><input type="checkbox" id="chk${i}"><span>${t}</span></label>`).join("");
+
+  /* ================= 7. DECISIONES ================= */
+  function decisiones() {
+    const f = window.Ficha.leer(), c = DRIVERS[st.drv].caida(st.I);
+    const filas = [
+      ["Puente H", f.driver, st.drv, "Caída de " + fmt(c, 2, "V") + " a " + fmt(st.I, 2, "A")],
+      ["Caída en el driver", fmt(f.caidaDriver, 2, "V"), fmt(c, 2, "V"), "Llegan " + fmt(f.vBat - c, 2, "V") + " al motor"],
+      ["Corriente de trabajo por motor", fmt(f.iTrabajo, 2, "A"), fmt(st.I, 2, "A"), "Dimensiona driver y batería"],
+      ["Batería", fmt(f.bateriaMah, 0, "mAh"), fmt(st.mah, 0, "mAh"), "LiPo 2S"],
+      ["Regulador de 5 V", f.regulador, st.reg, REGS[st.reg].n],
+      ["Compensar V<sub>bat</sub> en el firmware", f.compensarV ? "Sí" : "No", st.comp ? "Sí" : "No", st.comp ? "Velocidad constante con la descarga" : "La velocidad cae con la descarga"]
+    ];
+    $("#tabDecE tbody").innerHTML = filas.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num"><b>${r[2]}</b></td><td>${r[3]}</td></tr>`).join("");
+  }
+  $("#btnAplicarE").addEventListener("click", () => {
+    const c = +DRIVERS[st.drv].caida(st.I).toFixed(2);
+    const nueva = window.Ficha.guardar({ driver: st.drv, caidaDriver: c, iTrabajo: st.I, bateriaMah: st.mah, regulador: st.reg, compensarV: st.comp ? 1 : 0 });
+    Object.assign(ficha, nueva); decisiones();
+    const m = $("#msgDecE"); m.style.color = "var(--ok)"; m.textContent = "Listo: el simulador ya usa este driver y esta configuración.";
+  });
+
+  function notaVoltaje() {
+    const n = $("#m3NotaV");
+    if (ficha.vNom > 1.1 * ficha.vBat) {
+      n.hidden = false;
+      n.innerHTML = `<b>Motores de ${fmt(ficha.vNom, 0, "V")} con batería de ${fmt(ficha.vBat, 1, "V")}:</b> girarán como máximo al ${fmt(window.Ficha.vMotor(ficha) / ficha.vNom * 100, 0, "%")} de su velocidad nominal (${fmt(ficha.rpmMax * window.Ficha.vMotor(ficha) / ficha.vNom, 0, "rpm")} en lugar de ${fmt(ficha.rpmMax, 0, "rpm")}). Una batería 3S (11.1 V) los acercaría a su velocidad nominal, pero habría que verificar que la PCB y su regulador lo admitan; el TB6612 acepta hasta 13.5 V en el motor y el DRV8833 sólo 10.8 V.`;
+    } else n.hidden = true;
+  }
+  function todo() { arbol(); puenteH(); pwm(); driver(); bateria(); decisiones(); notaVoltaje(); }
+  todo();
+  document.addEventListener("cambio-tema", todo);
+  window.addEventListener("ficha-cambiada", e => { Object.assign(ficha, e.detail); arbol(); });
+}
+</script>
+</body>
+</html>

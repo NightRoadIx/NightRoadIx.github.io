@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seguidor de línea aplicado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.hero{padding-bottom:0}
+.hero h1{max-width:24ch}
+.hero .lead{font-size:clamp(17px,1.6vw,19px);max-width:62ch;color:var(--ink2)}
+.acciones{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 8px}
+.lamina{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:28px}
+.lamina svg{display:block;width:100%;height:auto;max-height:470px}
+.lamina .lbl{font:600 15px Barlow,sans-serif}
+.lamina .sub{font:400 13px Barlow,sans-serif;fill:var(--ink2)}
+.pulso{animation:pulso 1.4s ease-in-out infinite}
+@keyframes pulso{0%,100%{opacity:.25}50%{opacity:.9}}
+.pasos{counter-reset:p;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+.pasos .card h3{font-size:22px}
+.mod{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;position:relative}
+.mod .n{font:700 44px/1 "Barlow Condensed",sans-serif;color:var(--line)}
+.mod .cab{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mod p{margin:0;color:var(--ink2);font-size:15px}
+.mod .estado{font-size:13px;font-weight:600}
+a.mod:hover{border-color:var(--ink)}
+a.mod .estado{color:var(--ok)}
+div.mod .estado{color:var(--ink2)}
+.ficha-mini td.num{font-weight:600}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+</head>
+<body data-pagina="inicio">
+<main>
+<section class="band hero">
+  <div class="wrap">
+    <h1>Cómo echar a andar un carrito seguidor de línea</h1>
+    <p class="lead">Un carrito seguidor de línea parece sencillo, pero para que funcione hay que resolver mecánica, sensado, electrónica de potencia, modelado, control y programación al mismo tiempo, y cada decisión afecta a las demás. Este sitio sigue a un solo carrito mientras se diseña, módulo por módulo, y lo pone a prueba en un simulador.</p>
+    <div class="acciones">
+      <a class="btn pri" href="modulo0.html">Empezar por el Módulo 0</a>
+      <a class="btn" href="simulador.html">Abrir el simulador</a>
+    </div>
+  </div>
+  <div class="lamina">
+    <svg viewBox="0 0 1200 440" role="img" aria-labelledby="tLam">
+      <title id="tLam">Vista superior del carrito sobre la cinta negra, con sus subsistemas señalados</title>
+      <defs>
+        <pattern id="grano" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="var(--line)" stroke-width="1"/></pattern>
+      </defs>
+      <rect width="1200" height="440" fill="url(#grano)"/>
+      <!-- cinta -->
+      <path d="M-20 330 C 220 330, 330 330, 470 250 S 700 110, 900 150 S 1120 260, 1220 220" fill="none" stroke="var(--cinta)" stroke-width="30" stroke-linecap="round"/>
+      <!-- carrito (vista superior), orientado según la curva -->
+      <g transform="translate(560 190) rotate(-24)">
+        <ellipse cx="10" cy="8" rx="150" ry="98" fill="#000" opacity=".10"/>
+        <!-- ruedas -->
+        <rect x="-62" y="-104" width="70" height="24" rx="5" fill="#1b1b1b"/>
+        <rect x="-62" y="80" width="70" height="24" rx="5" fill="#1b1b1b"/>
+        <!-- motores -->
+        <rect x="-50" y="-80" width="46" height="26" rx="3" fill="#b9b9b9"/>
+        <rect x="-50" y="54" width="46" height="26" rx="3" fill="#b9b9b9"/>
+        <!-- chasis -->
+        <rect x="-110" y="-78" width="250" height="156" rx="16" fill="#1d6b47"/>
+        <rect x="-110" y="-78" width="250" height="156" rx="16" fill="none" stroke="#2f8a60" stroke-width="3"/>
+        <!-- batería -->
+        <rect x="-98" y="-34" width="62" height="68" rx="5" fill="#2b3f6b"/>
+        <!-- microcontrolador -->
+        <rect x="-10" y="-40" width="58" height="40" rx="3" fill="#0d4f7a"/>
+        <!-- puente H -->
+        <rect x="-10" y="12" width="30" height="30" rx="2" fill="#7a1d1d"/>
+        <!-- barra de sensores -->
+        <rect x="120" y="-6" width="80" height="12" rx="3" fill="#1d6b47"/>
+        <rect x="186" y="-60" width="22" height="120" rx="4" fill="#1d6b47"/>
+        <g fill="#111">
+          <rect x="190" y="-54" width="14" height="10" rx="2"/><rect x="190" y="-40" width="14" height="10" rx="2"/><rect x="190" y="-26" width="14" height="10" rx="2"/><rect x="190" y="-12" width="14" height="10" rx="2"/>
+          <rect x="190" y="2" width="14" height="10" rx="2"/><rect x="190" y="16" width="14" height="10" rx="2"/><rect x="190" y="30" width="14" height="10" rx="2"/><rect x="190" y="44" width="14" height="10" rx="2"/>
+        </g>
+        <g fill="var(--ir)" class="pulso"><circle cx="218" cy="-26" r="6"/><circle cx="218" cy="-12" r="6"/><circle cx="218" cy="2" r="6"/></g>
+        <!-- rueda loca -->
+        <circle cx="-92" cy="0" r="9" fill="#9a9a9a"/>
+      </g>
+      <!-- llamadas -->
+      <g stroke-width="1.6" fill="none">
+        <path d="M745 112 L 860 60 H 920" stroke="var(--sen)"/>
+        <path d="M500 112 L 470 46 H 400" stroke="var(--mec)"/>
+        <path d="M576 213 L 690 270 V 380 H 720" stroke="var(--ele)"/>
+        <path d="M569 164 L 360 140 H 300" stroke="var(--ctl)"/>
+        <path d="M499 217 L 380 300 V 390 H 300" stroke="var(--ele)"/>
+      </g>
+      <g>
+        <text class="lbl" x="928" y="56" fill="var(--sen)">Sensado</text>
+        <text class="sub" x="928" y="76">8 sensores IR leen la cinta</text>
+        <text class="lbl" x="392" y="42" fill="var(--mec)" text-anchor="end">Mecánica</text>
+        <text class="sub" x="392" y="62" text-anchor="end">motorreductor, rueda, chasis</text>
+        <text class="lbl" x="728" y="376" fill="var(--ele)">Potencia</text>
+        <text class="sub" x="728" y="396">puente H y PWM a los motores</text>
+        <text class="lbl" x="292" y="136" fill="var(--ctl)" text-anchor="end">Control y firmware</text>
+        <text class="sub" x="292" y="156" text-anchor="end">el microcontrolador calcula el PID</text>
+        <text class="lbl" x="292" y="386" fill="var(--ele)" text-anchor="end">Energía</text>
+        <text class="sub" x="292" y="406" text-anchor="end">batería LiPo 2S y regulación</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Cómo se usa este sitio</h2>
+    <div class="pasos">
+      <div class="card"><h3>Una ficha técnica viva</h3><p>Todas las decisiones (diámetro de rueda, motor, separación de sensores, ganancias) se guardan en una sola ficha. Cada módulo la llena o la corrige, y lo que se decide en uno repercute en los siguientes.</p></div>
+      <div class="card"><h3>Un simulador compartido</h3><p>El mismo carrito corre en la misma pista en todos los módulos. Empieza como un carrito genérico y, con los resultados del grupo, se va convirtiendo en el carrito que se va a construir.</p></div>
+      <div class="card"><h3>Fallas para diagnosticar</h3><p>Batería baja, un sensor sucio, piso resbaloso o motores desiguales. Cada falla deja un síntoma distinto, y reconocerlo es parte de echar a andar un sistema real.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <h2>Ruta de módulos</h2>
+    <p class="muted">Cada módulo atiende un subsistema y deja sus decisiones en la ficha.</p>
+    <div class="grid" id="modulos"></div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap dos">
+    <div>
+      <h2>Ficha técnica actual</h2>
+      <p>Valores con los que arranca el simulador. Si guardaste cambios desde el simulador o desde algún módulo, aquí aparecen.</p>
+      <p class="nota small" id="notaPerfil"></p>
+      <p class="nota small">Para el profesor: los valores por defecto viven en <code>js/carrito.js</code>. Cuando el grupo elija los componentes reales, se actualizan ahí y se sube el número de versión; el resto del sitio los toma automáticamente.</p>
+      <a class="btn" href="simulador.html">Probar esta ficha en el simulador</a>
+    </div>
+    <div class="scroll"><table class="ficha-mini"><tbody id="fichaMini"></tbody></table></div>
+  </div>
+</section>
+</main>
+
+<script>
+{
+  const M = window.MODULOS;
+  document.getElementById("modulos").innerHTML = M.map(m => {
+    const dentro = `<div class="cab"><span class="n">${m.n}</span><span class="tag t-${m.tag}">${m.tn}</span></div><h3>${m.t}</h3><p>${m.d}</p><span class="estado">${m.listo ? "Disponible →" : "En preparación"}</span>`;
+    return m.listo ? `<a class="card mod" href="${m.href}">${dentro}</a>` : `<div class="card mod">${dentro}</div>`;
+  }).join("");
+
+  function fichaMini() {
+  const f = window.Ficha.leer();
+  const filas = [
+    ["Versión", f.version, ""],
+    ["Velocidad objetivo", fmt(f.vObjetivo, 2, "m/s"), "Requisito"],
+    ["Radio mínimo de curva", fmt(f.radioMin * 100, 0, "cm"), "Requisito"],
+    ["Diámetro de rueda", fmt(f.radioRueda * 2000, 0, "mm"), "Mecánica"],
+    ["Distancia entre ruedas", fmt(f.trocha * 1000, 0, "mm"), "Mecánica"],
+    ["Masa", fmt(f.masa * 1000, 0, "g"), "Mecánica"],
+    ["Motorreductor", "1:" + f.reduccion + " · " + fmt(f.rpmMax, 0, "rpm") + " · τ " + fmt(f.tauMotor * 1000, 0, "ms"), "Mecánica"],
+    ["Batería", fmt(f.vBat, 1, "V"), "Potencia"],
+    ["Sensores", f.nSens + " × " + fmt(f.pasoSens * 1000, 1, "mm"), "Sensado"],
+    ["Ganancias", "Kp " + fmt(f.kp, 2) + " · Ki " + fmt(f.ki, 1) + " · Kd " + fmt(f.kd, 3), "Control"],
+    ["Lazo de control", fmt(1 / f.periodo, 0, "Hz"), "Firmware"]
+  ];
+  const tb = document.getElementById("fichaMini");
+  tb.textContent = "";
+  for (const r of filas) {
+    const tr = document.createElement("tr");
+    r.forEach((c, i) => { const td = document.createElement(i === 0 ? "th" : "td"); td.textContent = c; if (i === 1) td.className = "num"; if (i === 2) td.className = "muted small"; tr.append(td); });
+    tb.append(tr);
+  }
+  }
+  fichaMini();
+  window.addEventListener("ficha-cambiada", fichaMini);
+  const esp = window.Ficha.perfil() === "especifico01";
+  document.getElementById("notaPerfil").innerHTML = esp
+    ? "<b>Perfil activo: Robot específico 01.</b> Es el robot del grupo: barra curva 16sMuxHS con multiplexor, motores planetarios 5:1 de 5000 rpm y llantas de 20 mm. Los datos marcados como <span class=\"porconf\">por confirmar</span> son estimados y hay que medirlos. Para volver al carrito de la explicación base, elige \"Genérico v0\" en el selector de perfil, arriba a la derecha."
+    : "<b>Perfil activo: Genérico v0</b>, el carrito de la explicación base. En el selector de perfil, arriba a la derecha, está también el <b>Robot específico 01</b> del grupo; todo el sitio y el simulador cambian a sus datos, y en el simulador se pueden correr los dos juntos.";
+}
+</script>
+</body>
+</html>

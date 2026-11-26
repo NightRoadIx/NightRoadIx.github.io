@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Módulo 5 · Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.m5 .lab{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:900px){.m5 .lab{grid-template-columns:minmax(0,1fr)}}
+.m5 .lienzo{background:var(--card);border:1px solid var(--line);border-radius:var(--radio);padding:8px;overflow-x:auto}
+.m5 .lienzo svg{display:block;width:100%;height:auto;min-width:500px}
+.m5 .lienzo text{font-family:Barlow,sans-serif}
+.m5 .lienzo + .lienzo{margin-top:12px}
+.m5 .ctl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:center;padding:3px 0}
+.m5 .ctl output{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.m5 .ctl input{grid-column:1/3}
+.m5 .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:10px;margin-top:12px}
+.m5 .res div{background:var(--bg2);border-radius:8px;padding:8px 12px}
+.m5 .res b{display:block;font-size:20px;font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.m5 .res span{font-size:13px;color:var(--ink2)}
+.m5 .formula{font-family:"JetBrains Mono",monospace;font-size:14px;background:var(--bg2);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap;line-height:1.8}
+.m5 .veredicto{margin-top:12px;font-weight:600}
+.m5 .veredicto .est{white-space:normal}
+.m5 .ley{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.m5 .ley i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.m5 .ruedas{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}
+.m5 .rueda{background:var(--bg2);border-radius:8px;padding:10px 12px}
+.m5 .rueda .barra2{height:16px;border-radius:8px;background:var(--line);overflow:hidden;margin-top:6px}
+.m5 .rueda .barra2 span{display:block;height:100%;background:var(--ele)}
+.m5 .rueda b{font-family:"Barlow Condensed",sans-serif;font-size:22px}
+.m5 .dbg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media(max-width:900px){.m5 .dbg{grid-template-columns:minmax(0,1fr)}}
+.m5 pre.codigo{margin:0;font-size:13.5px;line-height:1.6}
+.m5 pre.codigo .val{color:var(--ir);font-weight:600}
+.m5 pre.codigo .com{color:var(--ink2)}
+.m5 .pasoctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.m5 .pasoctl input{flex:1;min-width:160px}
+.m5 .multi{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px}
+.m5 .multi .card{padding:10px}
+.m5 .multi svg{display:block;width:100%;height:auto}
+.m5 .multi h3{font-size:18px;margin:2px 4px 6px}
+.m5 .mapa{display:grid;gap:3px}
+.m5 .mapa button{min-height:34px;padding:0;border-radius:4px;border:0;font-size:11.5px;font-weight:600;color:#fff;justify-content:center}
+.m5 .mapa button.sel{outline:3px solid var(--ink);outline-offset:1px}
+.m5 .mapa .eje{font-size:12px;color:var(--ink2);display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.m5 .escala{display:flex;gap:0;height:12px;border-radius:6px;overflow:hidden;margin-top:8px;max-width:360px}
+.m5 .escala span{flex:1}
+.m5 .pasos5{counter-reset:p;display:grid;gap:12px;padding:0;margin:0;list-style:none}
+.m5 .pasos5 li{counter-increment:p;background:var(--card);border:1px solid var(--line);border-radius:var(--radio);padding:12px 16px 12px 58px;position:relative}
+.m5 .pasos5 li::before{content:counter(p);position:absolute;left:16px;top:12px;width:30px;height:30px;border-radius:50%;background:var(--ctl);color:var(--bg);display:grid;place-items:center;font-weight:700}
+.m5 .pasos5 b{display:block;margin-bottom:2px}
+.m5 .codigo2{position:relative}
+.m5 .codigo2 button{position:absolute;top:8px;right:8px;min-height:36px;font-size:14px}
+.m5 .codigo2 pre{padding-top:48px}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/sim-core.js"></script>
+</head>
+<body data-pagina="m5">
+<main class="m5">
+<section class="band">
+  <div class="wrap">
+    <p><span class="tag t-ctl">Módulo 5 · Control</span></p>
+    <h1>Control: del K<sub>p</sub> + K<sub>i</sub>/s + K<sub>d</sub>·s a dos ruedas que giran distinto</h1>
+    <p class="muted" style="font-size:18px">En el pizarrón, un PID es una función de transferencia. En el carrito, son unas líneas de código que cada 5 ms convierten milímetros de error en porcentaje de PWM. Este módulo hace esa traducción paso a paso, con todo lo que la teoría lineal no ve: unidades, muestreo, saturación, windup, ruido y cómo sintonizar en la pista.</p>
+    <nav class="scroll" aria-label="Secciones del módulo" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <a class="btn" href="#ganancias">1. Qué significa cada ganancia</a>
+      <a class="btn" href="#depurador">2. De la ecuación al código</a>
+      <a class="btn" href="#comparativa">3. On/off, P, PD, PID</a>
+      <a class="btn" href="#mapa">4. Mapa de sintonía</a>
+      <a class="btn" href="#saturacion">5. Saturación y windup</a>
+      <a class="btn" href="#filtro">6. Ruido y filtro</a>
+      <a class="btn" href="#en-pista">7. En la pista</a>
+      <a class="btn" href="#decisiones-ctl">8. Decisiones</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============ 1. GANANCIAS ============ -->
+<section class="band alt" id="ganancias">
+  <div class="wrap">
+    <h2>1. Las ganancias tienen unidades físicas</h2>
+    <p>El error <i>e</i> que usa el firmware está normalizado: 1 significa que la línea está bajo el sensor de la orilla, a medio ancho del arreglo. La salida <i>u</i> se suma a la rueda derecha y se resta a la izquierda, en fracción de PWM. Por eso K<sub>p</sub> = 0.8 no es un número abstracto: dice cuántos puntos de PWM cambia cada rueda por cada milímetro de error.</p>
+    <div class="formula">u = K<sub>p</sub>·e + K<sub>i</sub>·∫e dt + K<sub>d</sub>·de/dt &nbsp;&nbsp; PWM<sub>der</sub> = base + u &nbsp;&nbsp; PWM<sub>izq</sub> = base − u &nbsp;&nbsp; e = y<sub>línea</sub> / medio ancho</div>
+    <div class="lab">
+      <div class="card">
+        <h3>Traducción física con la ficha actual</h3>
+        <div class="res" id="resUnid"></div>
+        <h3 style="margin-top:18px">Las dos ruedas para un error de ejemplo</h3>
+        <div class="ctl"><label for="c_ej">Línea desplazada (positivo = a la izquierda)</label><output id="o_ej"></output><input type="range" id="c_ej" min="-0.04" max="0.04" step="0.0005"></div>
+        <div class="ruedas" id="ruedas"></div>
+        <p class="small muted" style="margin:10px 0 0" id="txtRuedas"></p>
+      </div>
+      <div class="card">
+        <div class="ctl"><label for="c_kp">K<sub>p</sub></label><output id="o_kp"></output><input type="range" id="c_kp" min="0" max="4" step="0.05"></div>
+        <div class="ctl"><label for="c_ki">K<sub>i</sub></label><output id="o_ki"></output><input type="range" id="c_ki" min="0" max="5" step="0.1"></div>
+        <div class="ctl"><label for="c_kd">K<sub>d</sub></label><output id="o_kd"></output><input type="range" id="c_kd" min="0" max="0.15" step="0.005"></div>
+        <div class="ctl"><label for="c_vb">Velocidad base</label><output id="o_vb"></output><input type="range" id="c_vb" min="0.1" max="1" step="0.01"></div>
+        <p class="small muted" style="margin:10px 0 0">Estas ganancias se usan en todo el módulo y se guardan en la ficha en la sección 8.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. DEPURADOR ============ -->
+<section class="band" id="depurador">
+  <div class="wrap">
+    <h2>2. De la ecuación al código, muestra por muestra</h2>
+    <p>El microcontrolador no integra ni deriva: suma y resta. Con un periodo fijo <i>T</i>, la integral se vuelve una suma acumulada y la derivada, una diferencia entre dos muestras. Abajo está una corrida real del simulador; muévete muestra por muestra y observa qué valores tienen las variables en cada línea de código.</p>
+    <div class="formula">I[k] = I[k−1] + e[k]·T &nbsp;&nbsp; D[k] = (e[k] − e[k−1]) / T &nbsp;&nbsp; u[k] = K<sub>p</sub>·e[k] + K<sub>i</sub>·I[k] + K<sub>d</sub>·D[k]</div>
+    <div class="lienzo"><svg id="svgDbg" viewBox="0 0 1000 220" role="img" aria-label="Error y señal de control de la corrida registrada"></svg></div>
+    <div class="ley"><span><i style="background:var(--ctl)"></i>error e[k]</span><span><i style="background:var(--ir)"></i>corrección u[k]</span><span><i style="background:var(--ink)"></i>muestra actual</span></div>
+    <div class="pasoctl">
+      <button type="button" id="dbgPrev" aria-label="Muestra anterior">◀</button>
+      <input type="range" id="dbgK" min="0" max="10" step="1" aria-label="Muestra">
+      <button type="button" id="dbgNext" aria-label="Muestra siguiente">▶</button>
+      <span class="small muted" id="dbgT"></span>
+    </div>
+    <div class="dbg">
+      <div class="card">
+        <h3 style="font-size:18px">Lo que leen los sensores en esta muestra</h3>
+        <div class="lienzo" style="border:0;padding:0"><svg id="svgDbgSens" viewBox="0 0 460 150" role="img" aria-label="Lecturas de los sensores en la muestra actual"></svg></div>
+        <div class="res" id="resDbg"></div>
+      </div>
+      <pre class="codigo" id="codDbg"></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. COMPARATIVA ============ -->
+<section class="band alt" id="comparativa">
+  <div class="wrap">
+    <h2>3. Cuatro controladores en la misma pista</h2>
+    <p>Mismo carrito, misma pista, misma velocidad base, 15 segundos cada uno. La línea roja es el recorrido del arreglo de sensores. Fíjate en las rectas: ahí se nota quién oscila.</p>
+    <div class="multi" id="multi"></div>
+    <div class="scroll" style="margin-top:14px"><table class="stack" id="tabComp"><thead><tr><th>Controlador</th><th class="num">Error RMS</th><th class="num">Vuelta</th><th class="num">Oscilaciones</th><th class="num">Actividad del PWM</th><th>Lo que se observa</th></tr></thead><tbody></tbody></table></div>
+    <p class="small muted">Actividad del PWM: cambio promedio del ciclo de trabajo entre muestras. Mucha actividad significa motores que vibran, más consumo y más ruido eléctrico.</p>
+  </div>
+</section>
+
+<!-- ============ 4. MAPA ============ -->
+<section class="band" id="mapa">
+  <div class="wrap">
+    <h2>4. Mapa de sintonía: dónde está la zona buena</h2>
+    <p>En vez de mover ganancias a ciegas, el simulador puede probar una cuadrícula de combinaciones K<sub>p</sub> × K<sub>d</sub> y medir el error de cada una. El resultado es un mapa: la zona verde es la que funciona y las celdas con × se salen de la pista. Al subir la velocidad base, la zona buena se encoge y se mueve, y por eso no hay "una" sintonía correcta para todas las velocidades.</p>
+    <div class="lab">
+      <div>
+        <div class="mapa" id="gridMapa"></div>
+        <div class="escala" id="escala"></div>
+        <div class="ley" style="max-width:360px;justify-content:space-between"><span>0 mm</span><span>error RMS</span><span>≥ 20 mm</span></div>
+      </div>
+      <div class="card">
+        <div class="ctl"><label for="c_vbm">Velocidad base para el mapa</label><output id="o_vbm"></output><input type="range" id="c_vbm" min="0.2" max="0.9" step="0.05"></div>
+        <button type="button" class="pri" id="btnMapa" style="margin-top:10px">Explorar (80 corridas)</button>
+        <p class="small muted" id="progMapa" style="margin:8px 0 0">Cada celda es una corrida de 6 s en la pista de competencia, con la K<sub>i</sub> de la sección 1.</p>
+        <div class="res" id="resMapa"></div>
+        <p class="veredicto" id="verMapa"></p>
+        <p class="small muted" style="margin:8px 0 0">Haz clic en una celda para cargar esas ganancias en la sección 1.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. SATURACIÓN ============ -->
+<section class="band alt" id="saturacion">
+  <div class="wrap">
+    <h2>5. Saturación y windup: el PWM no pasa de 100 %</h2>
+    <p>La teoría lineal supone que el actuador entrega cualquier valor de <i>u</i>. En el carrito, cada rueda tiene un tope de 100 % de PWM. Si la velocidad base es 85 %, la rueda de afuera sólo puede acelerar 15 % más: el controlador pide un giro y el carrito no puede darlo.</p>
+    <div class="formula">reserva de control = 1 − base &nbsp;&nbsp; radio mínimo sin saturar ≈ base · b / (2·(1 − base))</div>
+    <div class="lab">
+      <div class="lienzo"><svg id="svgWind" viewBox="0 0 640 300" role="img" aria-label="Error y término integral con y sin anti-windup"></svg></div>
+      <div class="card">
+        <div class="res" id="resSat"></div>
+        <p class="veredicto" id="verSat"></p>
+        <h3 style="margin-top:18px;font-size:18px">Experimento de windup</h3>
+        <p class="small" style="margin:0">Con K<sub>i</sub> = 3, se levanta el carrito 1.5 s (los sensores no ven nada y el error se queda en su máximo) y luego se pone sobre la línea. Sin anti-windup, la integral acumuló tanto que el carrito sale girando aunque ya esté sobre la línea.</p>
+        <div class="ley" style="margin-top:8px"><span><i style="background:var(--ok)"></i>término integral, con anti-windup</span><span><i style="background:var(--bad)"></i>término integral, sin anti-windup</span></div>
+        <p class="veredicto" id="verWind"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. FILTRO ============ -->
+<section class="band" id="filtro">
+  <div class="wrap">
+    <h2>6. La derivada amplifica el ruido</h2>
+    <p>El término derivativo divide entre <i>T</i> = 5 ms. Un ruido de 0.02 en el error, que es casi nada, se vuelve una derivada de 4, y con K<sub>d</sub> = 0.03 son 12 puntos de PWM saltando en cada muestra. La solución es filtrar la derivada con un pasa-bajas de primer orden.</p>
+    <div class="formula">D<sub>f</sub>[k] = α·D<sub>f</sub>[k−1] + (1 − α)·D[k] &nbsp;&nbsp; f<sub>corte</sub> ≈ (1 − α) / (2π·α·T)</div>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="svgFil" viewBox="0 0 640 260" role="img" aria-label="PWM del motor izquierdo con y sin filtro de la derivada"></svg></div>
+        <div class="ley"><span><i style="background:var(--int)"></i>sin filtro (α = 0)</span><span><i style="background:var(--ele)"></i>con el filtro elegido</span></div>
+      </div>
+      <div class="card">
+        <div class="ctl"><label for="c_alfa">α del filtro</label><output id="o_alfa"></output><input type="range" id="c_alfa" min="0" max="0.95" step="0.05"></div>
+        <div class="ctl"><label for="c_ruido">Ruido de los sensores (para el experimento)</label><output id="o_ruido"></output><input type="range" id="c_ruido" min="0" max="0.1" step="0.005"></div>
+        <div class="res" id="resFil"></div>
+        <p class="veredicto" id="verFil"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. EN LA PISTA ============ -->
+<section class="band alt" id="en-pista">
+  <div class="wrap">
+    <h2>7. Llevarlo al carrito real</h2>
+    <div class="dos">
+      <div>
+        <h3>Procedimiento de sintonización en la pista</h3>
+        <ol class="pasos5">
+          <li><b>Comprueba el signo antes de encender motores.</b>Con las ruedas al aire, pon la línea bajo los sensores de la izquierda: la rueda derecha debe acelerar. Si acelera la izquierda, el carrito huye de la línea; cambia el signo de <i>u</i>, no las ganancias.</li>
+          <li><b>Empieza lento y sólo con P.</b>Velocidad base de 30 %, K<sub>i</sub> = K<sub>d</sub> = 0. Sube K<sub>p</sub> hasta que el carrito tome las curvas aunque se bambolee en las rectas.</li>
+          <li><b>Agrega K<sub>d</sub> para amortiguar.</b>Súbelo poco a poco hasta que el bamboleo desaparezca. Si los motores empiezan a zumbar o temblar, el ruido ya domina: filtra la derivada.</li>
+          <li><b>Sube la velocidad un 10 % y repite.</b>A más velocidad, L/v baja (Módulo 4) y se necesita más K<sub>d</sub>. Anota las ganancias que funcionan en cada velocidad.</li>
+          <li><b>K<sub>i</sub> sólo si hay un error que no se va.</b>Por ejemplo, motores desiguales que lo cargan siempre hacia un lado en la recta. Usa poco y con anti-windup.</li>
+          <li><b>Registra todo.</b>Envía e, u y los PWM por el puerto serial cada 20 ms (no en cada muestra: imprimir es lento y alarga el periodo). Grafica y compara con el simulador.</li>
+        </ol>
+      </div>
+      <div>
+        <h3>Ajustar sin volver a programar</h3>
+        <p>Recompilar y cargar el código cada vez que se cambia una ganancia es lento. Tres alternativas comunes:</p>
+        <ul>
+          <li><b>Potenciómetros</b> en entradas analógicas libres, mapeados a un rango de K<sub>p</sub> y K<sub>d</sub>.</li>
+          <li><b>Comandos por Bluetooth</b> (HC-05) desde el celular: <code>kp=0.8</code>, <code>kd=0.03</code>.</li>
+          <li><b>EEPROM:</b> guardar las ganancias que funcionaron para que sobrevivan al apagado.</li>
+        </ul>
+        <h3>El PID completo para Arduino</h3>
+        <div class="codigo2">
+          <button type="button" id="btnCopiarPid">Copiar</button>
+<pre id="codPid"><code></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. DECISIONES ============ -->
+<section class="band" id="decisiones-ctl">
+  <div class="wrap">
+    <h2>8. Decisiones de control para la ficha</h2>
+    <div class="scroll"><table class="stack" id="tabDecC"><thead><tr><th>Decisión</th><th class="num">En la ficha</th><th class="num">Propuesta</th><th>Consecuencia</th></tr></thead><tbody></tbody></table></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px">
+      <button class="pri" type="button" id="btnAplicarC">Aplicar al carrito</button>
+      <a class="btn" href="simulador.html">Probarlo en el simulador</a>
+      <span class="small" id="msgDecC" role="status"></span>
+    </div>
+    <h2 style="margin-top:36px">Actividad</h2>
+    <ol>
+      <li>Calculen a mano, con la ficha, cuántos puntos de PWM cambia cada rueda con K<sub>p</sub> = 0.8 y la línea 5 mm a la izquierda. Comprueben con la sección 1.</li>
+      <li>En el depurador, encuentren una muestra donde el término D tenga signo contrario al P y expliquen qué está haciendo físicamente el carrito en ese instante.</li>
+      <li>Generen el mapa de sintonía a 50 % y a 75 % de velocidad. Describan cómo cambia la zona buena y relaciónenlo con la condición L/v &gt; τ del Módulo 4.</li>
+      <li>En el carrito real, sigan el procedimiento de la sección 7, registren sus ganancias por velocidad y compárenlas con el mapa del simulador.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<script>
+{
+  const $ = s => document.querySelector(s);
+  const ficha = window.Ficha.leer();
+  const color = n => { const e = document.createElement("span"); e.style.color = "var(" + n + ")"; document.body.append(e); const c = getComputedStyle(e).color; e.remove(); return c; };
+  const tarjetas = (sel, items) => { $(sel).innerHTML = items.map(x => `<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join(""); };
+  const est = (c, t) => `<span class="est ${c}">${c === "ok" ? "✓" : c === "warn" ? "!" : "✗"} ${t}</span>`;
+  const st = { kp: ficha.kp, ki: ficha.ki, kd: ficha.kd, vb: ficha.vBase, ej: 0.005, vbm: ficha.vBase, alfa: ficha.filtroD || 0.6, ruido: 0.05, k: 120 };
+  function slider(id, clave, fmtf, alCambiar) {
+    const i = $("#c_" + id), o = $("#o_" + id);
+    const pinta = () => { i.value = st[clave]; o.textContent = fmtf(st[clave]); };
+    i.addEventListener("input", () => { st[clave] = parseFloat(i.value); pinta(); alCambiar(); });
+    pinta(); return pinta;
+  }
+  const half = () => (ficha.nSens - 1) / 2 * ficha.pasoSens;
+  const vw = () => ficha.rpmMax * 2 * Math.PI / 60 * ficha.radioRueda * window.Ficha.vMotor(ficha) / ficha.vNom;
+  const pct = x => fmt(x * 100, 1, "%");
+  function correr(over, pista, T, cada, prep) {
+    const p = Object.assign({}, ficha, over);
+    Object.assign(p, window.Ficha.derivar(p));
+    const S = window.SimCore.crearSim(p, pista || "competencia");
+    if (prep) prep(S);
+    const tr = [], paso = Math.round((cada || 0.02) / S.dtFis);
+    for (let k = 0; S.t < T; k++) { if (k % paso === 0) tr.push([S.x + p.lookahead * Math.cos(S.th), S.y + p.lookahead * Math.sin(S.th)]); S.paso(); if (S.estado === "fuera") break; }
+    return { S, tr, p };
+  }
+
+  /* ================= 1. UNIDADES ================= */
+  function unidades() {
+    const h = half() * 1000, Vw = vw(), b = ficha.trocha;
+    const kpmm = st.kp / h, kdmm = st.kd / h, kimm = st.ki / h;
+    tarjetas("#resUnid", [
+      ["Kp: PWM por mm de error", fmt(kpmm * 100, 2, "%/mm")],
+      ["Kp: giro por mm de error", fmt(2 * kpmm * Vw / b * 180 / Math.PI, 1, "°/s por mm")],
+      ["Kd: PWM si la línea se mueve 100 mm/s", fmt(kdmm * 100 * 100, 1, "%")],
+      ["Ki: PWM tras 1 s con 5 mm de error", fmt(kimm * 5 * 100, 1, "%")],
+      ["Medio ancho del arreglo", fmt(h, 1, "mm")],
+      ["Reserva de control (1 − base)", pct(1 - st.vb)]
+    ]);
+    const e = st.ej / half(), u = st.kp * e, dR = Math.max(-1, Math.min(1, st.vb + u)), dL = Math.max(-1, Math.min(1, st.vb - u));
+    const rueda = (n, d, sat) => `<div class="rueda"><span class="small muted">Rueda ${n}</span><br><b>${fmt(d * 100, 0, "%")}</b>${sat ? ' <span class="est bad">saturada</span>' : ""}<div class="barra2"><span style="width:${Math.max(0, d) * 100}%"></span></div></div>`;
+    $("#ruedas").innerHTML = rueda("izquierda", dL, Math.abs(st.vb - u) > 1) + rueda("derecha", dR, Math.abs(st.vb + u) > 1);
+    const w = (dR - dL) * Vw / b;
+    $("#txtRuedas").textContent = `e = ${fmt(e, 3)} → u = Kp·e = ${fmt(u, 3)}. La diferencia de velocidades hace girar al carrito a ${fmt(w * 180 / Math.PI, 0, "°/s")} hacia ${st.ej >= 0 ? "la izquierda" : "la derecha"}, de vuelta hacia la línea (sólo con el término P).`;
+  }
+  const pk = slider("kp", "kp", x => fmt(x, 2), todoCtl);
+  const pki = slider("ki", "ki", x => fmt(x, 1), todoCtl);
+  const pkd = slider("kd", "kd", x => fmt(x, 3), todoCtl);
+  const pvb = slider("vb", "vb", x => fmt(x * 100, 0, "%"), todoCtl);
+  slider("ej", "ej", x => fmt(x * 1000, 1, "mm"), unidades);
+
+  /* ================= 2. DEPURADOR ================= */
+  let reg = [];
+  function grabar() {
+    const r = correr({ kp: st.kp, ki: st.ki, kd: st.kd, vBase: st.vb, modoCtl: 0 }, "competencia", 4, 0.02, S => { S.registrar = true; });
+    reg = r.S.log;
+    const i = $("#dbgK"); i.max = Math.max(0, reg.length - 1); st.k = Math.min(st.k, reg.length - 1); i.value = st.k;
+    depurador();
+  }
+  function depurador() {
+    if (!reg.length) return;
+    const k = st.k, m = reg[k], ant = reg[Math.max(0, k - 1)];
+    const ink2 = color("--ink2"), ink = color("--ink"), ctl = color("--ctl"), ir = color("--ir"), line = color("--line"), sen = color("--sen");
+    const T = reg[reg.length - 1].t, x0 = 50, W = 930, yc = 110, H = 85;
+    const X = t => x0 + t / T * W, Y = v => yc - Math.max(-1.3, Math.min(1.3, v)) / 1.3 * H;
+    let h = "";
+    for (const v of [-1, 0, 1]) h += `<line x1="${x0}" y1="${Y(v)}" x2="${x0 + W}" y2="${Y(v)}" stroke="${v === 0 ? ink2 : line}"/><text x="${x0 - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${v}</text>`;
+    for (let t = 0; t <= T; t += 0.5) h += `<text x="${X(t)}" y="${yc + H + 18}" text-anchor="middle" font-size="12.5" fill="${ink2}">${fmt(t, 1)} s</text>`;
+    const pl = f => reg.filter((_, i) => i % 2 === 0).map(r => `${X(r.t).toFixed(1)},${Y(f(r)).toFixed(1)}`).join(" ");
+    h += `<polyline points="${pl(r => r.e)}" fill="none" stroke="${ctl}" stroke-width="2"/><polyline points="${pl(r => r.u)}" fill="none" stroke="${ir}" stroke-width="2"/>`;
+    h += `<line x1="${X(m.t)}" y1="${yc - H - 6}" x2="${X(m.t)}" y2="${yc + H}" stroke="${ink}" stroke-width="2"/>`;
+    $("#svgDbg").innerHTML = h;
+    $("#dbgT").textContent = `muestra k = ${k} · t = ${fmt(m.t, 3, "s")} · T = ${fmt(ficha.periodo * 1000, 0, "ms")}`;
+    // sensores
+    const n = m.lect.length, bw = 400 / n;
+    let g = "";
+    m.lect.forEach((v, i) => { const x = 30 + i * bw; g += `<rect x="${x + 4}" y="${110 - v * 90}" width="${bw - 8}" height="${Math.max(1, v * 90)}" rx="3" fill="${sen}" opacity="${0.35 + 0.65 * v}"/><text x="${x + bw / 2}" y="128" text-anchor="middle" font-size="12" fill="${ink2}">S${i + 1}</text><text x="${x + bw / 2}" y="${104 - v * 90}" text-anchor="middle" font-size="11.5" fill="${ink}">${fmt(v, 2)}</text>`; });
+    g += `<line x1="30" y1="110" x2="430" y2="110" stroke="${ink2}"/>`;
+    $("#svgDbgSens").innerHTML = g;
+    tarjetas("#resDbg", [["e[k]", fmt(m.e, 3)], ["P = Kp·e", fmt(m.P, 3)], ["I = Ki·Σe·T", fmt(m.I, 3)], ["D = Kd·Δe/T", fmt(m.D, 3)], ["u[k]", fmt(m.u, 3)], ["PWM izq / der", fmt(m.dL * 100, 0) + " / " + fmt(m.dR * 100, 0, "%")]]);
+    const v = x => `<span class="val">${fmt(x, 3)}</span>`;
+    $("#codDbg").innerHTML =
+`<span class="com">// cada ${fmt(ficha.periodo * 1000, 0, "ms")} (muestra k = ${k})</span>
+e = leerError();                    <span class="com">// </span>${v(m.e)}${m.perdida ? ' <span class="com">← línea perdida</span>' : ""}
+integral += e * T;                  <span class="com">// </span>${v(m.Iacc)}
+derivada = (e - ePrev) / T;         <span class="com">// (</span>${v(m.e)}<span class="com"> − </span>${v(ant.e)}<span class="com">) / ${fmt(ficha.periodo, 3)}</span>
+ePrev = e;
+P = Kp * e;                         <span class="com">// ${fmt(st.kp, 2)} × e = </span>${v(m.P)}
+I = Ki * integral;                  <span class="com">// </span>${v(m.I)}
+D = Kd * derivada;                  <span class="com">// </span>${v(m.D)}
+u = P + I + D;                      <span class="com">// </span>${v(m.u)}
+pwmIzq = base - u;                  <span class="com">// </span>${v(m.dL)}
+pwmDer = base + u;                  <span class="com">// </span>${v(m.dR)}
+analogWrite(PWMA, 255 * pwmIzq);    <span class="com">// </span><span class="val">${Math.round(255 * Math.max(0, m.dL))}</span>
+analogWrite(PWMB, 255 * pwmDer);    <span class="com">// </span><span class="val">${Math.round(255 * Math.max(0, m.dR))}</span>`;
+  }
+  $("#dbgK").addEventListener("input", e => { st.k = +e.target.value; depurador(); });
+  $("#dbgPrev").addEventListener("click", () => { st.k = Math.max(0, st.k - 1); $("#dbgK").value = st.k; depurador(); });
+  $("#dbgNext").addEventListener("click", () => { st.k = Math.min(reg.length - 1, st.k + 1); $("#dbgK").value = st.k; depurador(); });
+
+  /* ================= 3. COMPARATIVA ================= */
+  function metricas(r) {
+    const S = r.S; let cruces = 0, act = 0;
+    for (let i = 1; i < S.hist.length; i++) { if (Math.sign(S.hist[i][1]) !== Math.sign(S.hist[i - 1][1])) cruces++; act += Math.abs(S.hist[i][2] - S.hist[i - 1][2]); }
+    return { rms: S.errorRMS(), vuelta: S.tVueltas[0], osc: cruces / 2 / Math.max(S.t, 1e-3), act: act / Math.max(1, S.hist.length - 1), fuera: S.estado === "fuera", t: S.t };
+  }
+  function pistaSvg(r, titulo) {
+    const P = r.S.pista.P, c = r.S.pista.caja, ink = color("--cinta"), ir = color("--ir");
+    const W = 300, H = 190, m = 10, sx = (W - 2 * m) / (c.xmax - c.xmin), sy = (H - 2 * m) / (c.ymax - c.ymin), s = Math.min(sx, sy);
+    const X = x => m + (x - c.xmin) * s, Y = y => H - m - (y - c.ymin) * s;
+    const pts = P.filter((_, i) => i % 4 === 0).map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+    const tr = r.tr.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Recorrido con ${titulo}"><polygon points="${pts}" fill="none" stroke="${ink}" stroke-width="${Math.max(2, ficha.anchoLinea * s)}" stroke-linejoin="round"/><polyline points="${tr}" fill="none" stroke="${ir}" stroke-width="1.4"/></svg>`;
+  }
+  function comparativa() {
+    const base = { vBase: st.vb, ki: 0, kd: 0, kp: st.kp };
+    const casos = [
+      ["On/off", Object.assign({}, base, { modoCtl: 1 }), "Corrige siempre con la misma fuerza: zigzaguea aunque el error sea pequeño."],
+      ["Sólo P", Object.assign({}, base, { modoCtl: 0 }), "Corrige en proporción al error, pero sin amortiguamiento oscila en las rectas."],
+      ["PD", Object.assign({}, base, { modoCtl: 0, kd: Math.max(st.kd, 0.02) }), "La derivada frena la corrección antes de pasarse: deja de oscilar."],
+      ["PID", Object.assign({}, base, { modoCtl: 0, kd: Math.max(st.kd, 0.02), ki: Math.max(st.ki, 2) }), "La integral elimina errores sostenidos; aquí casi no hacen falta y agrega algo de oscilación."]
+    ];
+    const res = casos.map(c => { const r = correr(c[1], "competencia", 15, 0.02); return { n: c[0], r, m: metricas(r), txt: c[2] }; });
+    $("#multi").innerHTML = res.map(x => `<div class="card"><h3>${x.n}${x.m.fuera ? ' <span class="est bad">se salió</span>' : ""}</h3>${pistaSvg(x.r, x.n)}</div>`).join("");
+    $("#tabComp tbody").innerHTML = res.map(x => `<tr><td><b>${x.n}</b></td><td class="num">${fmt(x.m.rms * 1000, 1, "mm")}</td><td class="num">${x.m.vuelta ? fmt(x.m.vuelta, 2, "s") : "—"}</td><td class="num">${fmt(x.m.osc, 1, "Hz")}</td><td class="num">${fmt(x.m.act * 100, 2, "%")}</td><td>${x.txt}</td></tr>`).join("");
+  }
+
+  /* ================= 4. MAPA ================= */
+  const KPS = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0], KDS = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.065, 0.08];
+  const ESC = ["#1d7650", "#5b9a3f", "#a8b236", "#e0a030", "#e0702e", "#c2261b"];
+  const colRms = r => ESC[Math.min(ESC.length - 1, Math.floor(r * 1000 / 20 * (ESC.length - 1) + 0.0001))];
+  let mapa = {}, explorando = false, selMapa = null;
+  $("#escala").innerHTML = ESC.map(c => `<span style="background:${c}"></span>`).join("");
+  function pintarMapa() {
+    let h = "";
+    $("#gridMapa").style.gridTemplateColumns = `48px repeat(${KPS.length}, minmax(0,1fr))`;
+    for (let j = KDS.length - 1; j >= 0; j--) {
+      h += `<div class="eje">${fmt(KDS[j], 3)}</div>`;
+      for (let i = 0; i < KPS.length; i++) {
+        const c = mapa[i + "_" + j], sel = selMapa === i + "_" + j ? " sel" : "";
+        if (!c) h += `<button type="button" disabled style="background:var(--bg2)" aria-label="Sin calcular"></button>`;
+        else if (c.fuera) h += `<button type="button" class="${sel}" data-c="${i}_${j}" style="background:#555" aria-label="Kp ${KPS[i]}, Kd ${KDS[j]}: se sale">×</button>`;
+        else h += `<button type="button" class="${sel}" data-c="${i}_${j}" style="background:${colRms(c.rms)}" aria-label="Kp ${KPS[i]}, Kd ${KDS[j]}: ${fmt(c.rms * 1000, 1)} mm">${fmt(c.rms * 1000, 0)}</button>`;
+      }
+    }
+    h += `<div class="eje">K<sub>d</sub> ↑ / K<sub>p</sub> →</div>` + KPS.map(k => `<div class="eje">${fmt(k, 1)}</div>`).join("");
+    $("#gridMapa").innerHTML = h;
+  }
+  function explorar() {
+    if (explorando) return; explorando = true; mapa = {}; selMapa = null; pintarMapa();
+    const celdas = []; for (let j = 0; j < KDS.length; j++) for (let i = 0; i < KPS.length; i++) celdas.push([i, j]);
+    let n = 0; const t0 = performance.now();
+    const lote = () => {
+      const fin = performance.now() + 60;
+      while (n < celdas.length && performance.now() < fin) {
+        const [i, j] = celdas[n++];
+        const r = correr({ kp: KPS[i], kd: KDS[j], ki: st.ki, vBase: st.vbm, modoCtl: 0 }, "competencia", 6, 1);
+        mapa[i + "_" + j] = { rms: r.S.errorRMS(), fuera: r.S.estado === "fuera" };
+      }
+      pintarMapa();
+      $("#progMapa").textContent = `Calculando: ${n} de ${celdas.length} corridas…`;
+      if (n < celdas.length) setTimeout(lote, 0);
+      else { explorando = false; $("#progMapa").textContent = `Listo: ${celdas.length} corridas en ${fmt((performance.now() - t0) / 1000, 1, "s")} a ${fmt(st.vbm * 100, 0, "%")} de velocidad.`; resumenMapa(); }
+    };
+    lote();
+  }
+  function resumenMapa() {
+    const v = Object.entries(mapa); if (!v.length) return;
+    const ok = v.filter(([, c]) => !c.fuera && c.rms < 0.006).length, fuera = v.filter(([, c]) => c.fuera).length;
+    const mejor = v.filter(([, c]) => !c.fuera).sort((a, b) => a[1].rms - b[1].rms)[0];
+    const [bi, bj] = mejor ? mejor[0].split("_").map(Number) : [0, 0];
+    tarjetas("#resMapa", [["Celdas con error < 6 mm", ok + " de " + v.length], ["Se salen", String(fuera)], ["Mejor celda", mejor ? `Kp ${fmt(KPS[bi], 1)} · Kd ${fmt(KDS[bj], 3)}` : "—"], ["Su error RMS", mejor ? fmt(mejor[1].rms * 1000, 1, "mm") : "—"]]);
+    $("#verMapa").innerHTML = ok === 0 ? est("bad", "A esta velocidad ninguna combinación sigue bien la línea: hay que bajar la velocidad o cambiar la mecánica.") : ok < 10 ? est("warn", "Zona buena pequeña: el carrito será sensible a cualquier cambio (batería, piso, ruido).") : est("ok", "Zona buena amplia: la sintonía es robusta a esta velocidad.");
+  }
+  $("#btnMapa").addEventListener("click", explorar);
+  $("#gridMapa").addEventListener("click", e => {
+    const b = e.target.closest("button[data-c]"); if (!b) return;
+    const [i, j] = b.dataset.c.split("_").map(Number);
+    selMapa = b.dataset.c; st.kp = KPS[i]; st.kd = KDS[j]; st.vb = st.vbm; pk(); pkd(); pvb(); pintarMapa(); todoCtl();
+  });
+  slider("vbm", "vbm", x => fmt(x * 100, 0, "%"), () => { mapa = {}; selMapa = null; pintarMapa(); $("#resMapa").innerHTML = ""; $("#verMapa").innerHTML = ""; $("#progMapa").textContent = "Cambió la velocidad: vuelve a explorar."; });
+
+  /* ================= 5. SATURACIÓN Y WINDUP ================= */
+  function saturacion() {
+    const b = ficha.trocha, rmin = st.vb * b / (2 * Math.max(1e-3, 1 - st.vb)), rp = window.SimCore.crearPista("competencia").rMin;
+    tarjetas("#resSat", [["Reserva de control", pct(1 - st.vb)], ["Radio mínimo sin saturar", fmt(rmin * 100, 1, "cm")], ["Curva más cerrada de la pista", fmt(rp * 100, 1, "cm")]]);
+    $("#verSat").innerHTML = rmin < 0.7 * rp ? est("ok", "Hay reserva suficiente para tomar la curva más cerrada sin saturar.") : rmin < rp ? est("warn", "La curva más cerrada usa casi toda la reserva: cualquier error extra satura.") : est("bad", "En la curva más cerrada el PWM se satura: el carrito no puede girar lo que pide el controlador. Baja la velocidad base o frena en curvas.");
+    // windup
+    const exp = aw => {
+      const p = Object.assign({}, ficha, { kp: st.kp, kd: st.kd, ki: 3, vBase: st.vb, antiWindup: aw, modoCtl: 0 }); Object.assign(p, window.Ficha.derivar(p));
+      const S = window.SimCore.crearSim(p, "recta"); S.levantado = true; const out = [];
+      for (let k = 0; S.t < 4.5; k++) { if (k === 1500) S.levantado = false; if (k % 10 === 0) out.push([S.t, S.tI, S.e]); S.paso(); if (S.estado === "fuera") break; }
+      return { out, S };
+    };
+    const a = exp(1), n = exp(0);
+    const ink2 = color("--ink2"), line = color("--line"), ok = color("--ok"), bad = color("--bad"), int = color("--int");
+    const x0 = 60, W = 560, yc = 150, H = 110, T = 4.5, lim = Math.max(1, ...n.out.map(p => Math.abs(p[1])), ...a.out.map(p => Math.abs(p[1])));
+    const X = t => x0 + t / T * W, Y = v => yc - v / lim * H;
+    let h = `<rect x="${X(0)}" y="${yc - H}" width="${X(1.5) - X(0)}" height="${2 * H}" fill="${int}" opacity=".12"/><text x="${X(0.05)}" y="${yc - H + 14}" font-size="12.5" fill="${ink2}">carrito levantado</text>`;
+    for (const v of [-lim, 0, lim]) h += `<line x1="${x0}" y1="${Y(v)}" x2="${x0 + W}" y2="${Y(v)}" stroke="${v === 0 ? ink2 : line}"/><text x="${x0 - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${fmt(v, 1)}</text>`;
+    for (let t = 0; t <= T; t += 0.5) h += `<text x="${X(t)}" y="${yc + H + 18}" text-anchor="middle" font-size="12.5" fill="${ink2}">${fmt(t, 1)} s</text>`;
+    const pl = (o, c) => `<polyline points="${o.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ")}" fill="none" stroke="${c}" stroke-width="2.6"/>`;
+    h += pl(n.out, bad) + pl(a.out, ok);
+    if (n.S.estado === "fuera") h += `<text x="${X(n.S.t)}" y="${Y(n.out[n.out.length - 1][1]) - 10}" text-anchor="middle" font-size="13" font-weight="700" fill="${bad}">se sale</text>`;
+    h += `<text x="${x0}" y="22" font-size="12.5" fill="${ink2}">término integral Ki·Σe·T (fracción de PWM)</text>`;
+    $("#svgWind").innerHTML = h;
+    $("#verWind").innerHTML = n.S.estado === "fuera" && a.S.estado !== "fuera" ? est("ok", "Con anti-windup vuelve a la línea; sin él, la integral acumulada lo saca de la pista.") : est("warn", "Con estas ganancias la diferencia es pequeña; prueba con más velocidad base.");
+  }
+
+  /* ================= 6. FILTRO ================= */
+  function filtro() {
+    const run = a => { const r = correr({ kp: st.kp, kd: Math.max(st.kd, 0.02), ki: st.ki, vBase: st.vb, ruido: st.ruido, filtroD: a, modoCtl: 0 }, "recta", 2.5, 1, S => { S.registrar = true; }); return r; };
+    const s0 = run(0), s1 = run(st.alfa);
+    const ink2 = color("--ink2"), line = color("--line"), int = color("--int"), ele = color("--ele");
+    const L0 = s0.S.log.filter(m => m.t > 1 && m.t < 2), L1 = s1.S.log.filter(m => m.t > 1 && m.t < 2);
+    const x0 = 56, W = 564, y0 = 230, H = 200, X = t => x0 + (t - 1) * W, Y = d => y0 - d * H;
+    let h = "";
+    for (const v of [0, 0.25, 0.5, 0.75, 1]) h += `<line x1="${x0}" y1="${Y(v)}" x2="${x0 + W}" y2="${Y(v)}" stroke="${line}"/><text x="${x0 - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${v * 100}%</text>`;
+    const pl = (L, c, w) => `<polyline points="${L.map(m => `${X(m.t).toFixed(1)},${Y(Math.max(0, Math.min(1, m.dL))).toFixed(1)}`).join(" ")}" fill="none" stroke="${c}" stroke-width="${w}"/>`;
+    h += pl(L0, int, 1.4) + pl(L1, ele, 2.4);
+    h += `<text x="${x0}" y="20" font-size="12.5" fill="${ink2}">PWM del motor izquierdo en una recta (1 s)</text>`;
+    $("#svgFil").innerHTML = h;
+    const jit = L => L.slice(1).reduce((a, m, i) => a + Math.abs(m.dL - L[i].dL), 0) / Math.max(1, L.length - 1);
+    const fc = st.alfa > 0 ? (1 - st.alfa) / (2 * Math.PI * st.alfa * ficha.periodo) : Infinity;
+    const j0 = jit(L0), j1 = jit(L1);
+    tarjetas("#resFil", [["Salto de PWM sin filtro", fmt(j0 * 100, 1, "%")], ["Con el filtro", fmt(j1 * 100, 1, "%")], ["Frecuencia de corte", isFinite(fc) ? fmt(fc, 0, "Hz") : "sin filtro"], ["Error RMS con filtro", fmt(s1.S.errorRMS() * 1000, 1, "mm")]]);
+    $("#verFil").innerHTML = st.alfa === 0 ? est("warn", "Sin filtro: el PWM salta en cada muestra y los motores vibran.") : st.alfa > 0.85 ? est("warn", "Filtro muy fuerte: la derivada llega tarde y pierde su efecto amortiguador.") : est("ok", `El filtro reduce el salto del PWM ${fmt((1 - j1 / Math.max(j0, 1e-9)) * 100, 0, "%")} sin retrasar demasiado la derivada.`);
+  }
+  slider("alfa", "alfa", x => fmt(x, 2), filtro);
+  slider("ruido", "ruido", x => fmt(x * 100, 1, "%"), filtro);
+
+  /* ================= 7. CÓDIGO ================= */
+  function codigoPid() {
+    const f = window.Ficha.leer();
+    $("#codPid code").textContent =
+`// ---- PID para seguidor de línea (valores tomados de la ficha) ----
+const unsigned long T_US = ${Math.round(f.periodo * 1e6)};  // periodo fijo: ${fmt(f.periodo * 1000, 0, "ms")}
+const float T = T_US / 1e6;
+float Kp = ${fmt(st.kp, 2).replace(",", ".")}, Ki = ${fmt(st.ki, 2).replace(",", ".")}, Kd = ${fmt(st.kd, 3).replace(",", ".")};
+float base = ${fmt(st.vb, 2).replace(",", ".")};          // velocidad base (0–1)
+const float ALFA = ${fmt(st.alfa, 2).replace(",", ".")};  // filtro de la derivada
+const float LIM_I = 0.5;                  // anti-windup: |Ki·integral| ≤ 50 % PWM
+
+float integral = 0, ePrev = 0, dFilt = 0;
+unsigned long tSig;
+
+void setup() {
+  // pines del puente H, calibrar() del Módulo 2 ...
+  tSig = micros();
+}
+
+void loop() {
+  if ((long)(micros() - tSig) < 0) return;  // esperar el siguiente periodo
+  tSig += T_US;                               // periodo fijo, sin acumular retraso
+
+  float e = leerError();                      // Módulo 2: −1 … +1 (1.2 si se perdió)
+  integral += e * T;
+  if (Ki > 0) integral = constrain(integral, -LIM_I / Ki, LIM_I / Ki);
+  float d = (e - ePrev) / T;  ePrev = e;
+  dFilt = ALFA * dFilt + (1 - ALFA) * d;      // pasa-bajas de la derivada
+
+  float u = Kp * e + Ki * integral + Kd * dFilt;
+  float izq = constrain(base - u, -1, 1);     // saturación explícita
+  float der = constrain(base + u, -1, 1);
+  motores(izq, der);                          // Módulo 3: PWM y sentido al TB6612
+
+  static uint8_t n = 0;                       // telemetría cada 20 ms, no en cada muestra
+  if (++n >= ${Math.max(1, Math.round(0.02 / f.periodo))}) { n = 0; Serial.print(e); Serial.print(','); Serial.println(u); }
+}`;
+  }
+  $("#btnCopiarPid").addEventListener("click", async () => {
+    const b = $("#btnCopiarPid");
+    try { await navigator.clipboard.writeText($("#codPid").textContent); b.textContent = "Copiado"; } catch (e) { b.textContent = "No se pudo copiar"; }
+    setTimeout(() => { b.textContent = "Copiar"; }, 2000);
+  });
+
+  /* ================= 8. DECISIONES ================= */
+  function decisiones() {
+    const f = window.Ficha.leer();
+    const filas = [
+      ["Kp", fmt(f.kp, 2), fmt(st.kp, 2), fmt(st.kp / (half() * 1000) * 100, 2, "% de PWM por mm")],
+      ["Ki", fmt(f.ki, 1), fmt(st.ki, 1), st.ki ? "Corrige errores sostenidos" : "Sin integral"],
+      ["Kd", fmt(f.kd, 3), fmt(st.kd, 3), "Amortiguamiento"],
+      ["Velocidad base", fmt(f.vBase * 100, 0, "%"), fmt(st.vb * 100, 0, "%"), "Reserva de control " + pct(1 - st.vb)],
+      ["Filtro de la derivada α", fmt(f.filtroD || 0, 2), fmt(st.alfa, 2), st.alfa ? "Corte ≈ " + fmt((1 - st.alfa) / (2 * Math.PI * st.alfa * f.periodo), 0, "Hz") : "Sin filtro"],
+      ["Anti-windup", f.antiWindup !== 0 ? "Sí" : "No", "Sí", "Integral limitada a ±50 % de PWM"]
+    ];
+    $("#tabDecC tbody").innerHTML = filas.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num"><b>${r[2]}</b></td><td>${r[3]}</td></tr>`).join("");
+  }
+  $("#btnAplicarC").addEventListener("click", () => {
+    const nueva = window.Ficha.guardar({ kp: st.kp, ki: st.ki, kd: st.kd, vBase: st.vb, filtroD: st.alfa, antiWindup: 1, modoCtl: 0 });
+    Object.assign(ficha, nueva); decisiones(); codigoPid();
+    const m = $("#msgDecC"); m.style.color = "var(--ok)"; m.textContent = "Listo: el simulador ya usa estas ganancias.";
+  });
+
+  let tCtl = null;
+  function todoCtl() {
+    unidades(); decisiones(); codigoPid();
+    clearTimeout(tCtl);
+    if (visible) tCtl = setTimeout(pesado, 400); // corridas del simulador, agrupadas
+  }
+  // las corridas del simulador sólo se hacen cuando el módulo está a la vista
+  let visible = false;
+  function pesado() { grabar(); comparativa(); saturacion(); filtro(); }
+  const io = new IntersectionObserver(ents => { if (!visible && ents.some(e => e.isIntersecting)) { visible = true; io.disconnect(); pesado(); } });
+  ["#ganancias", "#depurador", "#comparativa", "#saturacion", "#filtro"].forEach(s => io.observe($(s)));
+  pintarMapa();
+  todoCtl();
+  document.addEventListener("cambio-tema", () => { todoCtl(); pintarMapa(); });
+}
+</script>
+</body>
+</html>

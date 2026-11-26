@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador del seguidor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.simhead{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between;margin-bottom:16px}
+.simhead h1{margin:0}
+.lay{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+@media(max-width:1000px){.lay{grid-template-columns:minmax(0,1fr)}}
+.vista{position:relative;height:clamp(340px,56vh,600px);border-radius:var(--radio);overflow:hidden;border:1px solid var(--line);background:var(--bg2)}
+.vista canvas{display:block;width:100%;height:100%}
+.hud{position:absolute;left:10px;top:10px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none;right:10px}
+.chip{background:color-mix(in srgb,var(--card) 88%,transparent);border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip b{font-weight:700}
+.chip.alerta{border-color:var(--bad);color:var(--bad);font-weight:700}
+.chip.aviso{border-color:var(--warn);color:var(--warn);font-weight:700}
+.camaras{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+.camaras button{min-height:36px;padding:0 10px;font-size:14px}
+.fuera{position:absolute;inset:0;display:none;place-items:center;background:color-mix(in srgb,var(--bg) 70%,transparent)}
+.fuera.on{display:grid}
+.fuera .card{text-align:center;max-width:380px}
+.barra{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.barra .sep{flex:1}
+.graf{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:14px}
+@media(max-width:700px){.graf{grid-template-columns:minmax(0,1fr)}}
+.fig{position:relative;height:170px}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%}
+.leyenda{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.leyenda i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.sensores{display:flex;gap:4px;align-items:end;height:90px;padding:6px 0}
+.sensores div{flex:1;background:var(--bg2);border-radius:4px 4px 0 0;position:relative;height:100%}
+.sensores div span{position:absolute;left:0;right:0;bottom:0;background:var(--ir);border-radius:4px 4px 0 0}
+.sensores div em{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:12px;font-style:normal;color:var(--ink2)}
+.panel{display:flex;flex-direction:column;gap:14px}
+.grupo{background:var(--card);border:1px solid var(--line);border-radius:var(--radio);padding:12px 16px 6px}
+.grupo h3{display:flex;align-items:center;gap:8px;font-size:19px;margin:0 0 6px}
+.ctl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:center;padding:4px 0}
+.ctl label{grid-column:1}
+.ctl output{grid-column:2;font-variant-numeric:tabular-nums;font-weight:600;font-size:14.5px;white-space:nowrap}
+.ctl input{grid-column:1/3}
+.ind{display:grid;gap:8px}
+.ind .fila{display:flex;justify-content:space-between;gap:10px;font-size:14.5px;border-bottom:1px dashed var(--line);padding-bottom:6px}
+.ind .fila span:last-child{text-align:right}
+.fallas{display:flex;flex-wrap:wrap;gap:8px}
+.fallas button{font-weight:500;font-size:14.5px}
+.msg{font-size:14px;color:var(--ok);min-height:1.4em}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+</head>
+<body data-pagina="sim">
+<main>
+<section class="band" style="padding-bottom:0">
+  <div class="wrap">
+    <div class="simhead">
+      <div>
+        <h1>Simulador del carrito</h1>
+        <p class="muted" style="margin:0">Cambia un parámetro y observa qué le pasa al resto del sistema. Ficha cargada: <b id="verFicha"></b>. El carrito azul semitransparente es el otro perfil, si activas la comparación.</p>
+      </div>
+      <label>Pista&nbsp;
+        <select id="pista"></select>
+      </label>
+    </div>
+  </div>
+</section>
+
+<section class="band" style="padding-top:8px">
+  <div class="wrap lay">
+    <div>
+      <div class="vista" id="vista">
+        <div class="hud" id="hud"></div>
+        <div class="camaras" role="group" aria-label="Cámara">
+          <button type="button" data-cam="libre">Libre</button>
+          <button type="button" data-cam="sigue" aria-pressed="true">Persecución</button>
+          <button type="button" data-cam="arriba">Superior</button>
+        </div>
+        <div class="fuera" id="fuera"><div class="card"><h3>El carrito se salió de la pista</h3><p class="muted" id="fueraTxt"></p><button class="pri" type="button" id="btnReiniciar2">Reiniciar</button></div></div>
+      </div>
+
+      <div class="barra">
+        <button class="pri" type="button" id="btnPlay">▶ Iniciar</button>
+        <button type="button" id="btnReiniciar">↺ Reiniciar</button>
+        <span class="muted small">Velocidad de simulación</span>
+        <button type="button" data-vel="0.25">¼×</button>
+        <button type="button" data-vel="1" aria-pressed="true">1×</button>
+        <button type="button" data-vel="3">3×</button>
+        <span class="sep"></span>
+        <label style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><input type="checkbox" id="chkEstela" checked style="min-height:0;width:18px;height:18px"> Estela</label>
+        <label style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:#3d6fd6"><input type="checkbox" id="chkFantasma" style="min-height:0;width:18px;height:18px;accent-color:#3d6fd6"> <span id="lblFantasma">Comparar con el otro perfil</span></label>
+      </div>
+
+      <div class="graf">
+        <div class="card">
+          <h3>Error de seguimiento</h3>
+          <div class="fig"><canvas id="gErr"></canvas></div>
+          <div class="leyenda"><span><i style="background:var(--ctl)"></i>e medido por sensores (−1…+1)</span><span><i style="background:var(--ir)"></i>distancia real a la línea</span></div>
+        </div>
+        <div class="card">
+          <h3>Señal a los motores (PWM)</h3>
+          <div class="fig"><canvas id="gPwm"></canvas></div>
+          <div class="leyenda"><span><i style="background:var(--mec)"></i>Motor izquierdo</span><span><i style="background:var(--ele)"></i>Motor derecho</span></div>
+        </div>
+      </div>
+
+      <div class="graf">
+        <div class="card">
+          <h3>Lecturas del arreglo de sensores</h3>
+          <div class="sensores" id="barSens"></div>
+          <p class="small muted" style="margin-top:26px">Izquierda → derecha, ya normalizadas con la calibración (0 = blanco, 1 = negro).</p>
+        </div>
+        <div class="card">
+          <h3>Fallas para diagnosticar</h3>
+          <p class="small muted">Actívalas una por una y anota el síntoma que produce cada una.</p>
+          <div class="fallas" id="fallas"></div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel" id="panel">
+      <div class="grupo">
+        <h3>Ajustes rápidos</h3>
+        <div class="fallas" id="presets"></div>
+        <p class="small muted" style="margin:8px 0 6px">Cargan sólo las ganancias y la velocidad base.</p>
+      </div>
+      <div class="grupo">
+        <h3>Indicadores de diseño</h3>
+        <div class="ind" id="ind"></div>
+        <p class="small muted" style="margin:8px 0 6px">Se recalculan con cada cambio: así se ve el acoplamiento entre subsistemas.</p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <h2>Ficha técnica del carrito</h2>
+    <p>La ficha guarda las decisiones de diseño. Por ahora es un carrito genérico; conforme el grupo elija motor, ruedas, sensores y batería, estos valores se reemplazan por los del carrito real y el simulador se actualiza con ellos.</p>
+    <div class="barra">
+      <button class="pri" type="button" id="btnGuardar">Guardar en la ficha</button>
+      <button type="button" id="btnRestablecer">Restablecer genérico</button>
+      <button type="button" id="btnCopiar">Copiar ficha (JSON)</button>
+      <span class="msg" id="msg" role="status"></span>
+    </div>
+    <div class="scroll"><table class="stack" id="tabFicha"><thead><tr><th>Subsistema</th><th>Parámetro</th><th class="num">Valor</th><th>Para qué sirve</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="js/sim-core.js"></script>
+<script src="js/sim-vista.js"></script>
+</body>
+</html>

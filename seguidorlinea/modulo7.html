@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Módulo 7 · Pruebas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.m7 .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:10px;margin-top:12px}
+.m7 .res div{background:var(--bg2);border-radius:8px;padding:8px 12px}
+.m7 .res b{display:block;font-size:20px;font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.m7 .res span{font-size:13px;color:var(--ink2)}
+.m7 .veredicto{margin-top:12px;font-weight:600}
+.m7 .veredicto .est,.m7 td .est{white-space:normal}
+.m7 .nivel{margin-top:22px}
+.m7 .prueba{display:grid;grid-template-columns:70px minmax(0,1.3fr) minmax(0,1fr) 120px;gap:14px;align-items:start;background:var(--card);border:1px solid var(--line);border-radius:var(--radio);padding:14px 16px;margin-top:10px}
+.m7 .prueba .id{font:700 20px "Barlow Condensed",sans-serif}
+.m7 .prueba h4{margin:0 0 4px;font-size:16.5px}
+.m7 .prueba p{margin:0;font-size:14.5px}
+.m7 .prueba .crit{margin-top:6px;font-size:14px;color:var(--ink2)}
+.m7 .prueba .campos{display:grid;gap:6px}
+.m7 .prueba label{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px;align-items:center;font-size:14px}
+.m7 .prueba input,.m7 .prueba select{width:100%;min-height:38px}
+.m7 .prueba .estado{font-weight:700;text-align:center;padding-top:6px}
+@media(max-width:820px){.m7 .prueba{grid-template-columns:minmax(0,1fr)}.m7 .prueba .estado{text-align:left}}
+.m7 .barraprog{height:14px;border-radius:7px;background:var(--line);overflow:hidden;display:flex;max-width:520px}
+.m7 .barraprog span{display:block;height:100%}
+.m7 .sintomas{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+.m7 .sintomas button{font-size:14.5px}
+.m7 .diag7{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:900px){.m7 .diag7{grid-template-columns:minmax(0,1fr)}}
+.m7 .pares{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.m7 .pares .card{padding:10px}
+.m7 .pares h4{margin:2px 4px 6px;font-size:15.5px}
+.m7 .pares svg{display:block;width:100%;height:auto}
+.m7 .causas li{margin-bottom:6px}
+.m7 .botones{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/sim-core.js"></script>
+</head>
+<body data-pagina="m7">
+<main class="m7">
+<section class="band">
+  <div class="wrap">
+    <p><span class="tag t-int">Módulo 7 · Integración y pruebas</span></p>
+    <h1>Pruebas: demostrar con números que el carrito cumple, y saber qué revisar cuando no</h1>
+    <p class="muted" style="font-size:18px">"Ya funciona" no es una prueba. Este es el lado derecho del modelo en V del Módulo 0: primero se prueba cada pieza por separado, luego juntas en el banco y al final en la pista, contra los requisitos. Y cuando algo falla, el síntoma casi siempre apunta a una causa conocida.</p>
+    <nav class="scroll" aria-label="Secciones del módulo" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <a class="btn" href="#f7-plan">1. Plan de pruebas</a>
+      <a class="btn" href="#f7-diagnostico">2. Del síntoma a la causa</a>
+      <a class="btn" href="#f7-version">3. Congelar la versión</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============ 1. PLAN ============ -->
+<section class="band alt" id="f7-plan">
+  <div class="wrap">
+    <h2>1. Plan de pruebas: de la pieza a la pista</h2>
+    <p>Cada prueba tiene un procedimiento y un <b>criterio de aceptación con número</b>, que sale de la ficha técnica. Al anotar lo medido, la página decide si pasa. El orden importa: no tiene caso sintonizar el PID en la pista si un sensor tiene poco contraste o un motor gira al revés.</p>
+    <div class="barraprog" id="f7Prog" aria-label="Avance del plan de pruebas"></div>
+    <div class="res" id="f7Resumen"></div>
+    <div id="f7Plan"></div>
+    <div class="botones">
+      <button type="button" id="f7CopiarPlan">Copiar resultados (CSV)</button>
+      <button type="button" id="f7Borrar">Borrar lo anotado</button>
+      <span class="small" id="f7MsgPlan" role="status"></span>
+    </div>
+    <p class="small muted">Lo que anoten se recuerda sólo en este navegador. Para entregar o compartir, copien los resultados.</p>
+  </div>
+</section>
+
+<!-- ============ 2. DIAGNÓSTICO ============ -->
+<section class="band" id="f7-diagnostico">
+  <div class="wrap">
+    <h2>2. Del síntoma a la causa</h2>
+    <p>Elige lo que observas en la pista. La página explica las causas probables, cómo comprobarlas y en qué módulo está la solución, y reproduce la falla en el simulador junto al carrito sano para comparar.</p>
+    <div class="sintomas" id="f7Sintomas" role="group" aria-label="Síntomas"></div>
+    <div class="diag7">
+      <div>
+        <div class="pares">
+          <div class="card"><h4>Carrito sano</h4><div id="f7Sano"></div></div>
+          <div class="card"><h4>Con la falla</h4><div id="f7Falla"></div></div>
+        </div>
+        <div class="scroll" style="margin-top:12px"><table class="stack" id="f7Tab"><thead><tr><th>Métrica</th><th class="num">Sano</th><th class="num">Con la falla</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="card">
+        <h3 id="f7Titulo" style="font-size:21px"></h3>
+        <p id="f7Desc"></p>
+        <h4 style="margin:12px 0 6px">Causas probables, de la más a la menos común</h4>
+        <ol class="causas" id="f7Causas"></ol>
+        <h4 style="margin:12px 0 6px">Cómo comprobarlo</h4>
+        <p id="f7Comprobar" style="margin:0"></p>
+        <h4 style="margin:12px 0 6px">Qué hacer</h4>
+        <p id="f7Solucion" style="margin:0"></p>
+        <p class="small" id="f7Modulo" style="margin:10px 0 0"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. VERSIÓN ============ -->
+<section class="band alt" id="f7-version">
+  <div class="wrap dos">
+    <div>
+      <h2>3. Congelar la versión</h2>
+      <p>Cuando el plan de pruebas pasa, la ficha técnica describe un carrito que funciona. Se le pone nombre y fecha: así, si después algo deja de funcionar, se sabe exactamente contra qué comparar. Es el control de configuración que se usa en la industria (por ejemplo, en la automotriz, al liberar un diseño).</p>
+      <div class="ctl" style="display:grid;gap:6px;max-width:420px"><label for="f7Nombre" style="font-weight:600">Nombre de la versión</label><input type="text" id="f7Nombre" maxlength="40"></div>
+      <div class="botones"><button type="button" class="pri" id="f7Congelar">Guardar versión en la ficha</button><span class="small" id="f7MsgVer" role="status"></span></div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:19px">Estado del plan</h3>
+      <div class="res" id="f7ResVer"></div>
+      <p class="veredicto" id="f7VerVer"></p>
+      <h3 style="margin-top:20px;font-size:19px">Actividad</h3>
+      <ol style="margin:0">
+        <li>Ejecuten el plan completo en orden y anoten cada medición.</li>
+        <li>Para cada prueba que falle, usen la sección 2 para proponer la causa y documenten la corrección.</li>
+        <li>Congelen la versión cuando todas las pruebas pasen y anexen el CSV a su reporte.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+{
+  const raiz = document.querySelector(".m7");
+  const $ = s => raiz.querySelector(s);
+  let ficha = window.Ficha.leer();
+  const color = n => { const e = document.createElement("span"); e.style.color = "var(" + n + ")"; document.body.append(e); const c = getComputedStyle(e).color; e.remove(); return c; };
+  const tarjetas = (sel, items) => { $(sel).innerHTML = items.map(x => `<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join(""); };
+  const est = (c, t) => `<span class="est ${c}">${c === "ok" ? "✓" : c === "warn" ? "!" : "✗"} ${t}</span>`;
+  const CLAVE = "seguidor_pruebas_v1";
+  let reg = {};
+  try { reg = JSON.parse(localStorage.getItem(CLAVE) || "{}") || {}; } catch (e) { reg = {}; }
+  const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(reg)); } catch (e) {} };
+  const vMot = () => window.Ficha.vMotor(ficha);
+
+  /* ================= 1. PLAN ================= */
+  const SINO = [["", "—"], ["si", "Sí"], ["no", "No"]];
+  const PRUEBAS = () => [
+    { n: "Unitarias (cada pieza por separado)", p: [
+      { id: "U1", sub: "sen", t: "Contraste de un sensor", proc: `Con el multímetro, midan V_out sobre blanco y sobre la cinta a ${fmt(ficha.alturaSens * 1000, 1, "mm")} de altura.`, c: [["vn", "V sobre la cinta", "V"], ["vb", "V sobre blanco", "V"]], crit: "V_cinta − V_blanco ≥ 2.5 V (Módulo 2)", ev: v => v.vn - v.vb >= 2.5 },
+      { id: "U2", sub: "sen", t: "Calibración de todo el arreglo", proc: "Corran la calibración y lean por el puerto serial las lecturas normalizadas sobre blanco y sobre la cinta.", c: [["pb", "Peor lectura en blanco", "0–1"], ["pn", "Peor lectura en la cinta", "0–1"]], crit: "Blanco ≤ 0.10 y cinta ≥ 0.90 en todos los sensores", ev: v => v.pb <= 0.1 && v.pn >= 0.9 },
+      { id: "U3", sub: "mec", t: "Velocidad del motor sin carga", proc: "Ruedas al aire, PWM al 100 %. Midan las rpm de cada rueda (encoder, o marca + video en cámara lenta).", c: [["ri", "rpm rueda izquierda", "rpm"], ["rd", "rpm rueda derecha", "rpm"]], crit: () => `Ambas en ${fmt(ficha.rpmMax * vMot() / ficha.vNom, 0, "rpm")} ± 15 % y entre sí ± 5 %`, ev: v => { const e = ficha.rpmMax * vMot() / ficha.vNom; return Math.abs(v.ri / e - 1) <= 0.15 && Math.abs(v.rd / e - 1) <= 0.15 && Math.abs(v.ri / v.rd - 1) <= 0.05; } },
+      { id: "U4", sub: "ele", t: "Caída en el puente H", proc: "Con el motor girando a la corriente de trabajo, midan el voltaje de batería y el voltaje en las terminales del motor.", c: [["vbat", "V batería", "V"], ["vmot", "V en el motor", "V"]], crit: () => `V_bat − V_motor ≤ ${fmt(ficha.caidaDriver + 0.3, 2, "V")} (Módulo 3)`, ev: v => v.vbat - v.vmot <= ficha.caidaDriver + 0.3 },
+      { id: "U5", sub: "ele", t: "Regulador de 5 V con carga", proc: "Con sensores y microcontrolador encendidos, midan la salida del regulador.", c: [["v5", "V de salida", "V"]], crit: "Entre 4.75 y 5.25 V", ev: v => v.v5 >= 4.75 && v.v5 <= 5.25 }
+    ]},
+    { n: "Integración (en el banco, ruedas al aire)", p: [
+      { id: "I1", sub: "prg", t: "Sentido de la corrección", proc: "Con el carrito en ESPERA→SIGUIENDO y las ruedas al aire, pongan la cinta bajo los sensores de la izquierda.", c: [["s", "¿Acelera la rueda derecha?", "sino"]], crit: "Sí. Si no, se invierte el signo de u, no las ganancias.", ev: v => v.s === "si" },
+      { id: "I2", sub: "prg", t: "Periodo real del lazo", proc: "Pin en alto al inicio de cada periodo; midan con el osciloscopio el tiempo entre flancos.", c: [["T", "Periodo medido", "ms"]], crit: () => `${fmt(ficha.periodo * 1000, 1, "ms")} ± 10 % (Módulo 6)`, ev: v => Math.abs(v.T / (ficha.periodo * 1000) - 1) <= 0.1 },
+      { id: "I3", sub: "ctl", t: "Constante de tiempo del motor", proc: "Prueba escalón de 0 a 60 % de PWM, encoder cada 10 ms; ajusten τ en el Módulo 4.", c: [["tau", "τ identificado", "ms"]], crit: () => `Dentro de ± 30 % del τ de la ficha (${fmt(ficha.tauMotor * 1000, 0, "ms")}); si no, actualicen el factor en el Módulo 4`, ev: v => Math.abs(v.tau / (ficha.tauMotor * 1000) - 1) <= 0.3 }
+    ]},
+    { n: "Validación (en la pista, contra los requisitos del Módulo 0)", p: [
+      { id: "V1", sub: "int", t: "Velocidad media", proc: () => `Tiempo de una vuelta completa a la pista de ${fmt(ficha.longPista, 1, "m")}.`, c: [["tv", "Tiempo de vuelta", "s"]], crit: () => `L / t ≥ ${fmt(ficha.vObjetivo, 2, "m/s")} (requisito)`, ev: v => ficha.longPista / v.tv >= ficha.vObjetivo },
+      { id: "V2", sub: "int", t: "Confiabilidad", proc: "Corran 5 intentos seguidos sin tocar nada entre uno y otro.", c: [["ok", "Intentos completos de 5", "de 5"]], crit: "5 de 5 sin salirse", ev: v => v.ok >= 5 },
+      { id: "V3", sub: "int", t: "Precisión del seguimiento", proc: "Capturen la telemetría de una vuelta y calculen el error RMS en el Módulo 6.", c: [["rms", "Error RMS", "mm"]], crit: () => `≤ ${fmt(ficha.anchoLinea * 500, 1, "mm")} (la línea nunca sale de debajo del centro)`, ev: v => v.rms <= ficha.anchoLinea * 500 },
+      { id: "V4", sub: "int", t: "Masa del carrito terminado", proc: "Pesen el carrito completo con batería.", c: [["m", "Masa", "g"]], crit: () => `≤ ${fmt(ficha.masaMax * 1000, 0, "g")} (requisito)`, ev: v => v.m <= ficha.masaMax * 1000 }
+    ]}
+  ];
+  function estadoDe(p) {
+    const v = reg[p.id] || {};
+    const llenos = p.c.every(c => v[c[0]] !== undefined && v[c[0]] !== "");
+    if (!llenos) return "pend";
+    const num = {}; for (const c of p.c) num[c[0]] = c[2] === "sino" ? v[c[0]] : parseFloat(v[c[0]]);
+    return p.ev(num) ? "ok" : "bad";
+  }
+  const txt = x => typeof x === "function" ? x() : x;
+  function plan() {
+    const N = PRUEBAS();
+    $("#f7Plan").innerHTML = N.map(nv => `<div class="nivel"><h3>${nv.n}</h3>${nv.p.map(p => `
+      <div class="prueba" data-id="${p.id}">
+        <div class="id" style="color:var(--${p.sub})">${p.id}</div>
+        <div><h4>${p.t}</h4><p>${txt(p.proc)}</p><p class="crit">Criterio: ${txt(p.crit)}</p></div>
+        <div class="campos">${p.c.map(c => {
+          const val = (reg[p.id] || {})[c[0]] ?? "";
+          const id = `f7_${p.id}_${c[0]}`;
+          return c[2] === "sino"
+            ? `<label for="${id}">${c[1]}<select id="${id}" data-p="${p.id}" data-c="${c[0]}">${SINO.map(o => `<option value="${o[0]}"${o[0] === val ? " selected" : ""}>${o[1]}</option>`).join("")}</select></label>`
+            : `<label for="${id}">${c[1]} (${c[2]})<input type="number" step="any" inputmode="decimal" id="${id}" data-p="${p.id}" data-c="${c[0]}" value="${String(val).replace(/"/g, "")}"></label>`;
+        }).join("")}</div>
+        <div class="estado" id="f7E_${p.id}"></div>
+      </div>`).join("")}</div>`).join("");
+    resumen();
+  }
+  function resumen() {
+    const todas = PRUEBAS().flatMap(n => n.p);
+    let ok = 0, bad = 0, pend = 0;
+    for (const p of todas) {
+      const e = estadoDe(p);
+      const el = $("#f7E_" + p.id);
+      if (el) el.innerHTML = e === "ok" ? est("ok", "Pasa") : e === "bad" ? est("bad", "No pasa") : '<span class="muted">Pendiente</span>';
+      if (e === "ok") ok++; else if (e === "bad") bad++; else pend++;
+    }
+    const n = todas.length;
+    $("#f7Prog").innerHTML = `<span style="width:${ok / n * 100}%;background:var(--ok)"></span><span style="width:${bad / n * 100}%;background:var(--bad)"></span>`;
+    tarjetas("#f7Resumen", [["Pruebas", String(n)], ["Pasan", String(ok)], ["No pasan", String(bad)], ["Pendientes", String(pend)]]);
+    tarjetas("#f7ResVer", [["Pasan", ok + " de " + n], ["No pasan", String(bad)], ["Pendientes", String(pend)], ["Versión actual", ficha.version]]);
+    $("#f7VerVer").innerHTML = ok === n ? est("ok", "Todo el plan pasa: listo para congelar la versión.") : bad > 0 ? est("bad", "Hay pruebas que no pasan: corrijan antes de congelar.") : est("warn", "Faltan pruebas por ejecutar.");
+    return { ok, bad, pend, n };
+  }
+  $("#f7Plan").addEventListener("input", e => {
+    const t = e.target; if (!t.dataset.p) return;
+    reg[t.dataset.p] = reg[t.dataset.p] || {}; reg[t.dataset.p][t.dataset.c] = t.value; guardar(); resumen();
+  });
+  $("#f7CopiarPlan").addEventListener("click", async () => {
+    const filas = [["prueba", "titulo", "campo", "valor", "criterio", "resultado"]];
+    for (const p of PRUEBAS().flatMap(n => n.p)) { const e = estadoDe(p); for (const c of p.c) filas.push([p.id, p.t, c[1], (reg[p.id] || {})[c[0]] ?? "", txt(p.crit), e === "ok" ? "pasa" : e === "bad" ? "no pasa" : "pendiente"]); }
+    const csv = filas.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(",")).join("\n");
+    try { await navigator.clipboard.writeText(csv); $("#f7MsgPlan").textContent = "Resultados copiados."; } catch (e) { $("#f7MsgPlan").textContent = "El navegador no permitió copiar."; }
+    setTimeout(() => { $("#f7MsgPlan").textContent = ""; }, 2500);
+  });
+  $("#f7Borrar").addEventListener("click", () => {
+    const b = $("#f7Borrar");
+    if (b.dataset.conf !== "1") { b.dataset.conf = "1"; b.textContent = "¿Seguro? Presiona otra vez"; setTimeout(() => { b.dataset.conf = ""; b.textContent = "Borrar lo anotado"; }, 3000); return; }
+    reg = {}; guardar(); plan(); b.dataset.conf = ""; b.textContent = "Borrar lo anotado";
+  });
+
+  /* ================= 2. DIAGNÓSTICO ================= */
+  const FALLAS = [
+    { k: "oscila", t: "Oscila en las rectas", desc: "El carrito sigue la línea pero va serpenteando de un lado a otro, incluso en tramos rectos.",
+      causas: ["Kd muy bajo o cero: no hay amortiguamiento.", "La anticipación L/v es menor que τ (Módulo 4): demasiada velocidad, sensores muy pegados al eje o carrito pesado.", "Periodo de control largo o variable (delay o Serial.print en el lazo)."],
+      comp: "Grafiquen la telemetría (Módulo 6): una oscilación regular de 1–3 Hz que no se apaga indica falta de amortiguamiento. Comparen L/v con τ en el Módulo 4.",
+      sol: "Suban Kd poco a poco. Si no alcanza, bajen la velocidad base o alarguen el lookahead.", mod: "Módulos 4 y 5",
+      sano: {}, falla: { kd: 0 }, pista: "competencia", T: 15 },
+    { k: "curvas", t: "Derrapa o se abre en las curvas", desc: "En las curvas cerradas el carrito se abre y la línea queda en la orilla del arreglo, o la parte de atrás se barre.",
+      causas: ["Velocidad base demasiado alta para el radio de la curva: v²/R > μ·g.", "Llantas sucias o piso resbaloso (μ bajo).", "Poco peso sobre las ruedas motrices: el centro de masa está muy atrás (Módulo 1).", "PWM saturado: no queda reserva de control para girar (Módulo 5)."],
+      comp: "Calculen v²/R en la curva más cerrada y compárenlo con μ·g. Limpien las llantas con alcohol y repitan.",
+      sol: "Bajen la velocidad base o reduzcan la velocidad en curvas según el error; muevan la batería hacia el eje; limpien o cambien las llantas.", mod: "Módulos 1 y 5",
+      sano: { vBase: 0.8, kp: 1.4, kd: 0.05 }, falla: { vBase: 0.8, kp: 1.4, kd: 0.05 }, fallas: { patina: true }, pista: "competencia", T: 15 },
+    { k: "lado", t: "Siempre va cargado hacia un lado", desc: "En las rectas la línea no queda al centro: siempre está un poco hacia el mismo sensor.",
+      causas: ["Motores desiguales: a igual PWM, uno gira más rápido.", "Un sensor mal calibrado o sucio que jala el centroide.", "Rueda o eje con fricción en un lado."],
+      comp: "Prueba U3: comparen las rpm de cada rueda al 100 %. Revisen las lecturas normalizadas de cada sensor sobre blanco.",
+      sol: "Agreguen una Ki pequeña con anti-windup, o compensen la diferencia multiplicando el PWM del motor rápido por un factor medido.", mod: "Módulos 1, 2 y 5",
+      sano: { ki: 0 }, falla: { ki: 0 }, fallas: { motorDesigual: true }, pista: "competencia", T: 15 },
+    { k: "luz", t: "En la mañana funcionaba y en la tarde no", desc: "Mismo carrito, mismo código, misma pista, pero ahora pierde la línea o se sale.",
+      causas: ["Cambió la luz ambiente (sol por la ventana, lámparas) y la calibración ya no corresponde.", "Bajó la batería: va más lento o más rápido de lo que se sintonizó.", "Polvo en la pista o en los sensores."],
+      comp: "Lean las lecturas normalizadas sobre blanco: si ya no están cerca de 0, la luz cambió. Midan V_bat.",
+      sol: "Recalibren en cada arranque (el estado CALIBRANDO del Módulo 6 lo hace) y protejan los sensores con una falda opaca.", mod: "Módulos 2 y 6",
+      sano: {}, falla: {}, fallas: { luz: true }, pista: "competencia", T: 15 },
+    { k: "lento", t: "Cada vez va más lento", desc: "Las primeras vueltas salen bien y luego el carrito se vuelve perezoso y empieza a abrirse.",
+      causas: ["La batería se descarga y baja el voltaje en el motor (Módulo 3).", "El driver o los motores se calientan.", "Una rueda empieza a rozar con el chasis."],
+      comp: "Midan V_bat al inicio y después de varias vueltas. Toquen el driver: si quema, hay pérdidas excesivas.",
+      sol: "Activen la compensación de voltaje en el firmware, carguen la batería o cambien a un driver con menor caída.", mod: "Módulo 3",
+      sano: {}, falla: {}, fallas: { bateria: true }, pista: "competencia", T: 20 },
+    { k: "esquinas", t: "Se pierde en las esquinas", desc: "En las vueltas cerradas o a 90° la línea desaparece de los sensores y el carrito sigue de largo o tarda en encontrarla.",
+      causas: ["Velocidad alta para la geometría: la línea sale del arreglo antes de que el carrito gire (Módulo 1, sección 4).", "Arreglo de sensores angosto.", "La búsqueda en el estado PERDIDA gira hacia el lado equivocado (ultimoSigno)."],
+      comp: "Revisen en la telemetría cuánto dura cada pérdida de línea y hacia dónde estaba el último error.",
+      sol: "Reduzcan la velocidad, hagan más ancho el arreglo o detecten la esquina (varios sensores negros de un lado) para frenar antes.", mod: "Módulos 1, 2 y 6",
+      sano: {}, falla: { vBase: 0.8, kp: 1.4, kd: 0.05 }, pista: "esquinas", T: 20 },
+    { k: "tiembla", t: "Los motores tiemblan o zumban", desc: "El carrito sigue la línea, pero los motores vibran, hacen ruido y se calientan más de lo normal.",
+      causas: ["Ruido en los sensores amplificado por Kd, sin filtro (Módulo 5).", "Frecuencia de PWM audible (Módulo 3).", "Falta de capacitores de desacoplo en los motores."],
+      comp: "Grafiquen u en la telemetría: si salta de muestra a muestra, es ruido en la derivada.",
+      sol: "Filtren la derivada (α ≈ 0.5–0.7), suban la frecuencia de PWM y pongan capacitores de 100 nF en cada motor.", mod: "Módulos 3 y 5",
+      sano: { ruido: 0.08, filtroD: 0.7 }, falla: { ruido: 0.08, filtroD: 0 }, pista: "competencia", T: 15 },
+    { k: "levantar", t: "Sale disparado después de levantarlo", desc: "Si se levanta el carrito un momento y se vuelve a poner sobre la línea, arranca girando y se sale.",
+      causas: ["Windup: la integral siguió acumulando mientras no había línea (Módulo 5).", "El estado PERDIDA no se usa y el PID sigue corriendo sin línea."],
+      comp: "Imprimir la integral en la telemetría: si crece sin límite mientras está levantado, es windup.",
+      sol: "Limitar la integral (anti-windup) y reiniciar el PID al volver al estado SIGUIENDO.", mod: "Módulos 5 y 6",
+      sano: { ki: 3, antiWindup: 1 }, falla: { ki: 3, antiWindup: 0 }, pista: "recta", T: 4.5, levantar: true }
+  ];
+  let sel = "oscila", visible = false;
+  $("#f7Sintomas").innerHTML = FALLAS.map(f => `<button type="button" data-k="${f.k}">${f.t}</button>`).join("");
+  $("#f7Sintomas").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { sel = b.dataset.k; diagnostico(); } });
+  function correr(over, fallas, pista, T, levantar) {
+    const p = Object.assign({}, ficha, over); Object.assign(p, window.Ficha.derivar(p));
+    const S = window.SimCore.crearSim(p, pista); Object.assign(S.fallas, fallas || {});
+    if (levantar) S.levantado = true;
+    const tr = [];
+    for (let k = 0; S.t < T; k++) {
+      if (levantar && k === 1500) S.levantado = false;
+      if (k % 20 === 0) tr.push([S.x + p.lookahead * Math.cos(S.th), S.y + p.lookahead * Math.sin(S.th)]);
+      S.paso(); if (S.estado === "fuera") break;
+    }
+    let cr = 0, act = 0, med = 0;
+    for (let i = 1; i < S.hist.length; i++) { if (Math.sign(S.hist[i][1]) !== Math.sign(S.hist[i - 1][1])) cr++; act += Math.abs(S.hist[i][2] - S.hist[i - 1][2]); med += S.hist[i][1]; }
+    const half = (p.nSens - 1) / 2 * p.pasoSens * 1000;
+    return { S, tr, m: { rms: S.errorRMS() * 1000, vuelta: S.tVueltas[0], osc: cr / 2 / Math.max(S.t, 0.1), act: act / Math.max(1, S.hist.length - 1) * 100, med: med / Math.max(1, S.hist.length - 1) * half, derr: S.tDerrape, fuera: S.estado === "fuera" ? S.t : null } };
+  }
+  function pistaSvg(r) {
+    const P = r.S.pista.P, c = r.S.pista.caja, cinta = color("--cinta"), ir = color("--ir"), bad = color("--bad");
+    const W = 300, H = r.S.pista.clave === "recta" ? 90 : 190, m = 10;
+    let x0 = c.xmin, x1 = c.xmax, y0 = c.ymin, y1 = c.ymax;
+    if (r.S.pista.clave === "recta") { x0 = -3.05; x1 = -1.2; y0 = -0.25; y1 = 0.25; }
+    const s = Math.min((W - 2 * m) / (x1 - x0), (H - 2 * m) / (y1 - y0));
+    const X = x => m + (x - x0) * s, Y = y => H - m - (y - y0) * s;
+    const pts = P.filter((_, i) => i % 3 === 0).map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+    const tr = r.tr.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+    const fin = r.tr[r.tr.length - 1];
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Recorrido del carrito"><defs><clipPath id="f7c${H}${r.m.rms | 0}"><rect width="${W}" height="${H}"/></clipPath></defs><g clip-path="url(#f7c${H}${r.m.rms | 0})"><polygon points="${pts}" fill="none" stroke="${cinta}" stroke-width="${Math.max(2, ficha.anchoLinea * s)}" stroke-linejoin="round"/><polyline points="${tr}" fill="none" stroke="${ir}" stroke-width="1.4"/>${r.m.fuera ? `<circle cx="${X(fin[0])}" cy="${Y(fin[1])}" r="6" fill="none" stroke="${bad}" stroke-width="2.5"/>` : ""}</g></svg>`;
+  }
+  function diagnostico() {
+    const f = FALLAS.find(x => x.k === sel);
+    raiz.querySelectorAll("#f7Sintomas button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === sel));
+    $("#f7Titulo").textContent = f.t; $("#f7Desc").textContent = f.desc;
+    $("#f7Causas").innerHTML = f.causas.map(c => `<li>${c}</li>`).join("");
+    $("#f7Comprobar").textContent = f.comp; $("#f7Solucion").textContent = f.sol;
+    $("#f7Modulo").innerHTML = `<span class="tag t-int">Se resuelve en: ${f.mod}</span>`;
+    if (!visible) return;
+    const a = correr(f.sano, {}, f.pista, f.T, f.levantar), b = correr(f.falla, f.fallas, f.pista, f.T, f.levantar);
+    $("#f7Sano").innerHTML = pistaSvg(a); $("#f7Falla").innerHTML = pistaSvg(b);
+    const fila = (n, fa, fb) => `<tr><td>${n}</td><td class="num">${fa(a.m)}</td><td class="num"><b>${fb(b.m)}</b></td></tr>`;
+    const g = x => x;
+    const rms = m => fmt(m.rms, 1, "mm"), vu = m => m.vuelta ? fmt(m.vuelta, 2, "s") : "no completó", fu = m => m.fuera ? "se salió en " + fmt(m.fuera, 1, "s") : "terminó";
+    $("#f7Tab tbody").innerHTML = fila("Resultado", fu, fu) + fila("Error RMS", rms, rms) + fila("Primera vuelta", vu, vu) + fila("Oscilación", m => fmt(m.osc, 1, "Hz"), m => fmt(m.osc, 1, "Hz")) + fila("Error promedio (sesgo)", m => fmt(m.med, 1, "mm"), m => fmt(m.med, 1, "mm")) + fila("Actividad del PWM", m => fmt(m.act, 2, "%"), m => fmt(m.act, 2, "%")) + fila("Tiempo derrapando", m => fmt(m.derr, 2, "s"), m => fmt(m.derr, 2, "s"));
+  }
+
+  /* ================= 3. VERSIÓN ================= */
+  const hoy = new Date();
+  $("#f7Nombre").value = ficha.version === "Genérico v0" ? `v1 · ${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}` : ficha.version;
+  $("#f7Congelar").addEventListener("click", () => {
+    const nom = $("#f7Nombre").value.trim().slice(0, 40);
+    const m = $("#f7MsgVer");
+    if (!nom) { m.style.color = "var(--bad)"; m.textContent = "Escribe un nombre."; return; }
+    const r = resumen();
+    ficha = window.Ficha.guardar({ version: nom });
+    m.style.color = r.ok === r.n ? "var(--ok)" : "var(--warn)";
+    m.textContent = r.ok === r.n ? `Versión "${nom}" guardada con todas las pruebas aprobadas.` : `Versión "${nom}" guardada, pero ${r.n - r.ok} pruebas aún no pasan.`;
+    const pv = document.querySelector(".ficha-version"); if (pv) pv.textContent = nom;
+    resumen();
+  });
+  window.addEventListener("ficha-cambiada", e => { ficha = e.detail; plan(); if (visible) diagnostico(); });
+
+  const io = new IntersectionObserver(ents => { if (!visible && ents.some(e => e.isIntersecting)) { visible = true; io.disconnect(); diagnostico(); } });
+  ["#f7-plan", "#f7-diagnostico"].forEach(s => io.observe($(s)));
+  plan(); diagnostico();
+  document.addEventListener("cambio-tema", () => { if (visible) diagnostico(); });
+}
+</script>
+</body>
+</html>

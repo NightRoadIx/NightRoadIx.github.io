@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Módulo 6 · Programación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.m6 .lab{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:900px){.m6 .lab{grid-template-columns:minmax(0,1fr)}}
+.m6 .lienzo{background:var(--card);border:1px solid var(--line);border-radius:var(--radio);padding:8px;overflow-x:auto}
+.m6 .lienzo svg{display:block;width:100%;height:auto;min-width:520px}
+.m6 .lienzo text{font-family:Barlow,sans-serif}
+.m6 .lienzo + .lienzo{margin-top:12px}
+.m6 .ctl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:center;padding:3px 0}
+.m6 .ctl output{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.m6 .ctl input{grid-column:1/3}
+.m6 .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:10px;margin-top:12px}
+.m6 .res div{background:var(--bg2);border-radius:8px;padding:8px 12px}
+.m6 .res b{display:block;font-size:20px;font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.m6 .res span{font-size:13px;color:var(--ink2)}
+.m6 .veredicto{margin-top:12px;font-weight:600}
+.m6 .veredicto .est{white-space:normal}
+.m6 .botones{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+.m6 .botones button{font-size:14.5px}
+.m6 .ley{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.m6 .ley i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.m6 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0}
+.m6 .seg button{border:0;border-radius:0;min-height:40px}
+.m6 pre.cod{margin:0;font-size:13.5px;line-height:1.55;max-height:560px}
+.m6 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.m6 .tabs button{font-family:"JetBrains Mono",monospace;font-size:13.5px;min-height:38px}
+.m6 textarea{width:100%;min-height:150px;font:13.5px/1.5 "JetBrains Mono",monospace;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px}
+.m6 .capas{display:grid;gap:10px}
+.m6 .capa{display:grid;grid-template-columns:170px minmax(0,1fr);gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:var(--radio);padding:12px 16px}
+.m6 .capa b{font-family:"Barlow Condensed",sans-serif;font-size:19px}
+.m6 .capa code{font-size:13px}
+@media(max-width:600px){.m6 .capa{grid-template-columns:minmax(0,1fr)}}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/sim-core.js"></script>
+<script src="js/firmware.js"></script>
+</head>
+<body data-pagina="m6">
+<main class="m6">
+<section class="band">
+  <div class="wrap">
+    <p><span class="tag t-prg">Módulo 6 · Programación</span></p>
+    <h1>Firmware: que el microcontrolador haga lo correcto, a tiempo y en el orden correcto</h1>
+    <p class="muted" style="font-size:18px">El PID del Módulo 5 asume que corre cada 5 ms, exactos. Que eso pase depende de cómo se escriba el programa: un <code>delay()</code> o un <code>Serial.print()</code> mal colocados cambian el periodo y desestabilizan el carrito. Además, el carrito tiene que calibrar, esperar, buscar la línea si la pierde y detenerse en la meta. Este módulo organiza todo eso y termina en un firmware completo, generado con la ficha técnica.</p>
+    <nav class="scroll" aria-label="Secciones del módulo" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <a class="btn" href="#f6-capas">1. Arquitectura</a>
+      <a class="btn" href="#f6-tiempo">2. El periodo fijo</a>
+      <a class="btn" href="#f6-estados">3. Máquina de estados</a>
+      <a class="btn" href="#f6-telemetria">4. Telemetría</a>
+      <a class="btn" href="#f6-firmware">5. Firmware completo</a>
+      <a class="btn" href="#f6-decisiones">6. Decisiones</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============ 1. CAPAS ============ -->
+<section class="band alt" id="f6-capas">
+  <div class="wrap">
+    <h2>1. Arquitectura: un archivo por responsabilidad</h2>
+    <p>Un solo <code>.ino</code> de 400 líneas se vuelve imposible de depurar. Separar el código en capas permite probar cada parte por separado y deja que cada integrante del equipo trabaje en un archivo. Cada capa corresponde a un módulo del sitio.</p>
+    <div class="capas" id="f6Capas"></div>
+  </div>
+</section>
+
+<!-- ============ 2. TIEMPO ============ -->
+<section class="band" id="f6-tiempo">
+  <div class="wrap">
+    <h2>2. El periodo fijo: <code>delay()</code> contra <code>micros()</code></h2>
+    <p>Con <code>delay(5)</code>, el periodo real es 5 ms <b>más</b> lo que tarde todo lo demás, y cambia según lo que pase en cada vuelta del <code>loop()</code>. Con un temporizador basado en <code>micros()</code>, cada periodo empieza en un múltiplo exacto de <i>T</i>, siempre que el trabajo quepa. El <code>Serial.print()</code> es el sospechoso habitual: si se envía más de lo que el puerto alcanza a transmitir, el búfer de 64 bytes se llena y la función se queda esperando.</p>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="f6Tl" viewBox="0 0 900 250" role="img" aria-label="Línea de tiempo de las tareas del lazo de control"></svg></div>
+        <div class="ley"><span><i style="background:var(--sen)"></i>leer sensores</span><span><i style="background:var(--ctl)"></i>PID</span><span><i style="background:var(--ele)"></i>escribir PWM</span><span><i style="background:var(--prg)"></i>Serial.print</span><span><i style="background:var(--bad)"></i>esperando al búfer serial</span><span>líneas punteadas: múltiplos de T</span></div>
+      </div>
+      <div class="card">
+        <div class="seg" role="group" aria-label="Forma de temporizar"><button type="button" id="f6Fijo">Periodo fijo con micros()</button><button type="button" id="f6Delay">delay(T)</button></div>
+        <div class="ctl"><label for="f6_baud">Velocidad del puerto serial</label><output id="f6o_baud"></output><input type="range" id="f6_baud" min="0" max="4" step="1"></div>
+        <div class="ctl"><label for="f6_cada">Enviar telemetría cada N periodos</label><output id="f6o_cada"></output><input type="range" id="f6_cada" min="1" max="20" step="1"></div>
+        <div class="ctl"><label for="f6_chars">Caracteres por línea de telemetría</label><output id="f6o_chars"></output><input type="range" id="f6_chars" min="8" max="80" step="1"></div>
+        <div class="botones"><button type="button" id="f6Malo">Caso típico de principiante</button><button type="button" id="f6Bueno">Configuración recomendada</button></div>
+        <div class="res" id="f6ResT"></div>
+        <p class="veredicto" id="f6VerT"></p>
+        <p class="small muted" style="margin:8px 0 0">Tiempos típicos de un ATmega328P a 16 MHz: <code>analogRead()</code> ≈ 112 µs (≈ 16 µs con el preescalador en 16), más ≈ 6 µs por canal si hay multiplexor, cálculo del PID en punto flotante ≈ 180 µs, formatear e imprimir ≈ 60 µs + 8 µs por carácter. Son estimaciones; en el carrito se miden con <code>micros()</code> o con un pin y el osciloscopio.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. ESTADOS ============ -->
+<section class="band alt" id="f6-estados">
+  <div class="wrap">
+    <h2>3. Máquina de estados: qué hacer en cada situación</h2>
+    <p>Seguir la línea es sólo uno de los estados del carrito. Antes hay que calibrar y esperar la señal de salida. Durante la carrera puede perder la línea o cruzar la marca de meta, y al final hay que detenerse. Una <b>máquina de estados</b> (<code>enum</code> + <code>switch</code>) deja explícito qué hace el carrito en cada caso y qué evento lo hace cambiar. Presiona los eventos y sigue el estado.</p>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="f6Fsm" viewBox="0 0 900 400" role="img" aria-label="Diagrama de la máquina de estados del firmware"></svg></div>
+        <div class="botones" id="f6Eventos" role="group" aria-label="Eventos" style="margin-top:12px"></div>
+        <p class="small" id="f6MsgEv" role="status" style="min-height:1.5em;margin:0"></p>
+      </div>
+      <div class="card">
+        <h3 id="f6EstNom" style="font-size:21px"></h3>
+        <p id="f6EstTxt" style="margin:0 0 10px"></p>
+        <pre class="cod" id="f6EstCod"></pre>
+      </div>
+    </div>
+    <h3 style="margin-top:26px">El registro de estados en el simulador</h3>
+    <p>En la pista de esquinas a 90°, el carrito pierde la línea en cada esquina. El firmware espera hasta 1 s buscándola antes de detenerse. ¿Alcanza ese tiempo?</p>
+    <div class="lienzo"><svg id="f6Gantt" viewBox="0 0 900 120" role="img" aria-label="Estados del carrito a lo largo del tiempo en el simulador"></svg></div>
+    <div class="res" id="f6ResG"></div>
+    <p class="veredicto" id="f6VerG"></p>
+  </div>
+</section>
+
+<!-- ============ 4. TELEMETRÍA ============ -->
+<section class="band" id="f6-telemetria">
+  <div class="wrap">
+    <h2>4. Telemetría: ver lo que el carrito "piensa"</h2>
+    <p>El firmware envía cada 20 ms una línea <code>t_ms,estado,e,u</code>. Con el carrito conectado por USB o Bluetooth, se copia lo que aparece en el monitor serial y se pega aquí. La página lo grafica y calcula las mismas métricas que el simulador, para comparar el carrito real contra el modelo.</p>
+    <div class="lab">
+      <div>
+        <div class="lienzo"><svg id="f6Tel" viewBox="0 0 900 260" role="img" aria-label="Gráfica de la telemetría"></svg></div>
+        <div class="ley"><span><i style="background:var(--ctl)"></i>error e</span><span><i style="background:var(--ir)"></i>corrección u</span><span><i style="background:var(--warn);opacity:.35"></i>línea perdida</span></div>
+      </div>
+      <div class="card">
+        <label for="f6Csv" style="font-weight:600">Datos (t_ms,estado,e,u)</label>
+        <textarea id="f6Csv" spellcheck="false"></textarea>
+        <div class="botones"><button type="button" class="pri" id="f6Graf">Graficar</button><button type="button" id="f6Ej">Ejemplo del simulador</button><label class="btn" for="f6Arch" style="cursor:pointer">Cargar archivo</label><input type="file" id="f6Arch" accept=".csv,.txt,.log" style="position:absolute;width:1px;height:1px;opacity:0"></div>
+        <div class="res" id="f6ResTel"></div>
+        <p class="veredicto" id="f6VerTel"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. FIRMWARE ============ -->
+<section class="band alt" id="f6-firmware">
+  <div class="wrap">
+    <h2>5. El firmware completo, generado con la ficha</h2>
+    <p>Junta todo lo de los módulos anteriores con los valores actuales de la ficha técnica. En el IDE de Arduino, cada archivo <code>.h</code> se agrega con "Nueva pestaña" dentro de la carpeta del proyecto <code>seguidor</code>. Si cambias algo en otro módulo y lo aplicas, el código se regenera.</p>
+    <div class="lab">
+      <div>
+        <div class="tabs" id="f6Tabs" role="tablist"></div>
+        <pre class="cod" id="f6Cod"></pre>
+        <div class="botones" style="margin-top:10px"><button type="button" id="f6Copia">Copiar este archivo</button><button type="button" id="f6CopiaTodo">Copiar todos</button><span class="small" id="f6MsgCopia" role="status"></span></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:19px">Conexiones (Arduino Nano)</h3>
+        <div class="scroll"><table class="stack" id="f6Pines"><thead><tr><th>Pin</th><th>Se conecta a</th></tr></thead><tbody></tbody></table></div>
+        <p class="veredicto" id="f6VerFw"></p>
+        <p class="small muted" style="margin:8px 0 0">Antes de publicarlo, este código se compiló contra un entorno de Arduino simulado y se probó su máquina de estados (calibrar → esperar → seguir → perder la línea → detenerse) en una simulación de escritorio. En el carrito real, empiecen con las ruedas al aire.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. DECISIONES ============ -->
+<section class="band" id="f6-decisiones">
+  <div class="wrap">
+    <h2>6. Decisiones de firmware para la ficha</h2>
+    <div class="scroll"><table class="stack" id="f6Dec"><thead><tr><th>Decisión</th><th class="num">En la ficha</th><th class="num">Propuesta</th><th>Consecuencia</th></tr></thead><tbody></tbody></table></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px">
+      <button class="pri" type="button" id="f6Aplicar">Aplicar al carrito</button>
+      <a class="btn" href="simulador.html">Probarlo en el simulador</a>
+      <span class="small" id="f6MsgDec" role="status"></span>
+    </div>
+    <h2 style="margin-top:36px">Actividad</h2>
+    <ol>
+      <li>Agreguen al <code>loop()</code> un pin que se ponga en alto al empezar el periodo y en bajo al terminar el trabajo. Con el osciloscopio, midan el periodo real y el tiempo de trabajo, y compárenlos con la sección 2.</li>
+      <li>Cambien el firmware a <code>delay(5)</code> e impriman la telemetría en cada periodo a 9600 baudios. Midan el periodo y describan qué le pasa al seguimiento.</li>
+      <li>Agreguen un estado <code>PRUEBA_MOTORES</code> que se active si el botón está presionado al encender, y que haga una rampa de PWM de 0 a 100 % en cada motor.</li>
+      <li>Capturen la telemetría del carrito en la pista, péguenla en la sección 4 y compárenla con el ejemplo del simulador.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<script>
+{
+  const raiz = document.querySelector(".m6");
+  const $ = s => raiz.querySelector(s);
+  let ficha = window.Ficha.leer();
+  const color = n => { const e = document.createElement("span"); e.style.color = "var(" + n + ")"; document.body.append(e); const c = getComputedStyle(e).color; e.remove(); return c; };
+  const tarjetas = (sel, items) => { $(sel).innerHTML = items.map(x => `<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join(""); };
+  const est = (c, t) => `<span class="est ${c}">${c === "ok" ? "✓" : c === "warn" ? "!" : "✗"} ${t}</span>`;
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const BAUDS = [9600, 19200, 38400, 57600, 115200];
+  const st = { modo: "fijo", baudI: Math.max(0, BAUDS.indexOf(ficha.baud)), cada: ficha.telemCada || 4, chars: 24, estado: "CALIBRANDO", trans: null, archivo: "seguidor.ino" };
+  if (BAUDS.indexOf(ficha.baud) < 0) st.baudI = 4;
+  function slider(id, clave, fmtf, alCambiar) {
+    const i = $("#f6_" + id), o = $("#f6o_" + id);
+    const pinta = () => { i.value = st[clave]; o.textContent = fmtf(st[clave]); };
+    i.addEventListener("input", () => { st[clave] = parseFloat(i.value); pinta(); alCambiar(); });
+    pinta(); return pinta;
+  }
+
+  /* ================= 1. CAPAS ================= */
+  const CAPAS = [
+    ["--prg", "seguidor.ino", "Máquina de estados y lazo con periodo fijo", "setup(), loop(), switch (estado)", "Módulo 6"],
+    ["--ctl", "pid.h", "PID discreto con anti-windup y filtro de la derivada", "pid(e), reiniciarPID()", "Módulo 5"],
+    ["--sen", "sensores.h", "Calibración, normalización, centroide y detección de meta", "leerError(), pasoCalibracion()", "Módulo 2"],
+    ["--ele", "motores.h", "Puente H, PWM a 31 kHz, freno, V_bat y compensación", "motores(izq, der), frenar()", "Módulo 3"],
+    ["--int", "config.h", "Pines y todos los números de la ficha técnica", "Kp, BASE, T_US, PASO_MM…", "Ficha"]
+  ];
+  $("#f6Capas").innerHTML = CAPAS.map(c => `<div class="capa" style="--c:var(${c[0]})"><div><b>${c[1]}</b><br><span class="small muted">${c[4]}</span></div><div>${c[2]}<br><code>${c[3]}</code></div></div>`).join("");
+
+  /* ================= 2. TIEMPO ================= */
+  function lineaTiempo() {
+    const T = ficha.periodo * 1e6, n = ficha.nSens, baud = BAUDS[st.baudI], bps = baud / 10; // bytes por segundo
+    const tSens = n * ((ficha.tAdcUs || 112) + (ficha.mux ? 6 : 0)), tPid = 180, tPwm = 30, tFmt = 60 + 8 * st.chars;
+    const loops = [], N = 60; let fin = 0, buf = 0, tBuf = 0;
+    for (let i = 0; i < N; i++) {
+      const prog = i * T, ini = st.modo === "fijo" ? Math.max(prog, fin) : (i === 0 ? 0 : fin + T);
+      let t = ini; const segs = [];
+      segs.push(["sen", t, t += tSens]); segs.push(["ctl", t, t += tPid]); segs.push(["ele", t, t += tPwm]);
+      if (i % st.cada === 0) {
+        segs.push(["prg", t, t += tFmt]);
+        buf = Math.max(0, buf - (t - tBuf) / 1e6 * bps); tBuf = t;        // lo que ya se transmitió
+        const sobra = buf + st.chars - 64;
+        if (sobra > 0) { const esp = sobra / bps * 1e6; segs.push(["bad", t, t += esp]); buf = 64; tBuf = t; }
+        else buf += st.chars;
+      }
+      fin = t;
+      loops.push({ ini, fin, segs, prog, tarde: st.modo === "fijo" && ini > prog + 1 });
+    }
+    const per = loops.slice(1).map((l, i) => l.ini - loops[i].ini);
+    const per2 = per.slice(10);
+    const prom = per2.reduce((a, b) => a + b, 0) / per2.length, jit = Math.max(...per2) - Math.min(...per2);
+    const trabajo = loops.slice(10).reduce((a, l) => a + (l.fin - l.ini), 0) / (N - 10);
+    const tarde = loops.filter(l => l.tarde).length;
+    // dibujo: 10 periodos ideales a partir del periodo 20
+    const ink2 = color("--ink2"), line = color("--line"), ink = color("--ink");
+    const k0 = 20, x0 = 30, W = 850, span = 10 * T, t0 = loops[k0].ini, X = t => x0 + (t - t0) / span * W;
+    let h = "";
+    for (let k = 0; k <= 10; k++) { const xx = X(t0 + k * T); h += `<line x1="${xx}" y1="40" x2="${xx}" y2="170" stroke="${ink2}" stroke-dasharray="4 4" opacity=".6"/><text x="${xx}" y="190" text-anchor="middle" font-size="12.5" fill="${ink2}">${fmt(k * T / 1000, 0)} ms</text>`; }
+    const colores = { sen: color("--sen"), ctl: color("--ctl"), ele: color("--ele"), prg: color("--prg"), bad: color("--bad") };
+    for (const l of loops) for (const s of l.segs) {
+      if (s[2] < t0 || s[1] > t0 + span) continue;
+      const a = Math.max(X(s[1]), x0), b = Math.min(X(s[2]), x0 + W);
+      h += `<rect x="${a}" y="${s[0] === "bad" ? 70 : 60}" width="${Math.max(1, b - a)}" height="${s[0] === "bad" ? 60 : 80}" rx="2" fill="${colores[s[0]]}" opacity="${s[0] === "bad" ? 0.55 : 0.9}"/>`;
+    }
+    for (const l of loops) if (l.ini >= t0 && l.ini <= t0 + span) h += `<path d="M${X(l.ini)} 32 l-6 -10 h12 z" fill="${ink}"/>`;
+    h += `<text x="${x0}" y="18" font-size="12.5" fill="${ink2}">▼ inicio real de cada periodo · el resto del tiempo el procesador espera</text>`;
+    h += `<text x="${x0}" y="225" font-size="13" fill="${ink}">Periodo real promedio: ${fmt(prom / 1000, 2, "ms")} · variación (jitter): ${fmt(jit / 1000, 2, "ms")} · ocupación: ${fmt(trabajo / prom * 100, 0, "%")}</text>`;
+    $("#f6Tl").innerHTML = h;
+    st.perReal = prom / 1e6;
+    const demanda = st.chars / (st.cada * prom / 1e6), capacidad = bps;
+    tarjetas("#f6ResT", [["Periodo programado", fmt(T / 1000, 1, "ms")], ["Periodo real", fmt(prom / 1000, 2, "ms")], ["Jitter", fmt(jit / 1000, 2, "ms")], ["Ocupación del procesador", fmt(trabajo / prom * 100, 0, "%")], ["Telemetría pedida / posible", fmt(demanda, 0) + " / " + fmt(capacidad, 0, "B/s")], ["Periodos atrasados", String(tarde)]]);
+    let v;
+    if (st.modo === "delay") v = est("bad", `Con delay() el periodo real es ${fmt(prom / 1000, 2, "ms")}, no ${fmt(T / 1000, 0, "ms")}, y depende de lo que haga cada vuelta del loop. El PID se sintonizó para otro T.`);
+    else if (demanda > capacidad) v = est("bad", "La telemetría pide más bytes por segundo de los que el puerto puede enviar: Serial.print() bloquea y el periodo se alarga.");
+    else if (trabajo > 0.8 * prom) v = est("warn", "El trabajo ocupa casi todo el periodo: cualquier tarea extra lo desborda.");
+    else v = est("ok", "Cada periodo empieza a tiempo y sobra margen para otras tareas.");
+    $("#f6VerT").innerHTML = v;
+    clearTimeout(st.tSim); st.tSim = setTimeout(efectoControl, 250);
+    decisiones();
+  }
+  function efectoControl() {
+    if (!visible) return;
+    const run = (per, rap) => { const p = Object.assign({}, ficha, { periodo: per }, rap ? { vBase: 0.75, kp: 1.4, kd: 0.05 } : {}); Object.assign(p, window.Ficha.derivar(p)); const S = window.SimCore.crearSim(p, "competencia"); S.avanzar(15); return S; };
+    const r = S => S.estado === "fuera" ? "se sale" : fmt(S.errorRMS() * 1000, 1, "mm");
+    const pr = Math.round(st.perReal * 1e4) / 1e4;
+    const a = run(ficha.periodo), b = run(pr), c = run(ficha.periodo, true), d = run(pr, true);
+    const extra = `<div><span>Error RMS con T ideal</span><b>${r(a)}</b></div><div><span>Con el periodo real</span><b>${r(b)}</b></div><div><span>A 75 % de velocidad: T ideal / real</span><b>${r(c)} / ${r(d)}</b></div>`;
+    $("#f6ResT").insertAdjacentHTML("beforeend", extra);
+  }
+  const segm = () => { $("#f6Fijo").setAttribute("aria-pressed", st.modo === "fijo"); $("#f6Delay").setAttribute("aria-pressed", st.modo === "delay"); };
+  $("#f6Fijo").addEventListener("click", () => { st.modo = "fijo"; segm(); lineaTiempo(); });
+  $("#f6Delay").addEventListener("click", () => { st.modo = "delay"; segm(); lineaTiempo(); });
+  const pBaud = slider("baud", "baudI", i => BAUDS[i] + " baud", lineaTiempo);
+  const pCada = slider("cada", "cada", x => x + " (cada " + fmt(x * ficha.periodo * 1000, 0, "ms") + ")", lineaTiempo);
+  const pChars = slider("chars", "chars", x => x + " caracteres", lineaTiempo);
+  $("#f6Malo").addEventListener("click", () => { st.modo = "delay"; st.baudI = 0; st.cada = 1; st.chars = 40; segm(); pBaud(); pCada(); pChars(); lineaTiempo(); });
+  $("#f6Bueno").addEventListener("click", () => { st.modo = "fijo"; st.baudI = 4; st.cada = 4; st.chars = 24; segm(); pBaud(); pCada(); pChars(); lineaTiempo(); });
+
+  /* ================= 3. ESTADOS ================= */
+  const EST = {
+    CALIBRANDO: { x: 110, y: 70, c: "--sen", txt: "Gira sobre su eje 3 s para que todos los sensores vean blanco y negro, y guarda el mínimo y el máximo de cada uno. Motores: izquierdo atrás y derecho adelante al 35 %." },
+    ESPERA: { x: 360, y: 70, c: "--int", txt: "Carrito sobre la pista, motores frenados, LED parpadeando. Espera el botón de salida." },
+    SIGUIENDO: { x: 520, y: 200, c: "--ctl", txt: "Lee el error, calcula el PID, compensa el voltaje y manda el PWM a cada rueda. Es el único estado donde corre el PID." },
+    PERDIDA: { x: 790, y: 70, c: "--warn", txt: "Ninguno de los sensores ve la línea. Gira hacia el último lado donde se vio (ultimoSigno) y la busca durante 1 s como máximo." },
+    META: { x: 790, y: 330, c: "--ok", txt: "Todos los sensores ven negro: es la marca transversal de meta. Cruza recto 150 ms y cuenta una vuelta." },
+    PARO: { x: 400, y: 330, c: "--bad", txt: "Motores en freno, LED fijo. Llega aquí al terminar las vueltas, si no encontró la línea o si la batería bajó de 6.6 V. Con el botón vuelve a ESPERA." }
+  };
+  const TR = [
+    { id: "t1", de: "CALIBRANDO", a: "ESPERA", ev: "pasaron 3 s", d: "M195 70 H272", lx: 233, ly: 58 },
+    { id: "t2", de: "ESPERA", a: "SIGUIENDO", ev: "botón", d: "M400 100 L470 168", lx: 470, ly: 128 },
+    { id: "t3", de: "SIGUIENDO", a: "PERDIDA", ev: "no ve la línea", d: "M590 170 L705 92", lx: 676, ly: 150 },
+    { id: "t4", de: "PERDIDA", a: "SIGUIENDO", ev: "la vuelve a ver", d: "M712 108 C 680 150, 640 170, 606 188", lx: 590, ly: 118 },
+    { id: "t5", de: "PERDIDA", a: "PARO", ev: "1 s sin línea", d: "M820 100 C 870 200, 650 320, 487 322", lx: 842, ly: 200 },
+    { id: "t6", de: "SIGUIENDO", a: "META", ev: "todos negros", d: "M600 222 L705 306", lx: 690, ly: 250 },
+    { id: "t7", de: "META", a: "SIGUIENDO", ev: "faltan vueltas", d: "M712 342 C 640 360, 560 300, 528 232", lx: 600, ly: 372 },
+    { id: "t8", de: "META", a: "PARO", ev: "vueltas completas", d: "M705 330 H488", lx: 600, ly: 322 },
+    { id: "t9", de: "PARO", a: "ESPERA", ev: "botón", d: "M330 300 C 280 220, 300 140, 340 102", lx: 262, ly: 210 },
+    { id: "t10", de: "*", a: "PARO", ev: "batería baja", d: "M150 340 H312", lx: 160, ly: 330 }
+  ];
+  const EVENTOS = [...new Set(TR.map(t => t.ev))];
+  $("#f6Eventos").innerHTML = EVENTOS.map(e => `<button type="button" data-ev="${e}">${e}</button>`).join("") + `<button type="button" data-ev="__reset">↺ encender de nuevo</button>`;
+  $("#f6Eventos").addEventListener("click", ev => {
+    const b = ev.target.closest("button"); if (!b) return;
+    const e = b.dataset.ev;
+    if (e === "__reset") { st.estado = "CALIBRANDO"; st.trans = null; $("#f6MsgEv").textContent = "Encendido: empieza en CALIBRANDO."; maquina(); return; }
+    const t = TR.find(x => x.ev === e && (x.de === st.estado || (x.de === "*" && st.estado !== "PARO")));
+    if (!t) { $("#f6MsgEv").textContent = `"${e}" no tiene efecto en el estado ${st.estado}: el código de ese caso no revisa ese evento.`; return; }
+    $("#f6MsgEv").textContent = `${st.estado} → ${t.a} por "${e}".`;
+    st.estado = t.a; st.trans = t.id; maquina();
+  });
+  function maquina() {
+    const ink = color("--ink"), ink2 = color("--ink2"), card = color("--card"), ir = color("--ir");
+    let h = `<defs><marker id="f6fl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="${ink2}"/></marker><marker id="f6fl2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="${ir}"/></marker></defs>`;
+    for (const t of TR) {
+      const on = t.id === st.trans;
+      h += `<path d="${t.d}" fill="none" stroke="${on ? ir : ink2}" stroke-width="${on ? 3.5 : 1.8}" ${t.de === "*" ? 'stroke-dasharray="6 5"' : ""} marker-end="url(#${on ? "f6fl2" : "f6fl"})"/>`;
+      h += `<text x="${t.lx}" y="${t.ly}" text-anchor="middle" font-size="13" font-weight="${on ? 700 : 500}" fill="${on ? ir : ink2}">${t.ev}</text>`;
+    }
+    h += `<text x="20" y="${330 - 14}" font-size="12.5" fill="${ink2}">desde cualquier estado</text>`;
+    for (const [k, s] of Object.entries(EST)) {
+      const on = k === st.estado, c = color(s.c);
+      h += `<rect x="${s.x - 85}" y="${s.y - 28}" width="170" height="56" rx="28" fill="${on ? c : card}" stroke="${c}" stroke-width="${on ? 3 : 2}"/>`;
+      h += `<text x="${s.x}" y="${s.y + 6}" text-anchor="middle" font-size="16" font-weight="700" fill="${on ? card : ink}">${k}</text>`;
+    }
+    $("#f6Fsm").innerHTML = h;
+    $("#f6EstNom").textContent = "Estado actual: " + st.estado;
+    $("#f6EstTxt").textContent = EST[st.estado].txt;
+    const ino = window.generarFirmware(ficha)["seguidor.ino"];
+    const m = ino.match(new RegExp("    case " + st.estado + ":[\\s\\S]*?\\n      break;\\n"));
+    $("#f6EstCod").textContent = m ? m[0].replace(/^ {4}/gm, "") : "";
+  }
+  function registro() {
+    if (!visible) return;
+    const p = Object.assign({}, ficha); Object.assign(p, window.Ficha.derivar(p));
+    const S = window.SimCore.crearSim(p, "esquinas"); S.registrar = true; S.avanzar(20);
+    const L = S.log, T = S.t;
+    const ink2 = color("--ink2"), ctl = color("--ctl"), warn = color("--warn"), bad = color("--bad");
+    const x0 = 30, W = 850, X = t => x0 + t / 20 * W;
+    let h = `<rect x="${x0}" y="20" width="${X(T) - x0}" height="40" fill="${ctl}" opacity=".85"/>`;
+    const ep = []; let ini = null;
+    for (const m of L) { if (m.perdida && ini === null) ini = m.t; if (!m.perdida && ini !== null) { ep.push([ini, m.t]); ini = null; } }
+    if (ini !== null) ep.push([ini, T]);
+    for (const [a, b] of ep) h += `<rect x="${X(a)}" y="20" width="${Math.max(1.5, X(b) - X(a))}" height="40" fill="${b - a > 1 ? bad : warn}"/>`;
+    for (let t = 0; t <= 20; t += 2) h += `<text x="${X(t)}" y="80" text-anchor="middle" font-size="12.5" fill="${ink2}">${t} s</text>`;
+    h += `<text x="${x0}" y="104" font-size="12.5" fill="${ink2}">azul: SIGUIENDO · amarillo: PERDIDA${S.estado === "fuera" ? " · el carrito se salió de la pista en t = " + fmt(S.t, 1, "s") : ""}</text>`;
+    $("#f6Gantt").innerHTML = h;
+    const durs = ep.map(e => e[1] - e[0]), max = durs.length ? Math.max(...durs) : 0;
+    tarjetas("#f6ResG", [["Veces que perdió la línea", String(ep.length)], ["Pérdida más larga", fmt(max * 1000, 0, "ms")], ["Tiempo total perdido", fmt(durs.reduce((a, b) => a + b, 0), 2, "s")], ["Límite del firmware", "1000 ms"]]);
+    $("#f6VerG").innerHTML = S.estado === "fuera" ? est("bad", "En el simulador el carrito se salió antes de terminar: con esta ficha, las esquinas a 90° necesitan menos velocidad o una búsqueda más agresiva.")
+      : max < 0.5 ? est("ok", `La pérdida más larga duró ${fmt(max * 1000, 0, "ms")}: el límite de 1 s deja margen y no detendría al carrito por error.`)
+      : est("warn", "Las pérdidas se acercan al límite de 1 s: el carrito podría detenerse en una esquina.");
+  }
+
+  /* ================= 4. TELEMETRÍA ================= */
+  function ejemploTel() {
+    const p = Object.assign({}, ficha); Object.assign(p, window.Ficha.derivar(p));
+    const S = window.SimCore.crearSim(p, "competencia"); S.registrar = true; S.avanzar(8);
+    const cada = Math.max(1, Math.round(ficha.telemCada || 4));
+    const lin = S.log.filter((_, i) => i % cada === 0).map(m => `${Math.round(m.t * 1000)},${m.perdida ? 3 : 2},${m.e.toFixed(3)},${m.u.toFixed(3)}`);
+    $("#f6Csv").value = lin.join("\n");
+    telemetria();
+  }
+  function telemetria() {
+    const filas = $("#f6Csv").value.split(/\r?\n/).map(l => l.trim().split(/[,;\t ]+/)).filter(r => r.length >= 3 && r.every(x => x !== "" && isFinite(+x))).map(r => r.map(Number));
+    const ink2 = color("--ink2"), line = color("--line"), ctl = color("--ctl"), ir = color("--ir"), warn = color("--warn");
+    if (filas.length < 5) { $("#f6Tel").innerHTML = `<text x="450" y="130" text-anchor="middle" font-size="15" fill="${ink2}">Pega al menos 5 líneas numéricas con el formato t_ms,estado,e,u</text>`; $("#f6ResTel").innerHTML = ""; $("#f6VerTel").innerHTML = ""; return; }
+    const tiene4 = filas[0].length >= 4;
+    const D = filas.map(r => ({ t: r[0] / 1000, est: tiene4 ? r[1] : 2, e: tiene4 ? r[2] : r[1], u: tiene4 ? r[3] : r[2] }));
+    const t0 = D[0].t, T = D[D.length - 1].t - t0 || 1;
+    const x0 = 50, W = 830, yc = 120, H = 95, X = t => x0 + (t - t0) / T * W, Y = v => yc - Math.max(-1.3, Math.min(1.3, v)) / 1.3 * H;
+    let h = "";
+    let ini = null;
+    for (const d of D) { if (d.est === 3 && ini === null) ini = d.t; if (d.est !== 3 && ini !== null) { h += `<rect x="${X(ini)}" y="${yc - H}" width="${Math.max(1, X(d.t) - X(ini))}" height="${2 * H}" fill="${warn}" opacity=".3"/>`; ini = null; } }
+    for (const v of [-1, 0, 1]) h += `<line x1="${x0}" y1="${Y(v)}" x2="${x0 + W}" y2="${Y(v)}" stroke="${v === 0 ? ink2 : line}"/><text x="${x0 - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="12.5" fill="${ink2}">${v}</text>`;
+    const paso = T > 10 ? 2 : 1;
+    for (let t = 0; t <= T + 1e-9; t += paso) h += `<text x="${X(t0 + t)}" y="${yc + H + 18}" text-anchor="middle" font-size="12.5" fill="${ink2}">${fmt(t, 0)} s</text>`;
+    const pl = (f, c) => `<polyline points="${D.map(d => `${X(d.t).toFixed(1)},${Y(f(d)).toFixed(1)}`).join(" ")}" fill="none" stroke="${c}" stroke-width="1.8"/>`;
+    h += pl(d => d.u, ir) + pl(d => d.e, ctl);
+    $("#f6Tel").innerHTML = h;
+    const half = (ficha.nSens - 1) / 2 * ficha.pasoSens * 1000;
+    const seg = D.filter(d => d.est === 2);
+    const rms = Math.sqrt(seg.reduce((a, d) => a + d.e * d.e, 0) / Math.max(1, seg.length)) * half;
+    let cruces = 0; for (let i = 1; i < seg.length; i++) if (Math.sign(seg[i].e) !== Math.sign(seg[i - 1].e)) cruces++;
+    const dts = D.slice(1).map((d, i) => d.t - D[i].t), dtm = dts.reduce((a, b) => a + b, 0) / dts.length;
+    const perd = D.filter(d => d.est === 3).length / D.length;
+    tarjetas("#f6ResTel", [["Muestras", String(D.length)], ["Duración", fmt(T, 1, "s")], ["Intervalo promedio", fmt(dtm * 1000, 1, "ms")], ["Error RMS (siguiendo)", fmt(rms, 1, "mm")], ["Oscilación", fmt(cruces / 2 / T, 1, "Hz")], ["Tiempo con la línea perdida", fmt(perd * 100, 0, "%")]]);
+    const esperado = (ficha.telemCada || 4) * ficha.periodo;
+    $("#f6VerTel").innerHTML = dtm > 1.3 * esperado ? est("warn", `Las muestras llegan cada ${fmt(dtm * 1000, 1, "ms")} y se esperaban cada ${fmt(esperado * 1000, 0, "ms")}: el lazo podría estar corriendo más lento de lo programado.`) : est("ok", "El intervalo entre muestras coincide con lo programado.");
+  }
+  $("#f6Graf").addEventListener("click", telemetria);
+  $("#f6Ej").addEventListener("click", ejemploTel);
+  $("#f6Arch").addEventListener("change", async e => { const f = e.target.files[0]; if (!f) return; $("#f6Csv").value = await f.text(); telemetria(); });
+
+  /* ================= 5. FIRMWARE ================= */
+  function firmware() {
+    const fw = window.generarFirmware(ficha), nombres = ["seguidor.ino", "config.h", "sensores.h", "motores.h", "pid.h"];
+    $("#f6Tabs").innerHTML = nombres.map(n => `<button type="button" role="tab" aria-pressed="${n === st.archivo}" data-f="${n}">${n}</button>`).join("");
+    $("#f6Cod").textContent = fw[st.archivo];
+    const n = ficha.nSens, mux = !!ficha.mux;
+    const pines = mux
+      ? [["A0 … A3 (D14 … D17)", "Barra: S0 … S3 del multiplexor"], ["A4", "Barra: salida analógica común (SIG)"], ["D11", "Barra: LON, encendido de los emisores"], ["D9 / D7 / D8", "TB6612: PWMA / AIN1 / AIN2 (motor izquierdo)"], ["D10 / D5 / D6", "TB6612: PWMB / BIN1 / BIN2 (motor derecho) · confirmar con la PCB"], ["D4", "TB6612: STBY"], ["D2", "Botón a GND (pull-up interno)"], ["D13", "LED de estado"], ["A7", "Divisor 10 k / 10 k desde V_bat"]]
+      : [["A0 … A" + (Math.min(n, 8) - 1), n + " sensores IR (sensor 0 = izquierda)"], ["D9 / D7 / D8", "TB6612: PWMA / AIN1 / AIN2 (motor izquierdo)"], ["D10 / D11 / D12", "TB6612: PWMB / BIN1 / BIN2 (motor derecho)"], ["D4", "TB6612: STBY"], ["D2", "Botón a GND (pull-up interno)"], ["D13", "LED de estado"]];
+    if (!mux && n <= 7) pines.push(["A7", "Divisor 10 k / 10 k desde V_bat"]);
+    pines.push(["5V / GND", "Regulador de 5 V y tierra común (Módulo 3)"]);
+    $("#f6Pines tbody").innerHTML = pines.map(p => `<tr><td><b>${p[0]}</b></td><td>${p[1]}</td></tr>`).join("");
+    $("#f6VerFw").innerHTML = mux ? est("warn", "Con multiplexor sobran entradas analógicas (V_bat en A7). Los pines del TB6612 son una propuesta: verifíquenlos contra el código de prueba de la PCB antes de conectar.")
+      : n > 8 ? est("bad", `La ficha tiene ${n} sensores y el Nano sólo tiene 8 entradas analógicas: hace falta un multiplexor.`)
+      : n === 8 ? est("warn", "Con 8 sensores no queda entrada analógica para medir la batería: sin parada por batería baja ni compensación de voltaje.")
+      : est("ok", "Las conexiones caben en un Arduino Nano.");
+  }
+  $("#f6Tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { st.archivo = b.dataset.f; firmware(); } });
+  const copiar = async (txt, msg) => { try { await navigator.clipboard.writeText(txt); $("#f6MsgCopia").textContent = msg; } catch (e) { $("#f6MsgCopia").textContent = "El navegador no permitió copiar."; } setTimeout(() => { $("#f6MsgCopia").textContent = ""; }, 2500); };
+  $("#f6Copia").addEventListener("click", () => copiar($("#f6Cod").textContent, st.archivo + " copiado."));
+  $("#f6CopiaTodo").addEventListener("click", () => { const fw = window.generarFirmware(ficha); copiar(Object.keys(fw).map(k => `// ===================== ${k} =====================\n${fw[k]}`).join("\n"), "Los 5 archivos copiados."); });
+
+  /* ================= 6. DECISIONES ================= */
+  function decisiones() {
+    const f = window.Ficha.leer(), per = st.perReal || f.periodo;
+    const filas = [
+      ["Temporización", "Periodo fijo", st.modo === "fijo" ? "Periodo fijo" : "delay()", st.modo === "fijo" ? "Periodo estable" : "Periodo variable"],
+      ["Periodo real del lazo", fmt(f.periodo * 1000, 2, "ms"), fmt(per * 1000, 2, "ms"), "El simulador usará este periodo"],
+      ["Velocidad del puerto serial", f.baud + " baud", BAUDS[st.baudI] + " baud", fmt(BAUDS[st.baudI] / 10, 0, "bytes/s")],
+      ["Telemetría", "cada " + f.telemCada, "cada " + st.cada, "una línea cada " + fmt(st.cada * per * 1000, 0, "ms")]
+    ];
+    $("#f6Dec tbody").innerHTML = filas.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num"><b>${r[2]}</b></td><td>${r[3]}</td></tr>`).join("");
+  }
+  $("#f6Aplicar").addEventListener("click", () => {
+    const per = Math.round((st.perReal || ficha.periodo) * 1e5) / 1e5;
+    window.Ficha.guardar({ baud: BAUDS[st.baudI], telemCada: st.cada, periodo: per });
+    const m = $("#f6MsgDec"); m.style.color = "var(--ok)"; m.textContent = "Listo: el simulador usa el periodo real y el firmware se regeneró.";
+  });
+  window.addEventListener("ficha-cambiada", e => { ficha = e.detail; firmware(); maquina(); decisiones(); });
+
+  // las corridas del simulador sólo cuando el módulo está a la vista
+  let visible = false;
+  const io = new IntersectionObserver(ents => { if (!visible && ents.some(e => e.isIntersecting)) { visible = true; io.disconnect(); efectoControl(); registro(); } });
+  ["#f6-capas", "#f6-tiempo", "#f6-estados"].forEach(s => io.observe($(s)));
+
+  function todo() { segm(); lineaTiempo(); maquina(); firmware(); telemetria(); decisiones(); if (visible) registro(); }
+  todo();
+  document.addEventListener("cambio-tema", todo);
+}
+</script>
+</body>
+</html>

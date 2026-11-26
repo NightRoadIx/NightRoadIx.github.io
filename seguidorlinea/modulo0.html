@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Módulo 0 · Requisitos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.secc{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.secc a{flex:none;font-size:15px}
+.diag{min-width:760px}
+.diag svg{display:block;width:100%;height:auto}
+.blk{cursor:pointer}
+.blk rect{fill:var(--card);stroke-width:2.2}
+.blk:hover rect,.blk:focus rect,.blk.sel rect{stroke-width:4}
+.blk:focus{outline:none}
+.blk text{fill:var(--ink)}
+.blk .t1{font:700 17px Barlow,sans-serif}
+.blk .t2{font:400 13.5px "JetBrains Mono",monospace;fill:var(--ink2)}
+.flecha{stroke:var(--ink);stroke-width:1.8;fill:none}
+.sen-lbl{font:600 14px Barlow,sans-serif;fill:var(--ink)}
+.sen-sub{font:400 12.5px Barlow,sans-serif;fill:var(--ink2)}
+.detalle{min-height:150px}
+.detalle h3{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.formreq{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr))}
+.formreq label{display:flex;flex-direction:column;gap:4px;font-weight:600}
+.formreq label span{font-weight:400;color:var(--ink2);font-size:13px}
+.formreq input{width:100%}
+.n2{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;max-width:620px}
+.n2 .diag2{display:grid;place-items:center;text-align:center;font:700 15px "Barlow Condensed",sans-serif;border-radius:8px;min-height:76px;padding:6px;color:var(--bg)}
+.n2 button{min-height:76px;justify-content:center;padding:4px;border-radius:8px;font-size:13px;font-weight:500;color:var(--ink2)}
+.n2 button.vacio{opacity:.35;cursor:default}
+.n2 button .pt{width:12px;height:12px;border-radius:50%;background:var(--ink);display:block}
+.n2 button[aria-pressed=true]{background:var(--ir-suave);border-color:var(--ir)}
+@media(max-width:520px){.n2 .diag2{font-size:12px;min-height:56px}.n2 button{min-height:56px}}
+.vmod svg{display:block;width:100%;height:auto;max-width:980px}
+.vmod .nodo rect{stroke-width:2;fill:var(--card)}
+.vmod text{font:600 15px Barlow,sans-serif;fill:var(--ink)}
+.vmod .m{font:400 13px Barlow,sans-serif;fill:var(--ink2)}
+ol.act li{margin-bottom:.6em;max-width:75ch}
+</style>
+<script src="js/carrito.js"></script>
+<script src="js/comun.js"></script>
+</head>
+<body data-pagina="m0">
+<main>
+<section class="band">
+  <div class="wrap">
+    <p><span class="tag t-int">Módulo 0 · Sistema</span></p>
+    <h1>Requisitos y arquitectura: antes de soldar, decidir qué debe hacer</h1>
+    <p class="muted" style="font-size:18px">Echar a andar un seguidor de línea es cerrar un lazo de control con piezas físicas. Este módulo arma el mapa de ese lazo, convierte lo que se pide en números concretos y muestra por qué ningún subsistema se puede diseñar por separado.</p>
+    <nav class="secc scroll" aria-label="Secciones del módulo">
+      <a class="btn" href="#lazo">1. El lazo cerrado</a>
+      <a class="btn" href="#requisitos">2. Requisitos en números</a>
+      <a class="btn" href="#acoplamientos">3. Acoplamientos</a>
+      <a class="btn" href="#modelo-v">4. Modelo en V</a>
+      <a class="btn" href="#actividad">5. Actividad</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ================= 1. LAZO ================= -->
+<section class="band alt" id="lazo">
+  <div class="wrap">
+    <h2>1. El carrito es un sistema de control en lazo cerrado</h2>
+    <p>Lo que vieron en Señales y Sistemas aparece aquí con piezas reales. La referencia es que la línea quede al centro del arreglo de sensores, <i>r</i> = 0. Los sensores miden dónde está la línea, el microcontrolador calcula la corrección y los motores la ejecutan. El chasis convierte la diferencia de velocidades en un giro, y eso cambia lo que leen los sensores. Selecciona cada bloque para ver qué lo compone.</p>
+    <div class="card scroll" style="padding:10px">
+      <div class="diag">
+        <svg viewBox="0 0 1100 330" role="img" aria-labelledby="tDiag">
+          <title id="tDiag">Diagrama de bloques del lazo de control del seguidor de línea</title>
+          <defs><marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--ink)"/></marker></defs>
+          <!-- referencia -->
+          <text class="sen-lbl" x="10" y="104">r = 0</text>
+          <text class="sen-sub" x="10" y="122">línea al centro</text>
+          <path class="flecha" d="M62 140 H 98" marker-end="url(#pf)"/>
+          <circle cx="122" cy="140" r="22" fill="var(--card)" stroke="var(--ink)" stroke-width="2"/>
+          <text x="122" y="147" text-anchor="middle" style="font:700 20px Barlow">Σ</text>
+          <text x="96" y="186" class="sen-lbl">−</text>
+          <!-- e -->
+          <path class="flecha" d="M144 140 H 196" marker-end="url(#pf)"/>
+          <text class="sen-lbl" x="160" y="130">e</text>
+          <!-- controlador -->
+          <g class="blk" data-b="ctl" tabindex="0" role="button" aria-label="Controlador">
+            <rect x="198" y="100" width="190" height="80" rx="10" stroke="var(--ctl)"/>
+            <text class="t1" x="293" y="133" text-anchor="middle">Controlador PID</text>
+            <text class="t2" x="293" y="157" text-anchor="middle">Kp + Ki/s + Kd·s</text>
+          </g>
+          <path class="flecha" d="M388 140 H 450" marker-end="url(#pf)"/>
+          <text class="sen-lbl" x="404" y="130">u</text>
+          <!-- potencia -->
+          <g class="blk" data-b="ele" tabindex="0" role="button" aria-label="Puente H y motores">
+            <rect x="452" y="100" width="190" height="80" rx="10" stroke="var(--ele)"/>
+            <text class="t1" x="547" y="133" text-anchor="middle">Puente H + motores</text>
+            <text class="t2" x="547" y="157" text-anchor="middle">K / (τs + 1)</text>
+          </g>
+          <path class="flecha" d="M642 140 H 704" marker-end="url(#pf)"/>
+          <text class="sen-lbl" x="650" y="130">ωL, ωR</text>
+          <!-- chasis -->
+          <g class="blk" data-b="mec" tabindex="0" role="button" aria-label="Chasis diferencial">
+            <rect x="706" y="100" width="200" height="80" rx="10" stroke="var(--mec)"/>
+            <text class="t1" x="806" y="133" text-anchor="middle">Chasis diferencial</text>
+            <text class="t2" x="806" y="157" text-anchor="middle">v, ω → posición</text>
+          </g>
+          <!-- perturbación -->
+          <path class="flecha" d="M806 34 V 98" marker-end="url(#pf)"/>
+          <text class="sen-lbl" x="818" y="40">Perturbaciones</text>
+          <text class="sen-sub" x="818" y="58">curvas, fricción, desniveles</text>
+          <!-- salida -->
+          <path class="flecha" d="M906 140 H 1000"/>
+          <path class="flecha" d="M1000 140 H 1060" marker-end="url(#pf)"/>
+          <text class="sen-lbl" x="930" y="130">y</text>
+          <text class="sen-sub" x="1000" y="168" text-anchor="middle">posición lateral</text>
+          <circle cx="1000" cy="140" r="4" fill="var(--ink)"/>
+          <!-- realimentación -->
+          <path class="flecha" d="M1000 140 V 260 H 666" marker-end="url(#pf)"/>
+          <g class="blk" data-b="sen" tabindex="0" role="button" aria-label="Arreglo de sensores">
+            <rect x="452" y="222" width="212" height="76" rx="10" stroke="var(--sen)"/>
+            <text class="t1" x="558" y="254" text-anchor="middle">Arreglo IR + cálculo</text>
+            <text class="t2" x="558" y="278" text-anchor="middle">H ≈ 1 + ruido</text>
+          </g>
+          <path class="flecha" d="M452 260 H 122 V 164" marker-end="url(#pf)"/>
+          <text class="sen-lbl" x="300" y="250">yₘ (posición medida)</text>
+          <!-- envolvente firmware -->
+          <rect x="182" y="84" width="222" height="112" rx="14" fill="none" stroke="var(--prg)" stroke-width="2" stroke-dasharray="6 5"/>
+          <text x="186" y="216" style="font:600 13px Barlow" fill="var(--prg)">firmware del microcontrolador</text>
+        </svg>
+      </div>
+    </div>
+    <div class="card detalle" id="detalle" aria-live="polite" style="margin-top:14px"></div>
+
+    <h3 style="margin-top:28px">Las señales del lazo</h3>
+    <div class="scroll"><table class="stack">
+      <thead><tr><th>Señal</th><th>Qué representa</th><th>Unidades en el carrito</th><th>Dónde se mide o se ve</th></tr></thead>
+      <tbody>
+        <tr><td><b>r</b></td><td>Referencia: la línea debe quedar al centro del arreglo</td><td>0 (constante)</td><td>Se fija en el código</td></tr>
+        <tr><td><b>yₘ</b></td><td>Posición medida de la línea bajo los sensores</td><td>−1 … +1 (normalizada) o mm</td><td>Cálculo del centroide en el firmware</td></tr>
+        <tr><td><b>e</b></td><td>Error: e = r − yₘ</td><td>−1 … +1</td><td>Gráfica azul del simulador</td></tr>
+        <tr><td><b>u</b></td><td>Corrección del PID: cuánto girar</td><td>fracción de ciclo de trabajo</td><td>Diferencia entre PWM izquierdo y derecho</td></tr>
+        <tr><td><b>ωL, ωR</b></td><td>Velocidad angular de cada rueda</td><td>rad/s o rpm</td><td>Con encoder o tacómetro óptico</td></tr>
+        <tr><td><b>y</b></td><td>Posición lateral real respecto a la cinta</td><td>mm</td><td>Línea roja del simulador</td></tr>
+      </tbody>
+    </table></div>
+    <p class="nota">Las funciones de transferencia del diagrama son modelos simplificados. En el Módulo 4 se obtiene la del motor real con una prueba escalón, y en el Módulo 5 se usa para sintonizar el PID.</p>
+  </div>
+</section>
+
+<!-- ================= 2. REQUISITOS ================= -->
+<section class="band" id="requisitos">
+  <div class="wrap">
+    <h2>2. De "que siga la línea" a requisitos con números</h2>
+    <p>"Que vaya rápido y no se salga" no se puede diseñar ni verificar. Un requisito útil tiene un valor y una forma de comprobarlo. Escribe los de tu pista y observa cómo se transforman en requisitos para cada subsistema, que es lo que se llama <b>derivar requisitos</b>.</p>
+    <div class="card">
+      <h3>Requisitos del cliente (la pista y la competencia)</h3>
+      <div class="formreq" id="formReq">
+        <label>Ancho de la cinta<span>mm</span><input type="number" id="r_ancho" step="1" min="5" max="50"></label>
+        <label>Radio de la curva más cerrada<span>cm</span><input type="number" id="r_radio" step="1" min="5" max="200"></label>
+        <label>Velocidad media deseada<span>m/s</span><input type="number" id="r_v" step="0.05" min="0.05" max="3"></label>
+        <label>Longitud de la pista<span>m</span><input type="number" id="r_L" step="0.5" min="1" max="50"></label>
+        <label>Masa máxima del carrito<span>kg</span><input type="number" id="r_m" step="0.05" min="0.05" max="3"></label>
+        <label>Presupuesto<span>MXN</span><input type="number" id="r_pres" step="100" min="0"></label>
+      </div>
+      <h3 style="margin-top:20px">Supuestos de diseño (se refinan en los módulos)</h3>
+      <div class="formreq">
+        <label>Coef. de fricción μ<span>hule sobre melamina ≈ 0.6–0.9</span><input type="number" id="s_mu" step="0.05" min="0.1" max="1.5"></label>
+        <label>Radio de rueda<span>mm (de la ficha)</span><input type="number" id="s_r" step="0.5" min="5" max="50"></label>
+        <label>Tiempo para alcanzar la velocidad<span>s</span><input type="number" id="s_ta" step="0.1" min="0.1" max="5"></label>
+        <label>Avance máximo entre correcciones<span>mm</span><input type="number" id="s_dx" step="0.5" min="0.5" max="20"></label>
+      </div>
+    </div>
+
+    <h3 style="margin-top:28px">Requisitos derivados para cada subsistema</h3>
+    <div class="scroll"><table class="stack" id="tabDer">
+      <thead><tr><th>Subsistema</th><th>Requisito derivado</th><th>Cómo sale</th><th class="num">Valor</th><th>Carrito de la ficha</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="barra" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px">
+      <button class="pri" type="button" id="btnGuardarReq">Guardar requisitos en la ficha</button>
+      <span class="small" id="msgReq" role="status" style="color:var(--ok)"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3. ACOPLAMIENTOS ================= -->
+<section class="band alt" id="acoplamientos">
+  <div class="wrap dos">
+    <div>
+      <h2>3. Todo está acoplado</h2>
+      <p>En ingeniería de sistemas se usa una <b>matriz N²</b>: en la diagonal van los subsistemas y en cada celda lo que uno le entrega o le impone a otro. Se lee <i>de la fila hacia la columna</i>. Selecciona una celda.</p>
+      <p>Casi todas las celdas tienen algo. Por eso un seguidor de línea no se "arma" pieza por pieza: si se cambia la rueda para ir más rápido, hay que volver a revisar el motor, la batería y la sintonía del controlador.</p>
+      <div class="card detalle" id="detN2" aria-live="polite"></div>
+    </div>
+    <div>
+      <div class="n2" id="n2" role="group" aria-label="Matriz N² de acoplamientos"></div>
+      <p class="small muted" style="margin-top:10px">Pruébalo en el <a href="simulador.html">simulador</a>: baja el voltaje de batería sin tocar las ganancias y observa cómo cambia la respuesta.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 4. MODELO EN V ================= -->
+<section class="band" id="modelo-v">
+  <div class="wrap">
+    <h2>4. El camino completo: modelo en V</h2>
+    <p>Por la izquierda se baja de los requisitos al detalle, y por la derecha se sube probando. Cada nivel de la derecha verifica al nivel de la izquierda que tiene enfrente. Si una prueba falla, se regresa al nivel correspondiente, y no a "mover el código hasta que funcione".</p>
+    <div class="card vmod">
+      <svg viewBox="0 0 980 360" role="img" aria-labelledby="tV">
+        <title id="tV">Modelo en V del proyecto con los módulos del sitio</title>
+        <defs><marker id="pv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--ink2)"/></marker></defs>
+        <path d="M150 70 L 330 175 L 420 255 M560 255 L 650 175 L 830 70" stroke="var(--line)" stroke-width="14" fill="none" stroke-linecap="round"/>
+        <g stroke="var(--ink2)" stroke-width="1.5" stroke-dasharray="5 5" fill="none">
+          <path d="M260 46 H 720" marker-end="url(#pv)"/>
+          <path d="M420 156 H 560" marker-end="url(#pv)"/>
+        </g>
+        <text class="m" x="490" y="36" text-anchor="middle">se valida con</text>
+        <text class="m" x="490" y="146" text-anchor="middle">se verifica con</text>
+        <g class="nodo"><rect x="40" y="22" width="220" height="52" rx="8" stroke="var(--int)"/><text x="150" y="46" text-anchor="middle">Requisitos</text><text class="m" x="150" y="64" text-anchor="middle">Módulo 0</text></g>
+        <g class="nodo"><rect x="200" y="130" width="220" height="52" rx="8" stroke="var(--int)"/><text x="310" y="154" text-anchor="middle">Arquitectura y diseño</text><text class="m" x="310" y="172" text-anchor="middle">Módulos 0–4</text></g>
+        <g class="nodo"><rect x="370" y="244" width="240" height="72" rx="8" stroke="var(--prg)"/><text x="490" y="270" text-anchor="middle">Implementación</text><text class="m" x="490" y="290" text-anchor="middle">armado, control y firmware</text><text class="m" x="490" y="306" text-anchor="middle">Módulos 5–6</text></g>
+        <g class="nodo"><rect x="560" y="130" width="220" height="52" rx="8" stroke="var(--int)"/><text x="670" y="154" text-anchor="middle">Pruebas por subsistema</text><text class="m" x="670" y="172" text-anchor="middle">Módulo 7</text></g>
+        <g class="nodo"><rect x="720" y="22" width="220" height="52" rx="8" stroke="var(--int)"/><text x="830" y="46" text-anchor="middle">Validación en pista</text><text class="m" x="830" y="64" text-anchor="middle">Módulos 7–8</text></g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 5. ACTIVIDAD ================= -->
+<section class="band alt" id="actividad">
+  <div class="wrap">
+    <h2>5. Actividad antes del Módulo 1</h2>
+    <ol class="act">
+      <li>Midan la pista del laboratorio (ancho de cinta, curva más cerrada, longitud) y escriban sus requisitos en la sección 2. Guárdenlos en la ficha.</li>
+      <li>En la tabla de requisitos derivados, identifiquen cuál no cumple el carrito genérico y a qué subsistema le toca resolverlo.</li>
+      <li>En el <a href="simulador.html">simulador</a>, carguen el ajuste "Sólo P" y luego "PD sintonizado". Describan con sus palabras la diferencia en la estela y en la gráfica de error.</li>
+      <li>Escojan dos celdas de la matriz N² y propongan un experimento en el simulador que muestre ese acoplamiento.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<script>
+{
+  const $ = s => document.querySelector(s);
+  /* ---------- 1. detalle de bloques ---------- */
+  const BLOQUES = {
+    ctl: { tag: "ctl", tn: "Control · Firmware", t: "Controlador PID en el microcontrolador",
+      p: "Recibe el error <i>e</i> y calcula la corrección <i>u</i> con la parte proporcional (reacciona al error de hoy), la integral (al error acumulado) y la derivativa (a qué tan rápido cambia). En el carrito no es un circuito analógico: son unas líneas de código que se ejecutan cada <i>T</i> milisegundos, y por eso el periodo de muestreo también forma parte del diseño.",
+      d: "Decisiones: tipo de controlador, ganancias, periodo de muestreo, saturación. Módulos 5 y 6." },
+    ele: { tag: "ele", tn: "Electrónica y potencia", t: "Puente H y motorreductores",
+      p: "El microcontrolador no puede alimentar un motor: sólo entrega unos miliamperes. El puente H (TB6612FNG, L298N, DRV8833…) conmuta la corriente de la batería con PWM. El motor no cambia de velocidad al instante: se comporta, en primera aproximación, como un sistema de primer orden con constante de tiempo τ.",
+      d: "Decisiones: driver, frecuencia de PWM, batería, regulador, motor y reducción. Módulos 3 y 4." },
+    mec: { tag: "mec", tn: "Mecánica", t: "Chasis de tracción diferencial",
+      p: "Con dos ruedas motrices y una rueda loca, el carrito gira por diferencia de velocidades: v = (vR + vL)/2 y ω = (vR − vL)/b, donde <i>b</i> es la distancia entre ruedas. La geometría (b, radio de rueda, posición de los sensores) define la dinámica que el controlador va a enfrentar.",
+      d: "Decisiones: trocha, radio de rueda, centro de masa, lookahead, material de llanta. Módulo 1." },
+    sen: { tag: "sen", tn: "Sensado", t: "Arreglo de sensores infrarrojos",
+      p: "Cada sensor (TCRT5000, QRE1113…) emite infrarrojo y mide cuánto regresa: el blanco refleja y la cinta negra absorbe. Con varias lecturas calibradas se calcula un centroide que estima la posición de la línea. La altura, la separación entre sensores y la luz ambiente determinan qué tan buena es esa medición.",
+      d: "Decisiones: número de sensores, separación, altura, calibración, algoritmo de posición. Módulo 2." }
+  };
+  function mostrarBloque(k) {
+    const b = BLOQUES[k];
+    document.querySelectorAll(".blk").forEach(g => g.classList.toggle("sel", g.dataset.b === k));
+    $("#detalle").innerHTML = `<h3><span class="tag t-${b.tag}">${b.tn}</span>${b.t}</h3><p>${b.p}</p><p class="muted small" style="margin:0">${b.d}</p>`;
+  }
+  document.querySelectorAll(".blk").forEach(g => {
+    g.addEventListener("click", () => mostrarBloque(g.dataset.b));
+    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); mostrarBloque(g.dataset.b); } });
+  });
+  mostrarBloque("ctl");
+
+  /* ---------- 2. requisitos ---------- */
+  const f = window.Ficha.leer();
+  const ent = {
+    r_ancho: f.anchoLinea * 1000, r_radio: f.radioMin * 100, r_v: f.vObjetivo, r_L: f.longPista, r_m: f.masaMax, r_pres: f.presupuesto,
+    s_mu: f.mu, s_r: f.radioRueda * 1000, s_ta: 0.5, s_dx: 2
+  };
+  for (const k in ent) { const i = document.getElementById(k); i.value = +(+ent[k]).toFixed(3); i.addEventListener("input", calcular); }
+  const val = id => parseFloat(document.getElementById(id).value);
+  const est = (ok, warn, txt) => `<span class="est ${ok ? "ok" : warn ? "warn" : "bad"}">${ok ? "✓" : warn ? "!" : "✗"}</span> ${txt}`;
+
+  function calcular() {
+    const g = 9.81, w = val("r_ancho") / 1000, R = val("r_radio") / 100, v = val("r_v"), L = val("r_L"), m = val("r_m");
+    const mu = val("s_mu"), r = val("s_r") / 1000, ta = val("s_ta"), dx = val("s_dx") / 1000, Crr = 0.02;
+    const vPico = 1.3 * v;                                  // margen: en rectas va más rápido que el promedio
+    const t = L / v, ac = v * v / R, muReq = ac / g;
+    const rpm = vPico * 60 / (2 * Math.PI * r);
+    const F = m * vPico / ta + Crr * m * g, tau = F * r / 2;
+    const T = dx / vPico;
+    const vMaxFicha = f.rpmMax * 2 * Math.PI / 60 * f.radioRueda * window.Ficha.vMotor(f) / f.vNom;
+    const filas = [
+      ["int", "Sistema", "Tiempo de vuelta esperado", "t = L / v", fmt(t, 1, "s"), "—"],
+      ["mec", "Mecánica", "Aceleración lateral en la curva más cerrada", "a = v² / R", fmt(ac, 2, "m/s²"),
+        est(muReq < 0.7 * mu, muReq < mu, "requiere μ ≥ " + fmt(muReq, 2) + " (supuesto " + fmt(mu, 2) + ")")],
+      ["mec", "Mecánica", "Velocidad de rueda necesaria (con 30 % de margen)", "n = 60·1.3v / (2πr)", fmt(rpm, 0, "rpm"),
+        est(f.rpmMax >= rpm, f.rpmMax >= 0.85 * rpm, "motor de la ficha: " + fmt(f.rpmMax, 0, "rpm"))],
+      ["ele", "Potencia", "Par por rueda para arrancar", "τ = (m·1.3v/tₐ + C_rr·m·g)·r / 2", fmt(tau * 1000, 1, "mN·m"),
+        "≈ " + fmt(tau * 10.197, 2, "kg·cm") + " (unidad de las hojas de datos)"],
+      ["ele", "Potencia", "Velocidad máxima posible del carrito de la ficha", "v = ω·r·Vbat/Vnom", fmt(vMaxFicha, 2, "m/s"),
+        est(vMaxFicha >= vPico, vMaxFicha >= v, "se necesitan " + fmt(vPico, 2, "m/s") + " en recta")],
+      ["sen", "Sensado", "Separación máxima entre sensores", "d ≤ ancho de cinta", fmt(w * 1000, 0, "mm"),
+        est(f.pasoSens <= w, false, "ficha: " + fmt(f.pasoSens * 1000, 1, "mm"))],
+      ["prg", "Firmware", "Periodo máximo del lazo de control", "T ≤ Δx / v", fmt(T * 1000, 1, "ms") + " (" + fmt(1 / T, 0, "Hz") + ")",
+        est(f.periodo <= T, f.periodo <= 2 * T, "ficha: " + fmt(f.periodo * 1000, 0, "ms"))],
+      ["mec", "Mecánica", "Masa", "m ≤ m máx", fmt(m, 2, "kg"), est(f.masa <= m, false, "estimada: " + fmt(f.masa, 2, "kg"))]
+    ];
+    const tb = $("#tabDer tbody");
+    tb.innerHTML = filas.map(x => `<tr><td><span class="tag t-${x[0]}">${x[1]}</span></td><td>${x[2]}</td><td><code>${x[3]}</code></td><td class="num"><b>${x[4]}</b></td><td>${x[5]}</td></tr>`).join("");
+  }
+  calcular();
+  $("#btnGuardarReq").addEventListener("click", () => {
+    window.Ficha.guardar({ anchoLinea: val("r_ancho") / 1000, radioMin: val("r_radio") / 100, vObjetivo: val("r_v"), longPista: val("r_L"), masaMax: val("r_m"), presupuesto: val("r_pres") });
+    $("#msgReq").textContent = "Requisitos guardados en la ficha de este navegador.";
+    setTimeout(() => { $("#msgReq").textContent = ""; }, 3500);
+  });
+
+  /* ---------- 3. matriz N² ---------- */
+  const SUB = [["mec", "Mecánica"], ["sen", "Sensado"], ["ele", "Potencia"], ["ctl", "Control"], ["prg", "Firmware"]];
+  const AC = {
+    "mec>sen": "La altura del arreglo y su distancia al eje (lookahead) definen qué ve el sensor y con cuánta anticipación.",
+    "mec>ele": "La masa y el radio de rueda fijan el par, y con él la corriente que el motor y el driver deben entregar.",
+    "mec>ctl": "La trocha, el lookahead y la inercia cambian la dinámica de la planta: otras ganancias.",
+    "mec>prg": "Si se montan encoders, su resolución por milímetro depende de la rueda y la reducción.",
+    "sen>mec": "El arreglo debe ir al frente, a 3–5 mm del piso, sin rozar en desniveles.",
+    "sen>ele": "Cada emisor IR consume ≈ 20 mA: con 8 sensores el regulador debe dar más de 160 mA.",
+    "sen>ctl": "El error sale del arreglo: su rango (−1…+1) y su resolución limitan lo que puede hacer el controlador.",
+    "sen>prg": "La calibración (mínimos y máximos) y el cálculo del centroide se programan.",
+    "ele>mec": "El voltaje real fija la velocidad máxima: v = ω·r. Con la batería baja, el carrito es más lento.",
+    "ele>sen": "La conmutación del PWM y los motores mete ruido en las lecturas analógicas: hay que desacoplar.",
+    "ele>ctl": "La ganancia del motor depende del voltaje: si baja la batería, el mismo Kp corrige menos.",
+    "ele>prg": "Los pines y temporizadores del PWM que ofrece el driver condicionan cómo se escribe el código.",
+    "ctl>mec": "Una velocidad base alta exige más adherencia en las curvas: v²/R ≤ μ·g.",
+    "ctl>sen": "Kd amplifica el ruido del sensor; si es grande, hay que filtrar la medición.",
+    "ctl>ele": "La salida del PID se vuelve ciclo de trabajo y puede saturar en 0 % o 100 %.",
+    "ctl>prg": "Las ecuaciones del PID se discretizan: integral como suma, derivada como diferencia, periodo T fijo.",
+    "prg>sen": "Frecuencia de muestreo del ADC, promediado y detección de línea perdida.",
+    "prg>ele": "Frecuencia y resolución del PWM (8 bits = 256 niveles).",
+    "prg>ctl": "Si el lazo no corre con periodo fijo (por usar delay o imprimir por serial), aparece retardo y se pierde estabilidad."
+  };
+  const n2 = $("#n2"); let html = "";
+  for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
+    if (i === j) html += `<div class="diag2" style="background:var(--${SUB[i][0]})">${SUB[i][1]}</div>`;
+    else {
+      const k = SUB[i][0] + ">" + SUB[j][0], hay = AC[k];
+      html += hay ? `<button type="button" data-k="${k}" aria-label="De ${SUB[i][1]} hacia ${SUB[j][1]}"><span class="pt" style="background:var(--${SUB[i][0]})"></span></button>`
+                  : `<button type="button" class="vacio" disabled aria-label="Sin acoplamiento directo de ${SUB[i][1]} hacia ${SUB[j][1]}">·</button>`;
+    }
+  }
+  n2.innerHTML = html;
+  const nombre = c => SUB.find(s => s[0] === c);
+  function mostrarN2(k) {
+    n2.querySelectorAll("button[data-k]").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
+    const [a, b] = k.split(">").map(nombre);
+    $("#detN2").innerHTML = `<h3><span class="tag t-${a[0]}">${a[1]}</span> → <span class="tag t-${b[0]}">${b[1]}</span></h3><p style="margin:0">${AC[k]}</p>`;
+  }
+  n2.addEventListener("click", e => { const b = e.target.closest("button[data-k]"); if (b) mostrarN2(b.dataset.k); });
+  mostrarN2("ele>ctl");
+}
+</script>
+</body>
+</html>
