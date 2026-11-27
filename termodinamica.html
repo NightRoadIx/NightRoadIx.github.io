@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Termodinámica</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+
+<script>
+/* el tema se fija antes del primer pintado para que no parpadee */
+(function () {
+  var r = document.documentElement, t = null;
+  try { t = localStorage.getItem("banco-tema"); } catch (e) {}
+  if (t !== "claro" && t !== "oscuro") t = r.getAttribute("data-theme") === "light" ? "claro" : "oscuro";
+  r.setAttribute("data-tema", t);
+})();
+</script>
+
+<style>
+/* Layout: visor a la izquierda, panel de instrumento a la derecha; una pestaña por herramienta,
+   apila bajo 880px. Mismo sistema visual que los bancos de los otros cursos. */
+:root {
+  color-scheme: dark;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #0a0e15; --panel: #111722; --panel-2: #161e2b; --line: #223044; --line-rgb: 34,48,68;
+  --fg: #dde5f0; --dim: #8695aa;
+  --acc: #f2c454; --acc-rgb: 242,196,84;
+  --cy: #5fa8d8; --cy-rgb: 95,168,216;
+  --vi: #a888d8; --vi-rgb: 168,136,216;
+  --ok: #52b87c; --ok-rgb: 82,184,124;
+  --no: #d4624a; --no-rgb: 212,98,74;
+  --or: #e0743c; --or-rgb: 224,116,60;
+  --vp: #050709;
+  --hot: #6d3a2a; --good: #2a5c3f;
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --math: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+:root[data-tema="claro"] {
+  color-scheme: light;
+  --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eef1f6; --line: #d9dfe7; --line-rgb: 217,223,231;
+  --fg: #253243; --dim: #61728b;
+  --acc: #936904; --acc-rgb: 147,105,4;
+  --cy: #1a76b1; --cy-rgb: 26,118,177;
+  --vi: #8853d7; --vi-rgb: 136,83,215;
+  --ok: #27804c; --ok-rgb: 39,128,76;
+  --no: #ce3c1d; --no-rgb: 206,60,29;
+  --or: #c14a0d; --or-rgb: 193,74,13;
+  --vp: #f7f9fc;
+  --hot: #e8bfb2; --good: #b8dcc6;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; margin: 0; }
+
+.wrap {
+  position: relative; max-width: 1200px; margin: 0 auto; padding-block: 20px 36px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header { padding-right: 46px; }
+.back { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--dim); text-decoration: none; display: inline-block; margin-bottom: 10px; }
+.back:hover { color: var(--acc); }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); margin: 0 0 6px; }
+h1 { font-size: clamp(22px, 4.4vw, 31px); font-weight: 600; letter-spacing: -.015em; margin: 0 0 8px; text-wrap: balance; }
+.lede { color: var(--dim); margin: 0; max-width: 70ch; font-size: 14.5px; }
+.lede b { color: var(--fg); font-weight: 500; }
+
+/* pestañas */
+nav { display: flex; flex-wrap: wrap; gap: 5px; margin: 18px 0 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.tab {
+  font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--dim); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 11px; cursor: pointer;
+  display: flex; align-items: baseline; gap: 7px; transition: color .14s, background .14s, border-color .14s;
+}
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] { color: var(--bg); background: var(--acc); border-color: var(--acc); font-weight: 600; }
+.tab .n { font-family: var(--mono); font-size: 10.5px; opacity: .62; }
+.tab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.tab.sep { margin-left: 8px; }
+
+/* escenario */
+.stage { display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.viewport {
+  position: relative; background: var(--vp); border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; aspect-ratio: 4 / 3; min-width: 0; max-width: 100%;
+}
+.viewport canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hint {
+  position: absolute; left: 11px; bottom: 9px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em;
+  color: var(--dim); pointer-events: none; opacity: .8;
+}
+@media (max-width: 700px) { .hint { display: none; } }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 16px 18px; min-width: 0; display: flex; flex-direction: column; gap: 14px;
+}
+.ask { font-size: 14px; margin: 0; padding-left: 11px; border-left: 3px solid var(--acc); }
+.ask b { color: var(--acc); font-weight: 600; }
+
+.ctrl { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ctrl label { font-size: 12.5px; color: var(--dim); font-weight: 500; }
+.ctrl output { font-family: var(--mono); font-size: 13.5px; font-weight: 500; color: var(--acc); font-variant-numeric: tabular-nums; }
+.pair2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+
+input[type="range"] { width: 100%; -webkit-appearance: none; appearance: none; background: transparent; margin: 2px 0; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line); }
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none; margin-top: -6.5px; }
+input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius: 50%; background: var(--acc); border: none; }
+input[type="range"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px; }
+
+select, input[type="text"], input[type="number"] {
+  font: 500 14px var(--mono); color: var(--fg); background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 9px; width: 100%; min-width: 0;
+}
+select { font-family: var(--sans); }
+select:focus-visible, input:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button, .btn {
+  flex: 1; font-family: var(--sans); font-size: 12.5px; font-weight: 500; background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; cursor: pointer; white-space: nowrap;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.toggle button[aria-pressed="true"] { background: rgba(var(--acc-rgb), .14); color: var(--acc); border-color: rgba(var(--acc-rgb), .42); }
+.btn:hover, .toggle button:hover { color: var(--fg); border-color: var(--dim); }
+.toggle button:focus-visible, .btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--dim); }
+.chk input { accent-color: var(--acc); }
+
+.readout { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 1px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; }
+.row + .row { border-top: 1px solid rgba(var(--line-rgb), .55); }
+.row .k { font-size: 12.5px; color: var(--dim); min-width: 0; }
+.row .k em { font-family: var(--mono); font-style: normal; color: var(--fg); font-size: 12px; }
+.row .v { font-family: var(--mono); font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.row.hero { padding: 8px 0 6px; }
+.row.hero .k { font-size: 13px; color: var(--fg); font-weight: 500; }
+.row.hero .v { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.v.acc { color: var(--acc); } .v.cy { color: var(--cy); } .v.ok { color: var(--ok); } .v.no { color: var(--no); }
+.v.vi { color: var(--vi); } .v.or { color: var(--or); } .v.dim { color: var(--dim); }
+.sect { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 6px 0 1px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+.note { font-size: 12.5px; line-height: 1.5; color: var(--dim); background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; margin: 0; }
+.note b { color: var(--fg); font-weight: 600; }
+.note.hot { border-color: var(--hot); } .note.hot b { color: var(--no); }
+.note.good { border-color: var(--good); } .note.good b { color: var(--ok); }
+.legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 11.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+
+/* visor de conversiones */
+.htmlview { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 22px; overflow: auto; }
+.bigres { font-family: var(--mono); font-size: clamp(22px, 4.2vw, 34px); font-weight: 600; letter-spacing: -.01em; text-align: center; font-variant-numeric: tabular-nums; }
+.bigres .from { color: var(--fg); } .bigres .to { color: var(--acc); } .bigres .eqs { color: var(--dim); font-weight: 400; margin: 0 .3em; }
+.chainv { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 12px; font-family: var(--mono); font-size: 15px; }
+.chainv .op { color: var(--dim); }
+.chainv .term { display: inline-flex; gap: 6px; align-items: baseline; }
+.frac { display: inline-flex; flex-direction: column; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; }
+.frac .num, .frac .den { display: flex; gap: 6px; align-items: baseline; white-space: nowrap; }
+.frac .num { border-bottom: 1.5px solid var(--dim); padding-bottom: 4px; margin-bottom: 4px; }
+.u { color: var(--cy); }
+.u.x { color: var(--dim); text-decoration: line-through; text-decoration-color: var(--no); text-decoration-thickness: 2px; }
+.chainv .res { color: var(--acc); font-weight: 600; }
+.steps-v { margin: 0 auto; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; color: var(--dim); max-width: 52ch; }
+.steps-v b { color: var(--fg); font-weight: 500; }
+
+/* visor de análisis dimensional */
+.eqbig { font-family: var(--math); font-size: clamp(24px, 4.4vw, 38px); text-align: center; color: var(--fg); white-space: nowrap; overflow-x: auto; }
+.terms { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.term-c { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 9px 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 112px; }
+.term-c .t { font-family: var(--math); font-size: 19px; }
+.term-c .d { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.term-c.ok { border-color: rgba(var(--ok-rgb), .6); } .term-c.ok .d { color: var(--ok); }
+.term-c.no { border-color: rgba(var(--no-rgb), .6); } .term-c.no .d { color: var(--no); }
+.waiting { text-align: center; color: var(--dim); font-size: 13.5px; }
+.m { font-family: var(--math); font-size: 1.06em; white-space: nowrap; }
+
+/* pestañas a todo el ancho */
+.full { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 15px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.card .tag { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--cy); }
+.card h3 { font-size: 15.5px; font-weight: 600; margin: 0; }
+.card p.q { font-size: 14px; margin: 0; }
+details { border-top: 1px solid rgba(var(--line-rgb), .7); padding-top: 8px; }
+summary { cursor: pointer; font-size: 12.5px; font-weight: 500; color: var(--acc); list-style: none; display: inline-flex; align-items: center; gap: 7px; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "+"; font-family: var(--mono); width: 16px; height: 16px; border: 1.3px solid var(--acc); border-radius: 4px; display: inline-grid; place-items: center; font-size: 11px; line-height: 1; }
+details[open] summary::before { content: "−"; }
+summary:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; border-radius: 4px; }
+.steps { margin: 10px 0 0; padding-left: 1.2rem; display: grid; gap: 6px; font-size: 13.5px; }
+.steps li::marker { font-family: var(--mono); color: var(--dim); font-size: 12px; }
+.ans { display: inline-block; margin-left: 4px; font-family: var(--mono); font-size: 12.5px; font-weight: 500; color: var(--ok); background: rgba(var(--ok-rgb), .12); border-radius: 4px; padding: 1px 7px; }
+
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.opts button { font: 500 13.5px var(--mono); text-align: left; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 11px; cursor: pointer; }
+.opts button:hover:not(:disabled) { border-color: var(--acc); }
+.opts button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.opts button.right { border-color: var(--ok); background: rgba(var(--ok-rgb), .12); color: var(--ok); }
+.opts button.wrong { border-color: var(--no); background: rgba(var(--no-rgb), .12); color: var(--no); }
+.opts button:disabled { cursor: default; }
+.fb { margin: 0; font-size: 13px; color: var(--dim); }
+.fb b.ok { color: var(--ok); } .fb b.no { color: var(--no); }
+.scorebar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-family: var(--mono); font-size: 13px; color: var(--dim); }
+.scorebar b { color: var(--acc); font-weight: 600; }
+
+footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--dim); max-width: 80ch; }
+footer a { color: var(--dim); }
+
+.tema {
+  position: absolute; top: 20px; right: max(16px, env(safe-area-inset-right, 0px)); z-index: 5; width: 34px; height: 34px; padding: 0;
+  display: grid; place-items: center; background: var(--panel); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: color .14s, border-color .14s, background .14s;
+}
+.tema:hover { color: var(--acc); border-color: var(--acc); background: var(--panel-2); }
+.tema:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.tema svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: none; }
+.tema .sol { display: block; }
+:root[data-tema="claro"] .tema .sol { display: none; }
+:root[data-tema="claro"] .tema .luna { display: block; }
+
+@media (max-width: 560px) { .opts { grid-template-columns: minmax(0, 1fr); } .full { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+
+/* fuerzas a elegir y subpaneles */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button {
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500; background: var(--panel-2); color: var(--dim);
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; cursor: pointer;
+}
+.chips button:hover { color: var(--fg); border-color: var(--dim); }
+.chips button[aria-pressed="true"] { background: rgba(var(--acc-rgb), .14); color: var(--acc); border-color: rgba(var(--acc-rgb), .42); }
+.chips button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.sub { display: flex; flex-direction: column; gap: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button class="tema" id="tema" type="button" aria-label="Cambiar a modo claro">
+    <svg class="sol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.3"/><path d="M12 2.6v2.4M12 19v2.4M4.3 4.3l1.7 1.7M18 18l1.7 1.7M2.6 12H5M19 12h2.4M4.3 19.7 6 18M18 6l1.7-1.7"/></svg>
+    <svg class="luna" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.8A8.6 8.6 0 0 1 9.2 3.5a7.7 7.7 0 1 0 11.3 11.3Z"/></svg>
+  </button>
+  <header>
+    <a class="back" href="physical.html">← Propedéutico de Física</a>
+    <p class="eyebrow">Calor y fluidos · Propedéutico</p>
+    <h1>Termodinámica</h1>
+    <p class="lede">La energía que se "perdía" por fricción y en los choques termina como calor. Aquí se ve qué es la temperatura, cuánto calor cuesta calentar o fundir algo, cómo se comporta un gas y <b>el límite de eficiencia que ningún motor puede superar</b>.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Montajes">
+    <button class="tab" role="tab" id="t-escalas" aria-controls="p-escalas" aria-selected="true"><span class="n">01</span> Escalas</button>
+    <button class="tab" role="tab" id="t-dilatacion" aria-controls="p-dilatacion" aria-selected="false" tabindex="-1"><span class="n">02</span> Dilatación</button>
+    <button class="tab" role="tab" id="t-cambio-fase" aria-controls="p-cambio-fase" aria-selected="false" tabindex="-1"><span class="n">03</span> Cambios de fase</button>
+    <button class="tab" role="tab" id="t-calorimetria" aria-controls="p-calorimetria" aria-selected="false" tabindex="-1"><span class="n">04</span> Calorimetría</button>
+    <button class="tab" role="tab" id="t-transferencia" aria-controls="p-transferencia" aria-selected="false" tabindex="-1"><span class="n">05</span> Transferencia de calor</button>
+    <button class="tab" role="tab" id="t-gas-ideal" aria-controls="p-gas-ideal" aria-selected="false" tabindex="-1"><span class="n">06</span> Gas ideal</button>
+    <button class="tab" role="tab" id="t-procesos" aria-controls="p-procesos" aria-selected="false" tabindex="-1"><span class="n">07</span> Procesos</button>
+    <button class="tab" role="tab" id="t-carnot" aria-controls="p-carnot" aria-selected="false" tabindex="-1"><span class="n">08</span> Máquinas térmicas</button>
+    <button class="tab sep" role="tab" id="t-ejemplos" aria-controls="p-ejemplos" aria-selected="false" tabindex="-1">Ejemplos</button>
+    <button class="tab" role="tab" id="t-autoevaluacion" aria-controls="p-autoevaluacion" aria-selected="false" tabindex="-1">Autoevaluación</button>
+  </nav>
+
+  <!-- ============ 01 ESCALAS ============ -->
+  <section class="stage" id="p-escalas" role="tabpanel" aria-labelledby="t-escalas">
+    <div class="viewport"><canvas id="esCanvas" aria-label="Tres termómetros en grados Celsius, Fahrenheit y kelvin con la misma temperatura"></canvas><div class="hint">la misma temperatura, tres escalas</div></div>
+    <div class="panel">
+      <p class="ask">¿A qué temperatura coinciden las escalas Celsius y Fahrenheit? <b>¿Y qué significa 0 K?</b></p>
+      <div class="ctrl"><div class="ctrl-top"><label for="esC">Temperatura</label><output id="esCo"></output></div><input type="range" id="esC" min="-273.15" max="300" step="0.05" value="37"></div>
+      <div class="ctrl"><label for="esN">Escribe un valor en °C</label><input type="number" id="esN" step="any" value="37" min="-273.15" max="300"></div>
+      <div class="chips" id="esPresets" role="group" aria-label="Puntos de referencia">
+        <button type="button" data-t="-273.15" aria-pressed="false">Cero absoluto</button>
+        <button type="button" data-t="-40" aria-pressed="false">−40</button>
+        <button type="button" data-t="0" aria-pressed="false">Agua congela</button>
+        <button type="button" data-t="37" aria-pressed="true">Cuerpo humano</button>
+        <button type="button" data-t="100" aria-pressed="false">Agua hierve</button>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Celsius</div><div class="v acc" id="esRC">—</div></div>
+        <div class="row"><div class="k">Fahrenheit &nbsp;<em>°F = 1.8 °C + 32</em></div><div class="v or" id="esRF">—</div></div>
+        <div class="row"><div class="k">Kelvin &nbsp;<em>K = °C + 273.15</em></div><div class="v cy" id="esRK">—</div></div>
+      </div>
+      <p class="note" id="esNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 02 DILATACIÓN ============ -->
+  <section class="stage" id="p-dilatacion" role="tabpanel" aria-labelledby="t-dilatacion" hidden>
+    <div class="viewport"><canvas id="dlCanvas" aria-label="Riel o tanque que se dilata con la temperatura, dibujado exagerado"></canvas><div class="hint" id="dlHint">dibujo exagerado; las lecturas son reales</div></div>
+    <div class="panel">
+      <div class="toggle" role="group" aria-label="Tipo de dilatación">
+        <button type="button" data-dl="lin" aria-pressed="true">Lineal</button>
+        <button type="button" data-dl="vol" aria-pressed="false">Volumétrica</button>
+      </div>
+      <div id="dlLin" class="sub">
+        <p class="ask">Un riel de acero de 12 m pasa de 0 a 40 °C. <b>¿Cuánto se alarga?</b></p>
+        <div class="ctrl"><label for="dlMat">Material</label>
+          <select id="dlMat"><option value="acero">Acero · 12 × 10⁻⁶ /°C</option><option value="aluminio">Aluminio · 23 × 10⁻⁶ /°C</option><option value="cobre">Cobre · 17 × 10⁻⁶ /°C</option><option value="laton">Latón · 19 × 10⁻⁶ /°C</option><option value="concreto">Concreto · 12 × 10⁻⁶ /°C</option><option value="vidrio">Vidrio · 9 × 10⁻⁶ /°C</option></select>
+        </div>
+        <div class="ctrl"><div class="ctrl-top"><label for="dlL">Longitud inicial &nbsp;L₀</label><output id="dlLo"></output></div><input type="range" id="dlL" min="1" max="300" step="1" value="12"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="dlT">Cambio de temperatura &nbsp;ΔT</label><output id="dlTo"></output></div><input type="range" id="dlT" min="-40" max="80" step="1" value="40"></div>
+        <div class="toggle" id="dlPresets">
+          <button type="button" class="btn" data-p="riel">Riel de 12 m</button>
+          <button type="button" class="btn" data-p="puente">Puente de 200 m</button>
+        </div>
+        <div class="readout">
+          <div class="row hero"><div class="k">Alargamiento &nbsp;<em>ΔL = α L₀ ΔT</em></div><div class="v acc" id="dlRes">—</div></div>
+          <div class="row"><div class="k">Longitud final</div><div class="v" id="dlLf">—</div></div>
+          <div class="row"><div class="k">Por cada metro</div><div class="v cy" id="dlRel">—</div></div>
+        </div>
+      </div>
+      <div id="dlVol" class="sub" hidden>
+        <p class="ask">Llenas el tanque al tope en la mañana fría. <b>¿Cuánta gasolina se derrama al calentarse?</b></p>
+        <div class="ctrl"><div class="ctrl-top"><label for="dvV">Volumen del tanque &nbsp;V₀</label><output id="dvVo"></output></div><input type="range" id="dvV" min="10" max="100" step="1" value="50"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="dvT">Cambio de temperatura &nbsp;ΔT</label><output id="dvTo"></output></div><input type="range" id="dvT" min="0" max="40" step="1" value="20"></div>
+        <div class="readout">
+          <div class="row hero"><div class="k">Aumento de volumen &nbsp;<em>ΔV = β V₀ ΔT</em></div><div class="v acc" id="dvRes">—</div></div>
+          <div class="row"><div class="k">Volumen final</div><div class="v" id="dvVf">—</div></div>
+          <div class="row"><div class="k">Coeficiente de la gasolina &nbsp;β</div><div class="v dim">9.5 × 10⁻⁴ /°C</div></div>
+        </div>
+      </div>
+      <p class="note" id="dlNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 03 CAMBIOS DE FASE ============ -->
+  <section class="stage" id="p-cambio-fase" role="tabpanel" aria-labelledby="t-cambio-fase" hidden>
+    <div class="viewport"><canvas id="cfCanvas" aria-label="Curva de calentamiento del agua: temperatura contra calor suministrado"></canvas><div class="hint">en las mesetas la temperatura no sube</div></div>
+    <div class="panel">
+      <p class="ask">Calientas 1 kg de hielo a −10 °C hasta volverlo vapor. <b>¿Qué etapa se lleva casi todo el calor?</b></p>
+      <div class="ctrl"><div class="ctrl-top"><label for="cfQ">Calor suministrado</label><output id="cfQo"></output></div><input type="range" id="cfQ" min="0" max="1000" step="1" value="60"></div>
+      <div class="pair2">
+        <div class="ctrl"><div class="ctrl-top"><label for="cfM">Masa</label><output id="cfMo"></output></div><input type="range" id="cfM" min="0.1" max="5" step="0.1" value="1"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="cfP">Potencia del hervidor</label><output id="cfPo"></output></div><input type="range" id="cfP" min="500" max="3000" step="50" value="1500"></div>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Etapa</div><div class="v acc" id="cfEt">—</div></div>
+        <div class="row"><div class="k">Temperatura</div><div class="v or" id="cfT">—</div></div>
+        <div class="row"><div class="k">Tiempo con el hervidor &nbsp;<em>Q / P</em></div><div class="v dim" id="cfTime">—</div></div>
+        <div class="sect">Calor por etapa</div>
+        <div class="row"><div class="k">Hielo de −10 a 0 °C &nbsp;<em>m c ΔT</em></div><div class="v" id="cfS0">—</div></div>
+        <div class="row"><div class="k">Fusión a 0 °C &nbsp;<em>m L_f</em></div><div class="v cy" id="cfS1">—</div></div>
+        <div class="row"><div class="k">Agua de 0 a 100 °C &nbsp;<em>m c ΔT</em></div><div class="v" id="cfS2">—</div></div>
+        <div class="row"><div class="k">Vaporización a 100 °C &nbsp;<em>m L_v</em></div><div class="v cy" id="cfS3">—</div></div>
+        <div class="row"><div class="k">Vapor de 100 a 110 °C</div><div class="v" id="cfS4">—</div></div>
+        <div class="row hero"><div class="k">Total hasta vapor a 100 °C</div><div class="v acc" id="cfTot">—</div></div>
+        <div class="row"><div class="k">Parte que se va en vaporizar</div><div class="v" id="cfPct">—</div></div>
+      </div>
+      <p class="note" id="cfNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 04 CALORIMETRÍA ============ -->
+  <section class="stage" id="p-calorimetria" role="tabpanel" aria-labelledby="t-calorimetria" hidden>
+    <div class="viewport"><canvas id="caCanvas" aria-label="Bloque de metal caliente dentro de agua y la temperatura de equilibrio"></canvas><div class="hint">el calor que cede el metal es el que gana el agua</div></div>
+    <div class="panel">
+      <p class="ask">Un bloque de aluminio a 100 °C cae en agua a 20 °C. <b>¿La mezcla queda cerca de 60 °C?</b></p>
+      <div class="ctrl"><label for="caMet">Metal</label>
+        <select id="caMet"><option value="aluminio">Aluminio · 900 J/(kg·°C)</option><option value="cobre">Cobre · 385 J/(kg·°C)</option><option value="hierro">Hierro · 450 J/(kg·°C)</option><option value="plomo">Plomo · 128 J/(kg·°C)</option></select>
+      </div>
+      <div class="pair2">
+        <div class="ctrl"><div class="ctrl-top"><label for="caMm">Masa del metal</label><output id="caMmo"></output></div><input type="range" id="caMm" min="0.05" max="2" step="0.05" value="0.2"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="caTm">T del metal</label><output id="caTmo"></output></div><input type="range" id="caTm" min="20" max="300" step="1" value="100"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="caMa">Masa de agua</label><output id="caMao"></output></div><input type="range" id="caMa" min="0.1" max="2" step="0.05" value="0.5"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="caTa">T del agua</label><output id="caTao"></output></div><input type="range" id="caTa" min="0" max="60" step="1" value="20"></div>
+      </div>
+      <div class="toggle" id="caPresets">
+        <button type="button" class="btn" data-p="al">Aluminio en agua</button>
+        <button type="button" class="btn" data-p="tarea">Tarea 5: cobre</button>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Temperatura de equilibrio</div><div class="v acc" id="caTe">—</div></div>
+        <div class="row"><div class="k">Calor que cede el metal &nbsp;<em>m c (T_m − T_eq)</em></div><div class="v or" id="caQm">—</div></div>
+        <div class="row"><div class="k">Calor que gana el agua &nbsp;<em>m c (T_eq − T_a)</em></div><div class="v cy" id="caQa">—</div></div>
+        <div class="row"><div class="k">Capacidad calorífica &nbsp;<em>m c</em> metal · agua</div><div class="v dim" id="caC">—</div></div>
+      </div>
+      <p class="note" id="caNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 05 TRANSFERENCIA ============ -->
+  <section class="stage" id="p-transferencia" role="tabpanel" aria-labelledby="t-transferencia" hidden>
+    <div class="viewport"><canvas id="trCanvas" aria-label="Calor que atraviesa un muro o que irradia un cuerpo"></canvas><div class="hint" id="trHint">el grosor del muro está dibujado a escala relativa</div></div>
+    <div class="panel">
+      <div class="toggle" role="group" aria-label="Mecanismo">
+        <button type="button" data-tr="cond" aria-pressed="true">Conducción</button>
+        <button type="button" data-tr="rad" aria-pressed="false">Radiación</button>
+      </div>
+      <div id="trCond" class="sub">
+        <p class="ask">Un muro de ladrillo contra uno con unicel. <b>¿Cuántas veces menos calor deja pasar?</b></p>
+        <div class="ctrl"><label for="trMat">Material</label>
+          <select id="trMat"><option value="ladrillo">Ladrillo · 0.7 W/(m·K)</option><option value="vidrio">Vidrio · 0.8 W/(m·K)</option><option value="concreto">Concreto · 1.4 W/(m·K)</option><option value="madera">Madera · 0.12 W/(m·K)</option><option value="poliestireno">Poliestireno (unicel) · 0.033 W/(m·K)</option><option value="acero">Acero · 50 W/(m·K)</option><option value="aire">Aire quieto · 0.026 W/(m·K)</option></select>
+        </div>
+        <div class="pair2">
+          <div class="ctrl"><div class="ctrl-top"><label for="trA">Área</label><output id="trAo"></output></div><input type="range" id="trA" min="0.5" max="30" step="0.5" value="10"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="trT">ΔT</label><output id="trTo"></output></div><input type="range" id="trT" min="0" max="40" step="1" value="15"></div>
+        </div>
+        <div class="ctrl"><div class="ctrl-top"><label for="trL">Espesor &nbsp;L</label><output id="trLo"></output></div><input type="range" id="trL" min="0.002" max="0.3" step="0.001" value="0.15"></div>
+        <div class="toggle" id="trPresets">
+          <button type="button" class="btn" data-p="ladrillo">Muro de ladrillo</button>
+          <button type="button" class="btn" data-p="ventana">Ventana sencilla</button>
+          <button type="button" class="btn" data-p="unicel">Muro con unicel</button>
+        </div>
+        <div class="readout">
+          <div class="row hero"><div class="k">Calor que atraviesa &nbsp;<em>P = k A ΔT / L</em></div><div class="v or" id="trP">—</div></div>
+          <div class="row"><div class="k">Energía en 24 h</div><div class="v" id="trE">—</div></div>
+          <div class="row"><div class="k">Resistencia térmica &nbsp;<em>L / (k A)</em></div><div class="v cy" id="trR">—</div></div>
+        </div>
+      </div>
+      <div id="trRad" class="sub" hidden>
+        <p class="ask">Sin tocar nada, tu cuerpo pierde calor en un cuarto a 20 °C. <b>¿Cuánto, sólo por radiación?</b></p>
+        <div class="pair2">
+          <div class="ctrl"><div class="ctrl-top"><label for="trTs">T de la piel</label><output id="trTso"></output></div><input type="range" id="trTs" min="20" max="40" step="0.5" value="34"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="trTa">T del cuarto</label><output id="trTao"></output></div><input type="range" id="trTa" min="0" max="35" step="0.5" value="20"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="trAr">Área</label><output id="trAro"></output></div><input type="range" id="trAr" min="0.5" max="3" step="0.1" value="1.8"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="trEm">Emisividad &nbsp;e</label><output id="trEmo"></output></div><input type="range" id="trEm" min="0" max="1" step="0.01" value="0.97"></div>
+        </div>
+        <div class="readout">
+          <div class="row hero"><div class="k">Pérdida neta &nbsp;<em>e σ A (T⁴ − T₀⁴)</em></div><div class="v or" id="trPn">—</div></div>
+          <div class="row"><div class="k">Emite</div><div class="v" id="trPe">—</div></div>
+          <div class="row"><div class="k">Absorbe del cuarto</div><div class="v cy" id="trPa">—</div></div>
+        </div>
+      </div>
+      <p class="note" id="trNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 06 GAS IDEAL ============ -->
+  <section class="stage" id="p-gas-ideal" role="tabpanel" aria-labelledby="t-gas-ideal" hidden>
+    <div class="viewport"><canvas id="gaCanvas" aria-label="Cilindro con pistón y moléculas en movimiento, con su manómetro"></canvas><div class="hint">la rapidez de las moléculas crece con √T</div></div>
+    <div class="panel">
+      <p class="ask">Sube la temperatura sin mover el pistón. <b>¿Qué le pasa a la presión?</b></p>
+      <div class="ctrl"><div class="ctrl-top"><label for="gaN">Cantidad de gas &nbsp;n</label><output id="gaNo"></output></div><input type="range" id="gaN" min="0.1" max="5" step="0.1" value="1"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="gaT">Temperatura &nbsp;T</label><output id="gaTo"></output></div><input type="range" id="gaT" min="100" max="800" step="1" value="300"></div>
+      <div class="ctrl"><div class="ctrl-top"><label for="gaV">Volumen &nbsp;V</label><output id="gaVo"></output></div><input type="range" id="gaV" min="5" max="50" step="0.1" value="24.6"></div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Presión &nbsp;<em>P = n R T / V</em></div><div class="v acc" id="gaP">—</div></div>
+        <div class="row"><div class="k">En atmósferas</div><div class="v cy" id="gaAtm">—</div></div>
+        <div class="row"><div class="k">Rapidez media de las moléculas (aire)</div><div class="v dim" id="gaVr">—</div></div>
+      </div>
+      <div class="sect">Llanta que se calienta (volumen constante)</div>
+      <div class="pair2">
+        <div class="ctrl"><label for="llP">Presión del manómetro (psi)</label><input type="number" id="llP" step="any" value="32"></div>
+        <div class="ctrl"><label for="llT1">T inicial (°C)</label><input type="number" id="llT1" step="any" value="20"></div>
+        <div class="ctrl"><label for="llT2">T después de rodar (°C)</label><input type="number" id="llT2" step="any" value="50"></div>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k">Nueva lectura del manómetro</div><div class="v or" id="llRes">—</div></div>
+        <div class="row"><div class="k">Absoluta antes → después</div><div class="v" id="llAbs">—</div></div>
+      </div>
+      <p class="note" id="gaNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 07 PROCESOS ============ -->
+  <section class="stage" id="p-procesos" role="tabpanel" aria-labelledby="t-procesos" hidden>
+    <div class="viewport"><canvas id="prCanvas" aria-label="Diagrama presión contra volumen del proceso elegido; el área bajo la curva es el trabajo"></canvas><div class="hint">el área bajo la curva es el trabajo</div></div>
+    <div class="panel">
+      <div class="toggle" role="group" aria-label="Proceso">
+        <button type="button" data-pr="isob" aria-pressed="true">Isobárico</button>
+        <button type="button" data-pr="isoc" aria-pressed="false">Isocórico</button>
+        <button type="button" data-pr="isot" aria-pressed="false">Isotérmico</button>
+        <button type="button" data-pr="adia" aria-pressed="false">Adiabático</button>
+      </div>
+      <p class="ask" id="prAsk"></p>
+      <div id="prIsob" class="sub">
+        <div class="ctrl"><div class="ctrl-top"><label for="pbP">Presión constante &nbsp;P</label><output id="pbPo"></output></div><input type="range" id="pbP" min="50" max="500" step="5" value="200"></div>
+        <div class="pair2">
+          <div class="ctrl"><div class="ctrl-top"><label for="pbV1">V₁</label><output id="pbV1o"></output></div><input type="range" id="pbV1" min="1" max="50" step="0.5" value="10"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="pbV2">V₂</label><output id="pbV2o"></output></div><input type="range" id="pbV2" min="1" max="50" step="0.5" value="30"></div>
+        </div>
+        <div class="ctrl"><div class="ctrl-top"><label for="pbQ">Calor suministrado &nbsp;Q</label><output id="pbQo"></output></div><input type="range" id="pbQ" min="0" max="30000" step="100" value="10000"></div>
+      </div>
+      <div id="prIsoc" class="sub" hidden>
+        <div class="ctrl"><div class="ctrl-top"><label for="pcV">Volumen constante &nbsp;V</label><output id="pcVo"></output></div><input type="range" id="pcV" min="1" max="50" step="0.5" value="20"></div>
+        <div class="pair2">
+          <div class="ctrl"><div class="ctrl-top"><label for="pcP1">P₁</label><output id="pcP1o"></output></div><input type="range" id="pcP1" min="50" max="500" step="5" value="100"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="pcP2">P₂</label><output id="pcP2o"></output></div><input type="range" id="pcP2" min="50" max="500" step="5" value="200"></div>
+        </div>
+      </div>
+      <div id="prIsot" class="sub" hidden>
+        <div class="pair2">
+          <div class="ctrl"><div class="ctrl-top"><label for="ptN">n</label><output id="ptNo"></output></div><input type="range" id="ptN" min="0.1" max="5" step="0.1" value="1"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="ptT">T</label><output id="ptTo"></output></div><input type="range" id="ptT" min="100" max="800" step="5" value="300"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="ptV1">V₁</label><output id="ptV1o"></output></div><input type="range" id="ptV1" min="1" max="50" step="0.5" value="10"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="ptV2">V₂</label><output id="ptV2o"></output></div><input type="range" id="ptV2" min="1" max="50" step="0.5" value="20"></div>
+        </div>
+      </div>
+      <div id="prAdia" class="sub" hidden>
+        <div class="ctrl"><div class="ctrl-top"><label for="paT1">Temperatura del aire al entrar &nbsp;T₁</label><output id="paT1o"></output></div><input type="range" id="paT1" min="200" max="400" step="1" value="300"></div>
+        <div class="ctrl"><div class="ctrl-top"><label for="paR">Razón de compresión &nbsp;r = V₁/V₂</label><output id="paRo"></output></div><input type="range" id="paR" min="2" max="25" step="0.5" value="18"></div>
+      </div>
+      <div class="readout">
+        <div class="row hero"><div class="k" id="prWk">Trabajo del gas &nbsp;<em>W</em></div><div class="v acc" id="prW">—</div></div>
+        <div class="row"><div class="k" id="prQk">Calor &nbsp;<em>Q</em></div><div class="v or" id="prQ">—</div></div>
+        <div class="row"><div class="k" id="prUk">Energía interna &nbsp;<em>ΔU = Q − W</em></div><div class="v cy" id="prU">—</div></div>
+        <div class="row"><div class="k" id="prXk">—</div><div class="v" id="prX">—</div></div>
+        <div class="row"><div class="k" id="prYk">—</div><div class="v dim" id="prY">—</div></div>
+      </div>
+      <p class="note" id="prNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 08 MÁQUINAS TÉRMICAS ============ -->
+  <section class="stage" id="p-carnot" role="tabpanel" aria-labelledby="t-carnot" hidden>
+    <div class="viewport"><canvas id="cnCanvas" aria-label="Diagrama de flujo de energía de una máquina térmica o de un refrigerador"></canvas><div class="hint">el ancho de cada banda es proporcional a la energía</div></div>
+    <div class="panel">
+      <div class="toggle" role="group" aria-label="Modo">
+        <button type="button" data-cn="maq" aria-pressed="true">Máquina térmica</button>
+        <button type="button" data-cn="ref" aria-pressed="false">Refrigerador</button>
+      </div>
+      <div id="cnMaq" class="sub">
+        <p class="ask">Una planta de vapor trabaja entre 550 °C y 30 °C. <b>¿Cuál es lo máximo que puede convertir en trabajo?</b></p>
+        <div class="pair2">
+          <div class="ctrl"><div class="ctrl-top"><label for="cnTh">Foco caliente</label><output id="cnTho"></output></div><input type="range" id="cnTh" min="100" max="1500" step="10" value="550"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="cnTc">Foco frío</label><output id="cnTco"></output></div><input type="range" id="cnTc" min="0" max="100" step="1" value="30"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="cnQ">Calor que recibe &nbsp;Q_h</label><output id="cnQo"></output></div><input type="range" id="cnQ" min="100" max="5000" step="50" value="1000"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="cnR">Eficiencia real</label><output id="cnRo"></output></div><input type="range" id="cnR" min="1" max="90" step="1" value="35"></div>
+        </div>
+        <div class="toggle" id="cnPresets">
+          <button type="button" class="btn" data-p="planta">Planta de vapor</button>
+          <button type="button" class="btn" data-p="motor">Motor de auto</button>
+          <button type="button" class="btn" data-p="inventor">Inventor 60 %</button>
+        </div>
+        <div class="readout">
+          <div class="row hero"><div class="k">Eficiencia de Carnot &nbsp;<em>1 − T_c / T_h</em></div><div class="v acc" id="cnEta">—</div></div>
+          <div class="row"><div class="k">Trabajo máximo posible</div><div class="v" id="cnWm">—</div></div>
+          <div class="row"><div class="k">Trabajo real &nbsp;<em>η Q_h</em></div><div class="v acc" id="cnW">—</div></div>
+          <div class="row"><div class="k">Calor que tira al foco frío &nbsp;<em>Q_c = Q_h − W</em></div><div class="v cy" id="cnQc">—</div></div>
+          <div class="row hero"><div class="k">¿Es posible?</div><div class="v" id="cnSt">—</div></div>
+        </div>
+      </div>
+      <div id="cnRef" class="sub" hidden>
+        <p class="ask">Un congelador saca calor a −18 °C y lo tira a 30 °C. <b>¿Cuánto calor puede mover por cada joule de electricidad?</b></p>
+        <div class="pair2">
+          <div class="ctrl"><div class="ctrl-top"><label for="rfTc">Interior</label><output id="rfTco"></output></div><input type="range" id="rfTc" min="-30" max="10" step="1" value="-18"></div>
+          <div class="ctrl"><div class="ctrl-top"><label for="rfTh">Cocina</label><output id="rfTho"></output></div><input type="range" id="rfTh" min="20" max="45" step="1" value="30"></div>
+        </div>
+        <div class="readout">
+          <div class="row hero"><div class="k">COP máximo &nbsp;<em>T_c / (T_h − T_c)</em></div><div class="v acc" id="rfCop">—</div></div>
+          <div class="row"><div class="k">Con 100 J de trabajo saca del interior</div><div class="v cy" id="rfQc">—</div></div>
+          <div class="row"><div class="k">Y entrega a la cocina</div><div class="v or" id="rfQh">—</div></div>
+        </div>
+      </div>
+      <p class="note" id="cnNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ EJEMPLOS ============ -->
+  <section class="full" id="p-ejemplos" role="tabpanel" aria-labelledby="t-ejemplos" hidden>
+    <article class="card">
+      <span class="tag">Escalas</span>
+      <h3>La temperatura del cuerpo</h3>
+      <p class="q">Convierte 37 °C a Fahrenheit y a kelvin.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>°F = 1.8 (37) + 32 = 66.6 + 32. <span class="ans">98.6 °F</span></li>
+          <li>K = 37 + 273.15. <span class="ans">310.15 K</span></li>
+          <li>Un cambio de 1 °C equivale a 1 K y a 1.8 °F.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Dilatación lineal</span>
+      <h3>El riel de acero</h3>
+      <p class="q">Un riel de acero de 12 m pasa de 0 a 40 °C. ¿Cuánto se alarga? (α = 12 × 10⁻⁶ /°C)</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>ΔL = α L₀ ΔT = (12 × 10⁻⁶)(12)(40).</li>
+          <li><span class="ans">ΔL = 5.76 mm</span> Por eso se dejan juntas entre rieles y en los puentes.</li>
+          <li>Un puente de acero de 200 m con 45 °C de diferencia cambia <span class="ans">10.8 cm</span>.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Dilatación volumétrica</span>
+      <h3>El tanque lleno al tope</h3>
+      <p class="q">Un tanque de 50 L se llena de gasolina y después se calienta 20 °C. ¿Cuánto se derrama? (β = 9.5 × 10⁻⁴ /°C)</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>ΔV = β V₀ ΔT = (9.5 × 10⁻⁴)(50)(20). <span class="ans">0.95 L</span></li>
+          <li>El tanque metálico también se dilata, pero mucho menos que la gasolina; por eso conviene no llenarlo al tope.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Calor específico</span>
+      <h3>El hervidor</h3>
+      <p class="q">¿Cuánto calor hace falta para llevar 1.5 kg de agua de 20 a 100 °C? ¿Cuánto tarda un hervidor de 1500 W?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Q = m c ΔT = (1.5)(4186)(80). <span class="ans">502 kJ</span></li>
+          <li>t = Q / P = 502 320 / 1500. <span class="ans">335 s ≈ 5.6 min</span> si todo el calor llega al agua.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Calorimetría</span>
+      <h3>Aluminio caliente en agua</h3>
+      <p class="q">Un bloque de 0.2 kg de aluminio a 100 °C se mete en 0.5 kg de agua a 20 °C. ¿Temperatura final?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Calor cedido = calor ganado: (0.2)(900)(100 − T) = (0.5)(4186)(T − 20).</li>
+          <li>180 (100 − T) = 2093 (T − 20), así que 59 860 = 2273 T. <span class="ans">T = 26.3 °C</span></li>
+          <li>El agua casi no se calienta porque su capacidad calorífica es 11.6 veces la del bloque.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Cambios de fase</span>
+      <h3>De hielo a vapor</h3>
+      <p class="q">¿Cuánto calor hace falta para llevar 1 kg de hielo a −10 °C hasta vapor a 100 °C?</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Hielo de −10 a 0 °C: (1)(2090)(10) = 20.9 kJ.</li>
+          <li>Fusión: (1)(334 kJ) = 334 kJ. Agua de 0 a 100 °C: (1)(4186)(100) = 418.6 kJ.</li>
+          <li>Vaporización: (1)(2256 kJ) = 2256 kJ. <span class="ans">Total 3029.5 kJ</span></li>
+          <li>Sólo la vaporización es el 74.5 % del total.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Conducción</span>
+      <h3>Ladrillo contra unicel</h3>
+      <p class="q">Muro de 10 m² con 15 °C de diferencia. Compara 15 cm de ladrillo (k = 0.7) con 5 cm de unicel (k = 0.033).</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Ladrillo: P = (0.7)(10)(15) / 0.15. <span class="ans">700 W</span></li>
+          <li>Unicel: P = (0.033)(10)(15) / 0.05. <span class="ans">99 W</span></li>
+          <li>Con un tercio del espesor, el unicel deja pasar 7 veces menos calor.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Gas ideal</span>
+      <h3>La llanta caliente</h3>
+      <p class="q">Una llanta marca 32 psi a 20 °C. Después de rodar, el aire llega a 50 °C. ¿Qué marca el manómetro? (volumen constante)</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Pasa a absolutas: 32 psi = 220.6 kPa; P₁ = 220.6 + 101.3 = 321.9 kPa. T₁ = 293.15 K, T₂ = 323.15 K.</li>
+          <li>P₂ = P₁ T₂ / T₁ = 354.8 kPa absolutos.</li>
+          <li>Manométrica: 354.8 − 101.3 = 253.5 kPa. <span class="ans">36.8 psi</span></li>
+          <li>Por eso la presión de las llantas se mide en frío.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Primera ley</span>
+      <h3>Expansión a presión constante</h3>
+      <p class="q">Un gas a 200 kPa se expande de 10 a 30 L mientras recibe 10 kJ de calor. Trabajo y cambio de energía interna.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>W = P ΔV = (200 kPa)(0.020 m³). <span class="ans">4 kJ</span></li>
+          <li>ΔU = Q − W = 10 − 4. <span class="ans">6 kJ</span></li>
+          <li>De cada 10 J de calor, 4 J salen como trabajo y 6 J calientan el gas.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Adiabático</span>
+      <h3>Por qué un diésel no lleva bujía</h3>
+      <p class="q">Un diésel comprime aire a 300 K con razón de compresión 18, tan rápido que no hay intercambio de calor. Temperatura final (γ = 1.4).</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>T₂ = T₁ r^(γ−1) = 300 (18)^0.4 = 300 (3.18).</li>
+          <li><span class="ans">T₂ = 953 K = 680 °C</span> Suficiente para que el combustible inyectado se encienda solo.</li>
+        </ol>
+      </details>
+    </article>
+    <article class="card">
+      <span class="tag">Reto · segunda ley</span>
+      <h3>¿Le crees al inventor?</h3>
+      <p class="q">Una planta trabaja entre 550 °C y 30 °C: ¿eficiencia máxima? Un inventor dice que su motor entre 400 °C y 25 °C llega a 60 %.</p>
+      <details><summary>Ver procedimiento</summary>
+        <ol class="steps">
+          <li>Planta: η = 1 − 303.15 / 823.15. <span class="ans">63.2 %</span> Las reales andan en 35 a 45 %.</li>
+          <li>Inventor: η máx = 1 − 298.15 / 673.15. <span class="ans">55.7 %</span></li>
+          <li>Su 60 % supera el límite de Carnot: es imposible.</li>
+        </ol>
+      </details>
+    </article>
+  </section>
+
+  <!-- ============ AUTOEVALUACIÓN ============ -->
+  <section class="full" id="p-autoevaluacion" role="tabpanel" aria-labelledby="t-autoevaluacion" hidden>
+    <div class="scorebar"><span id="score">0 de 8 respondidas</span><button class="btn" type="button" id="quizReset" style="flex:none">Reiniciar</button></div>
+  </section>
+
+  <footer>
+    Constantes: c del agua 4186 J/(kg·°C), L_f 334 kJ/kg, L_v 2256 kJ/kg, R 8.314 J/(mol·K), 1 atm = 101.325 kPa, σ = 5.67 × 10⁻⁸ W/(m²·K⁴). Anterior: <a href="energia.html">Energía y colisiones</a>. Siguiente tema: <b>Hidráulica</b>. <a href="physical.html">Volver a los temas</a>.
+  </footer>
+</div>
+
+<script>
+(function () {
+"use strict";
+var $ = function (id) { return document.getElementById(id); };
+var root = document.documentElement, G = 9.81;
+var REDUCED = false; try { REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+
+/* ---------- tema ---------- */
+var V = {};
+function leerTema() {
+  var cs = getComputedStyle(root);
+  ["bg","panel","panel-2","line","fg","dim","acc","cy","vi","ok","no","or","vp"].forEach(function (k) { V[k] = cs.getPropertyValue("--" + k).trim(); });
+  ["line","acc","cy","vi","ok","no","or"].forEach(function (k) { V[k + "Rgb"] = cs.getPropertyValue("--" + k + "-rgb").trim(); });
+}
+function rgba(k, a) { return "rgba(" + V[k + "Rgb"] + "," + a + ")"; }
+leerTema();
+var bt = $("tema");
+function rotulo() { var c = root.getAttribute("data-tema") === "claro"; bt.setAttribute("aria-label", c ? "Cambiar a modo oscuro" : "Cambiar a modo claro"); }
+rotulo();
+bt.addEventListener("click", function () {
+  var nuevo = root.getAttribute("data-tema") === "claro" ? "oscuro" : "claro";
+  root.setAttribute("data-tema", nuevo);
+  try { localStorage.setItem("banco-tema", nuevo); } catch (e) {}
+});
+
+/* ---------- formato y dibujo ---------- */
+/* redondeo "hacia arriba en el medio" para que 245.25 dé 245.3 y 4.905 dé 4.91 */
+function rnd(x, d) { var p = Math.pow(10, d); return Math.round((x + (x >= 0 ? 1 : -1) * 1e-9) * p) / p; }
+function fx(x, d) { var v = rnd(x, d); if (Object.is(v, -0)) v = 0; return v.toLocaleString("es-MX", { minimumFractionDigits: d, maximumFractionDigits: d }).replace(/,/g, " "); }
+function sg(x, d) { return (rnd(x, d) < 0 ? "−" : "") + fx(Math.abs(x), d); }
+function N(x) { var a = Math.abs(x); return (rnd(x, 1) < 0 ? "−" : "") + fx(a, a >= 1000 ? 0 : 1) + " N"; }
+function A(x) { return sg(x, 2) + " m/s²"; }
+function setup(cv) {
+  var dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return null;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.fillStyle = V.vp; c.fillRect(0, 0, w, h);
+  return { c: c, w: w, h: h };
+}
+function arrow(c, x1, y1, x2, y2, col, w, dash) {
+  var ang = Math.atan2(y2 - y1, x2 - x1), len = Math.hypot(x2 - x1, y2 - y1), hs = Math.min(12, len * 0.4);
+  if (len < 0.5) return;
+  c.save(); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = w || 2.5; c.setLineDash(dash || []);
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(ang) * hs * 0.8, y2 - Math.sin(ang) * hs * 0.8); c.stroke(); c.setLineDash([]);
+  if (len > 2) { c.beginPath(); c.moveTo(x2, y2); c.lineTo(x2 - hs * Math.cos(ang - 0.42), y2 - hs * Math.sin(ang - 0.42)); c.lineTo(x2 - hs * Math.cos(ang + 0.42), y2 - hs * Math.sin(ang + 0.42)); c.closePath(); c.fill(); }
+  c.restore();
+}
+/* flecha desde un ángulo físico (grados, antihorario desde +x) */
+function arrowA(c, x, y, deg, len, col, w, dash) { var r = deg * Math.PI / 180; arrow(c, x, y, x + len * Math.cos(r), y - len * Math.sin(r), col, w, dash); }
+var MONO = "'IBM Plex Mono', ui-monospace, monospace", SANS = "'IBM Plex Sans', system-ui, sans-serif";
+function label(c, txt, x, y, col, opt) {
+  opt = opt || {}; c.font = (opt.w || "600") + " " + (opt.s || 12.5) + "px " + (opt.f || MONO); c.fillStyle = col;
+  c.textAlign = opt.a || "center"; c.textBaseline = opt.b || "middle"; c.fillText(txt, x, y);
+}
+function hatch(c, x, y, w, h) {
+  c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.strokeStyle = V.dim; c.lineWidth = 1; c.globalAlpha = .55;
+  for (var k = -h - w; k < w + h; k += 9) { c.beginPath(); c.moveTo(x + k, y + h); c.lineTo(x + k + h, y); c.stroke(); }
+  c.restore();
+}
+function bind(ids, fn) { ids.forEach(function (id) { $(id).addEventListener("input", fn); }); }
+function press(sel, attr, val) { document.querySelectorAll(sel).forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute(attr) === String(val) ? "true" : "false"); }); }
+function ground(c, W, y) { c.strokeStyle = V.dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); hatch(c, 0, y, W, 12); }
+function car(c, x, yb, s, col) {
+  var w = 120 * s, h = 34 * s, r = 11 * s;
+  c.fillStyle = V.panel; c.strokeStyle = col || V.fg; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(x - w / 2, yb - r); c.lineTo(x - w / 2, yb - r - h * 0.55); c.lineTo(x - w * 0.22, yb - r - h * 0.6); c.lineTo(x - w * 0.08, yb - r - h);
+  c.lineTo(x + w * 0.2, yb - r - h); c.lineTo(x + w * 0.34, yb - r - h * 0.55); c.lineTo(x + w / 2, yb - r - h * 0.45); c.lineTo(x + w / 2, yb - r); c.closePath(); c.fill(); c.stroke();
+  [-0.3, 0.3].forEach(function (k) { c.fillStyle = V.line; c.beginPath(); c.arc(x + k * w, yb - r, r, 0, Math.PI * 2); c.fill(); c.strokeStyle = V.fg; c.stroke(); });
+  return { cx: x, cy: yb - r - h * 0.45, top: yb - r - h };
+}
+function box(c, x, y, w, h, col, txt) {
+  c.fillStyle = V.panel; c.strokeStyle = col || V.fg; c.lineWidth = 2; c.fillRect(x - w / 2, y - h / 2, w, h); c.strokeRect(x - w / 2, y - h / 2, w, h);
+  if (txt) label(c, txt, x, y, V.fg, { s: 12 });
+}
+
+
+function J(x) { var a = Math.abs(x), s = rnd(x, 2) < 0 ? "−" : ""; if (a >= 1e5) return s + fx(a / 1000, 1) + " kJ"; if (a >= 1e4) return s + fx(a, 0) + " J"; if (a >= 10) return s + fx(a, 1) + " J"; return s + fx(a, 2) + " J"; }
+function kW(p) { var k = p / 1000; return fx(k, k < 10 ? 2 : 1) + " kW"; }
+function HP(p) { return fx(p / 745.7, 1) + " hp"; }
+function niceStep(max, n) { var raw = max / (n || 5), p = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / p; return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10) * p; }
+function axesTicks(c, x0, y0, x1, y1, xmax, ymax, xlab, ylab, xfmt, yfmt) {
+  c.strokeStyle = V.line; c.lineWidth = 1; c.font = "10.5px " + MONO; c.fillStyle = V.dim;
+  var sx = niceStep(xmax, 5), sy = niceStep(ymax, 4), k;
+  c.textAlign = "center"; c.textBaseline = "top";
+  for (k = 0; k <= xmax + 1e-9; k += sx) { var px = x0 + k / xmax * (x1 - x0); c.beginPath(); c.moveTo(px, y0); c.lineTo(px, y1); c.stroke(); c.fillText(xfmt ? xfmt(k) : fx(k, 0), px, y0 + 5); }
+  c.textAlign = "right"; c.textBaseline = "middle";
+  for (k = 0; k <= ymax + 1e-9; k += sy) { var py = y0 - k / ymax * (y0 - y1); c.beginPath(); c.moveTo(x0, py); c.lineTo(x1, py); c.stroke(); c.fillText(yfmt ? yfmt(k) : fx(k, 0), x0 - 6, py); }
+  c.strokeStyle = V.dim; c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  label(c, xlab, x1, y0 + 20, V.dim, { a: "right", b: "top", s: 11, w: "500" });
+  label(c, ylab, x0 + 6, y1 - 2, V.dim, { a: "left", b: "bottom", s: 11, w: "500" });
+}
+
+
+var R = 8.314, SIG = 5.67e-8, ATM = 101.325, PSI = 6.894757;
+function kJs(q) { return fx(q / 1000, 1) + " kJ"; }
+function Jf(x) { var a = Math.abs(x), s = rnd(x, 1) < 0 ? "−" : ""; return s + fx(a, a >= 1000 ? 0 : 1) + " J"; }
+function Wt(p) { var a = Math.abs(p); return fx(p, a >= 100 ? 0 : 1) + " W"; }
+function degC(t, d) { return sg(t, d === undefined ? 1 : d) + " °C"; }
+function note(id, cls, html) { var n = $(id); n.className = "note" + (cls ? " " + cls : ""); n.innerHTML = html; }
+function vlabel(c, txt, x, y, col, s) { label(c, txt, x, y, col, { s: s || 11.5, w: "500" }); }
+
+/* =========================================================
+   01 ESCALAS
+   ========================================================= */
+var ES_REF = [["cero absoluto", -273.15], ["−40 °C = −40 °F", -40], ["agua congela", 0], ["cuerpo humano", 37], ["agua hierve", 100]];
+function cToF(t) { return 1.8 * t + 32; }
+function cToK(t) { return t + 273.15; }
+function esSet(v) { if (!isFinite(v)) return; v = Math.max(-273.15, Math.min(300, v)); $("esC").value = v; $("esN").value = rnd(v, 2); drawEs(); }
+function drawEs() {
+  var t = +$("esC").value, f = cToF(t), k = cToK(t);
+  $("esCo").textContent = degC(t, 2); $("esRC").textContent = degC(t, 2); $("esRF").textContent = sg(f, 2) + " °F"; $("esRK").textContent = fx(Math.max(0, k), 2) + " K";
+  document.querySelectorAll("#esPresets button").forEach(function (b) { b.setAttribute("aria-pressed", Math.abs(+b.dataset.t - t) < 0.01 ? "true" : "false"); });
+  if (t <= -273.14) note("esNote", "hot", "<b>Cero absoluto:</b> la temperatura más baja posible, cuando las moléculas tienen la mínima energía. No hay kelvin negativos, por eso las leyes de los gases y la radiación usan K.");
+  else if (Math.abs(t + 40) < 0.01) note("esNote", "good", "<b>−40 es el único punto donde coinciden</b> °C y °F: −40 = 1.8 (−40) + 32.");
+  else note("esNote", "", "<b>Un cambio de 1 °C es 1 K y 1.8 °F.</b> Para diferencias de temperatura da igual usar °C o K; para PV = nRT, radiación o Carnot hay que usar kelvin.");
+  var S = setup($("esCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var top = H * 0.2, bot = H * 0.84, tmin = -290, tmax = 310;
+  var nar = W < 520, brk = bot - 0.22 * (bot - top);
+  var Y = nar ? function (v) { return v >= -60 ? brk - (v + 60) / (tmax + 60) * (brk - top) : bot - (v - tmin) / (-60 - tmin) * (bot - brk); } : function (v) { return bot - (v - tmin) / (tmax - tmin) * (bot - top); };
+  var xs = nar ? [W * 0.42, W * 0.6, W * 0.78] : [W * 0.46, W * 0.66, W * 0.86], conv = [function (v) { return v; }, cToF, cToK], units = ["°C", "°F", "K"], cols = [V.acc, V.or, V.cy];
+  ES_REF.forEach(function (r) {
+    var y = Y(r[1]); c.strokeStyle = rgba("line", .9); c.setLineDash([3, 4]); c.lineWidth = 1; c.beginPath(); c.moveTo(12, y); c.lineTo(W - 12, y); c.stroke(); c.setLineDash([]);
+    label(c, r[0], 14, y - 7, V.dim, { a: "left", s: 10.5, w: "500" });
+    xs.forEach(function (x, i) { var v = conv[i](r[1]); label(c, (i === 2 ? fx(v, 2) : sg(v, 0)), x + 15, y - 7, V.dim, { a: "left", s: 10.5, w: "500" }); });
+  });
+  var hot = t > 0, mc = hot ? V.no : V.cy, ym = Y(t);
+  xs.forEach(function (x, i) {
+    c.fillStyle = V.panel; c.strokeStyle = V.dim; c.lineWidth = 1.5;
+    c.beginPath(); if (c.roundRect) c.roundRect(x - 8, top - 8, 16, bot - top + 14, 8); else c.rect(x - 8, top - 8, 16, bot - top + 14); c.fill(); c.stroke();
+    c.beginPath(); c.arc(x, bot + 18, 14, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = mc; c.fillRect(x - 4, ym, 8, bot + 10 - ym); c.beginPath(); c.arc(x, bot + 18, 10, 0, Math.PI * 2); c.fill();
+    label(c, units[i], x, top - 46, V.fg, { s: 15 });
+    label(c, i === 2 ? fx(Math.max(0, conv[i](t)), 2) : sg(conv[i](t), 1), x, top - 26, cols[i], { s: 13 });
+  });
+}
+$("esC").addEventListener("input", function () { $("esN").value = rnd(+$("esC").value, 2); drawEs(); });
+$("esN").addEventListener("input", function () { var v = parseFloat($("esN").value); if (isFinite(v)) { $("esC").value = Math.max(-273.15, Math.min(300, v)); drawEs(); } });
+document.querySelectorAll("#esPresets button").forEach(function (b) { b.addEventListener("click", function () { esSet(+b.dataset.t); }); });
+
+/* =========================================================
+   02 DILATACIÓN
+   ========================================================= */
+var DL_MAT = { acero: [12, "Acero"], aluminio: [23, "Aluminio"], cobre: [17, "Cobre"], laton: [19, "Latón"], concreto: [12, "Concreto"], vidrio: [9, "Vidrio"] };
+var dlMode = "lin", BETA = 9.5e-4;
+function lenFmt(m) { var a = Math.abs(m), s = m < 0 ? "−" : ""; if (a < 0.1) return s + fx(a * 1000, 2) + " mm"; if (a < 1) return s + fx(a * 100, 1) + " cm"; return s + fx(a, 3) + " m"; }
+function drawDl() {
+  $("dlLin").hidden = dlMode !== "lin"; $("dlVol").hidden = dlMode !== "vol"; press("[data-dl]", "data-dl", dlMode);
+  if (dlMode === "lin") drawDlLin(); else drawDlVol();
+}
+function drawDlLin() {
+  var mat = DL_MAT[$("dlMat").value], a = mat[0] * 1e-6, L = +$("dlL").value, dT = +$("dlT").value, dL = a * L * dT;
+  $("dlLo").textContent = fx(L, 0) + " m"; $("dlTo").textContent = (dT > 0 ? "+" : "") + sg(dT, 0) + " °C";
+  $("dlRes").textContent = (dL > 0 ? "+" : "") + lenFmt(dL); $("dlLf").textContent = fx(L + dL, L < 100 ? 5 : 4) + " m";
+  $("dlRel").textContent = sg(a * dT * 1000, 3) + " mm por metro";
+  if (dT === 0) note("dlNote", "", "<b>Sin cambio de temperatura no hay dilatación.</b> Mueve ΔT.");
+  else if (dT < 0) note("dlNote", "", "<b>Con ΔT negativo el material se contrae:</b> " + lenFmt(-dL) + ". En invierno las juntas de los puentes se abren.");
+  else if (L >= 100) note("dlNote", "hot", "<b>En estructuras largas el cambio es de centímetros:</b> " + lenFmt(dL) + ". Por eso los puentes llevan juntas de dilatación y apoyos que deslizan; si no, el acero se pandea o agrieta el concreto.");
+  else note("dlNote", "", "<b>Parece poco, pero no cabe:</b> si el riel no tiene dónde crecer, empuja con una fuerza enorme y se pandea. Por eso se deja una junta entre rieles. El vidrio se dilata menos que los metales; el aluminio, casi el doble que el acero.");
+  var S = setup($("dlCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var x0 = 34, Lpx = W - x0 - 180, y = H * 0.42, th = 26, k = Math.round(60 / (23e-6 * 80 * Lpx) / 10) * 10, ext = a * dT * Lpx * k;
+  $("dlHint").textContent = "dilatación dibujada ×" + fx(k, 0) + "; las lecturas son reales";
+  var col = dT >= 0 ? V.or : V.cy, gap0 = 70;
+  label(c, mat[1] + " · L₀ = " + fx(L, 0) + " m", x0, y - 62, V.fg, { a: "left", s: 13 });
+  c.fillStyle = rgba(dT >= 0 ? "or" : "cy", .22); c.fillRect(x0, y - th / 2, Lpx + ext, th);
+  c.strokeStyle = col; c.lineWidth = 2; c.strokeRect(x0, y - th / 2, Lpx + ext, th);
+  c.setLineDash([5, 4]); c.strokeStyle = V.dim; c.lineWidth = 1.5; c.strokeRect(x0, y - th / 2, Lpx, th); c.setLineDash([]);
+  var x2 = x0 + Lpx + gap0; c.fillStyle = V.line; c.fillRect(x2, y - th / 2, W - x2, th); c.strokeStyle = V.dim; c.strokeRect(x2, y - th / 2, W - x2 + 4, th);
+  label(c, "siguiente riel", x2 + 6, y + th / 2 + 14, V.dim, { a: "left", s: 10.5, w: "500" });
+  var ex = x0 + Lpx + ext;
+  c.strokeStyle = col; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x0 + Lpx, y - th / 2 - 14); c.lineTo(x0 + Lpx, y - th / 2 - 4); c.moveTo(ex, y - th / 2 - 14); c.lineTo(ex, y - th / 2 - 4); c.moveTo(x0 + Lpx, y - th / 2 - 9); c.lineTo(ex, y - th / 2 - 9); c.stroke();
+  label(c, "ΔL = " + (dL > 0 ? "+" : "") + lenFmt(dL), Math.min(x0 + Lpx + ext / 2, W - 70), y - th / 2 - 24, col, { s: 12.5 });
+  var gap = gap0 - ext; label(c, "junta: " + (gap > 2 ? "se " + (ext > 0 ? "cierra" : "abre") : "¡cerrada!"), x0 + Lpx + gap0 / 2 + Math.max(0, ext) / 2, y + th / 2 + 34, gap > 2 ? V.dim : V.no, { s: 10.5, w: "500" });
+  c.setLineDash([]); label(c, W < 520 ? "punteada: T inicial" : "línea punteada: a la temperatura inicial", x0, y + th / 2 + 14, V.dim, { a: "left", s: 10.5, w: "500" });
+  var ry = H * 0.76, st = niceStep(L, 5); c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.moveTo(x0, ry); c.lineTo(x0 + Lpx, ry); c.stroke();
+  for (var v = 0; v <= L + 1e-9; v += st) { var px = x0 + v / L * Lpx; c.beginPath(); c.moveTo(px, ry); c.lineTo(px, ry + 6); c.stroke(); label(c, fx(v, 0) + " m", px, ry + 16, V.dim, { s: 10.5, w: "500" }); }
+}
+function drawDlVol() {
+  var V0 = +$("dvV").value, dT = +$("dvT").value, dV = BETA * V0 * dT;
+  $("dvVo").textContent = fx(V0, 0) + " L"; $("dvTo").textContent = "+" + fx(dT, 0) + " °C";
+  $("dvRes").textContent = fx(dV, 2) + " L"; $("dvVf").textContent = fx(V0 + dV, 2) + " L";
+  $("dlHint").textContent = "dilatación dibujada ×10; las lecturas son reales";
+  note("dlNote", dV > 0.5 ? "hot" : "", "<b>Si el tanque se llenó al tope, se derraman " + fx(dV, 2) + " L.</b> Es el " + fx(BETA * dT * 100, 1) + " % del volumen. El tanque metálico también crece, pero unas 25 veces menos que la gasolina.");
+  var S = setup($("dlCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var tw = Math.min(W * 0.42, 260), th = H * 0.5, tx = W / 2 - tw / 2, ty = H * 0.3, ext = (BETA * dT * 10) * th;
+  c.fillStyle = rgba("acc", .35); c.fillRect(tx, ty - ext, tw, th + ext);
+  if (ext > 1) { c.fillStyle = rgba("acc", .35); c.beginPath(); c.moveTo(tx + tw, ty - Math.min(ext, 8)); c.quadraticCurveTo(tx + tw + 26, ty, tx + tw + 18, ty + th * 0.55); c.lineTo(tx + tw + 8, ty + th * 0.55); c.quadraticCurveTo(tx + tw + 12, ty + 4, tx + tw, ty); c.fill(); }
+  c.strokeStyle = V.fg; c.lineWidth = 2.5; c.beginPath(); c.moveTo(tx, ty - 4); c.lineTo(tx, ty + th); c.lineTo(tx + tw, ty + th); c.lineTo(tx + tw, ty - 4); c.stroke();
+  c.setLineDash([5, 4]); c.strokeStyle = V.dim; c.lineWidth = 1.2; c.beginPath(); c.moveTo(tx - 30, ty); c.lineTo(tx + tw + 30, ty); c.stroke(); c.setLineDash([]);
+  label(c, "lleno al tope a T₀", tx - 34, ty, V.dim, { a: "right", s: 11, w: "500" });
+  label(c, "+" + fx(dV, 2) + " L", tx + tw / 2, ty - ext - 14, V.acc, { s: 13 });
+  label(c, "gasolina · " + fx(V0, 0) + " L", tx + tw / 2, ty + th / 2, V.fg, { s: 13 });
+  if (ext > 1) label(c, "se derrama", tx + tw + 24, ty + th * 0.55 + 14, V.no, { a: "left", s: 11, w: "500" });
+}
+document.querySelectorAll("[data-dl]").forEach(function (b) { b.addEventListener("click", function () { dlMode = b.dataset.dl; drawDl(); }); });
+bind(["dlL", "dlT", "dvV", "dvT"], drawDl); $("dlMat").addEventListener("change", drawDl);
+document.querySelectorAll("#dlPresets button").forEach(function (b) { b.addEventListener("click", function () {
+  $("dlMat").value = "acero"; if (b.dataset.p === "riel") { $("dlL").value = 12; $("dlT").value = 40; } else { $("dlL").value = 200; $("dlT").value = 45; } drawDl(); }); });
+
+/* =========================================================
+   03 CAMBIOS DE FASE
+   ========================================================= */
+function cfStages(m) {
+  return [
+    { n: "hielo", q: m * 2090 * 10, T0: -10, T1: 0, lat: false },
+    { n: "fusión", q: m * 334000, T0: 0, T1: 0, lat: true },
+    { n: "agua", q: m * 4186 * 100, T0: 0, T1: 100, lat: false },
+    { n: "vaporización", q: m * 2256000, T0: 100, T1: 100, lat: true },
+    { n: "vapor", q: m * 2010 * 10, T0: 100, T1: 110, lat: false }
+  ];
+}
+function cfState(m, Q) {
+  var st = cfStages(m), acc = 0;
+  for (var i = 0; i < st.length; i++) { if (Q <= acc + st[i].q || i === st.length - 1) { var f = st[i].q ? Math.max(0, Math.min(1, (Q - acc) / st[i].q)) : 0; return { i: i, f: f, T: st[i].T0 + (st[i].T1 - st[i].T0) * f, st: st }; } acc += st[i].q; }
+}
+var CF_ET = ["Calentando el hielo", "Fundiéndose (hielo + agua)", "Calentando el agua", "Hirviendo (agua + vapor)", "Calentando el vapor"];
+function drawCf() {
+  var m = +$("cfM").value, Pw = +$("cfP").value, st = cfStages(m), tot = st.reduce(function (s, x) { return s + x.q; }, 0), Q = tot * (+$("cfQ").value) / 1000, s = cfState(m, Q);
+  $("cfMo").textContent = fx(m, 1) + " kg"; $("cfPo").textContent = fx(Pw, 0) + " W"; $("cfQo").textContent = kJs(Q);
+  $("cfEt").textContent = CF_ET[s.i]; $("cfT").textContent = degC(s.T, 1);
+  var tsec = Q / Pw; $("cfTime").textContent = tsec < 120 ? fx(tsec, 0) + " s" : fx(tsec / 60, 1) + " min";
+  st.forEach(function (x, i) { $("cfS" + i).textContent = kJs(x.q); });
+  var t4 = st[0].q + st[1].q + st[2].q + st[3].q; $("cfTot").textContent = kJs(t4); $("cfPct").textContent = fx(st[3].q / t4 * 100, 1) + " %";
+  if (st[s.i].lat) note("cfNote", "good", "<b>La temperatura no cambia</b> aunque sigues dando calor: se usa para romper la estructura del " + (s.i === 1 ? "hielo" : "líquido") + " (calor latente). Lleva " + fx(s.f * 100, 0) + " % de la etapa.");
+  else note("cfNote", "", "<b>La vaporización se lleva el " + fx(st[3].q / t4 * 100, 1) + " % del calor.</b> Hervir el agua cuesta más de cinco veces lo que cuesta calentarla de 0 a 100 °C. Por eso el vapor quema tanto: al condensarse en la piel suelta esos 2256 kJ por kilo.");
+  var S = setup($("cfCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var x0 = 56, x1 = W - 22, y0 = H - 46, y1 = 24, Tmin = -20, Tmax = 120;
+  var X = function (q) { return x0 + q / tot * (x1 - x0); }, Y = function (T) { return y0 - (T - Tmin) / (Tmax - Tmin) * (y0 - y1); };
+  c.strokeStyle = V.line; c.lineWidth = 1; c.font = "10.5px " + MONO; c.fillStyle = V.dim; c.textAlign = "right"; c.textBaseline = "middle";
+  for (var T = -20; T <= 120; T += 20) { c.beginPath(); c.moveTo(x0, Y(T)); c.lineTo(x1, Y(T)); c.stroke(); c.fillText(T + " °C", x0 - 6, Y(T)); }
+  var sx = niceStep(tot / 1000, 5); c.textAlign = "center"; c.textBaseline = "top";
+  for (var q = 0; q <= tot / 1000 + 1e-9; q += sx) { var px = X(q * 1000); c.beginPath(); c.moveTo(px, y0); c.lineTo(px, y0 + 4); c.stroke(); c.fillText(fx(q, 0), px, y0 + 6); }
+  label(c, "calor suministrado [kJ]", x1, y0 + 24, V.dim, { a: "right", b: "top", s: 11, w: "500" });
+  var acc = 0, pts = [];
+  st.forEach(function (x, i) { var qa = acc, qb = acc + x.q; c.strokeStyle = x.lat ? V.cy : V.acc; c.lineWidth = 3; c.beginPath(); c.moveTo(X(qa), Y(x.T0)); c.lineTo(X(qb), Y(x.T1)); c.stroke(); pts.push([qa, qb]); acc = qb; });
+  label(c, "fusión · " + kJs(st[1].q), (X(pts[1][0]) + X(pts[1][1])) / 2 + 4, Y(0) + 14, V.cy, { a: "left", s: 11 });
+  label(c, "vaporización · " + kJs(st[3].q), (X(pts[3][0]) + X(pts[3][1])) / 2, Y(100) - 12, V.cy, { s: 11.5 });
+  var cx = X(Q), cy = Y(s.T);
+  c.setLineDash([3, 4]); c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.moveTo(cx, y0); c.lineTo(cx, cy); c.lineTo(x0, cy); c.stroke(); c.setLineDash([]);
+  c.fillStyle = V.or; c.beginPath(); c.arc(cx, cy, 6, 0, Math.PI * 2); c.fill();
+  var bw = 80, bh = 74, bx = x1 - bw - 14, by = (y1 + y0) / 2 - bh / 2 + 10;
+  c.fillStyle = V.vp; c.fillRect(bx - 8, by - 30, bw + 16, bh + 54);
+  c.strokeStyle = V.fg; c.lineWidth = 2; c.beginPath(); c.moveTo(bx, by); c.lineTo(bx, by + bh); c.lineTo(bx + bw, by + bh); c.lineTo(bx + bw, by); c.stroke();
+  var lvl = s.i <= 1 ? 0.55 : s.i === 2 ? 0.6 : s.i === 3 ? 0.6 * (1 - s.f) : 0;
+  if (s.i >= 1 && s.i <= 3) { var wl = s.i === 1 ? 0.55 * s.f : lvl; c.fillStyle = rgba("cy", .35); c.fillRect(bx + 2, by + bh - wl * bh, bw - 4, wl * bh - 2); }
+  if (s.i <= 1) { var nIce = s.i === 0 ? 6 : Math.max(0, Math.round(6 * (1 - s.f))); c.strokeStyle = V.cy; c.lineWidth = 1.5; for (var k = 0; k < nIce; k++) { var ix = bx + 8 + (k % 3) * 24, iy = by + bh - 20 - Math.floor(k / 3) * 20; c.strokeRect(ix, iy, 16, 16); } }
+  if (s.i === 2 && s.T > 80 || s.i === 3) { c.fillStyle = V.fg; for (var j = 0; j < 7; j++) { c.globalAlpha = .55; c.beginPath(); c.arc(bx + 12 + (j * 37) % 58, by + bh - 6 - (j * 13) % Math.max(6, lvl * bh - 6), 2.5, 0, Math.PI * 2); c.fill(); } c.globalAlpha = 1; }
+  if (s.i >= 3) { c.strokeStyle = V.dim; c.lineWidth = 1.5; for (var w = 0; w < 3; w++) { var vx = bx + 18 + w * 22; c.beginPath(); c.moveTo(vx, by - 4); c.bezierCurveTo(vx - 6, by - 12, vx + 6, by - 18, vx, by - 26); c.stroke(); } }
+  label(c, ["hielo", "hielo + agua", "agua", "agua + vapor", "vapor"][s.i], bx + bw / 2, by + bh + 14, V.fg, { s: 11.5, w: "500" });
+}
+bind(["cfQ", "cfM", "cfP"], drawCf);
+
+/* =========================================================
+   04 CALORIMETRÍA
+   ========================================================= */
+var CA_MET = { aluminio: [900, "Aluminio"], cobre: [385, "Cobre"], hierro: [450, "Hierro"], plomo: [128, "Plomo"] };
+function drawCa() {
+  var met = CA_MET[$("caMet").value], cm = met[0], mm = +$("caMm").value, Tm = +$("caTm").value, ma = +$("caMa").value, Ta = +$("caTa").value;
+  var Cm = mm * cm, Ca = ma * 4186, Te = (Cm * Tm + Ca * Ta) / (Cm + Ca), Q = Cm * (Tm - Te);
+  $("caMmo").textContent = fx(mm, 2) + " kg"; $("caTmo").textContent = fx(Tm, 0) + " °C"; $("caMao").textContent = fx(ma, 2) + " kg"; $("caTao").textContent = fx(Ta, 0) + " °C";
+  $("caTe").textContent = degC(Te, 1); $("caQm").textContent = Jf(Q); $("caQa").textContent = Jf(Ca * (Te - Ta)); $("caC").textContent = fx(Cm, 0) + " · " + fx(Ca, 0) + " J/°C";
+  var ratio = Ca / Cm;
+  note("caNote", "", ratio >= 1 ? "<b>El agua casi no cambia de temperatura:</b> su capacidad calorífica es " + fx(ratio, 1) + " veces la del " + met[1].toLowerCase() + ", así que el equilibrio queda mucho más cerca de su temperatura que de la del metal. El agua es de lo mejor para guardar calor." : "<b>Aquí el metal manda:</b> tiene " + fx(1 / ratio, 1) + " veces la capacidad calorífica del agua, así que el equilibrio queda cerca de su temperatura.");
+  var S = setup($("caCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var bx = W * 0.1, bw = W * 0.38, by = H * 0.24, bh = H * 0.56, wl = 0.4 + 0.25 * Math.min(1, ma / 2);
+  c.fillStyle = rgba("cy", .25); c.fillRect(bx + 2, by + bh * (1 - wl), bw - 4, bh * wl - 2);
+  c.strokeStyle = V.fg; c.lineWidth = 2.5; c.beginPath(); c.moveTo(bx, by); c.lineTo(bx, by + bh); c.lineTo(bx + bw, by + bh); c.lineTo(bx + bw, by); c.stroke();
+  var bs = 22 + 30 * Math.sqrt(mm / 2); c.fillStyle = rgba("or", .5); c.fillRect(bx + bw * 0.38 - bs / 2, by + bh - bs - 6, bs, bs); c.strokeStyle = V.or; c.lineWidth = 2; c.strokeRect(bx + bw * 0.38 - bs / 2, by + bh - bs - 6, bs, bs);
+  label(c, met[1], bx + bw * 0.38, by + bh - bs - 18, V.or, { s: 11 });
+  var tx = bx + bw * 0.8; c.strokeStyle = V.dim; c.lineWidth = 1.5; c.strokeRect(tx - 4, by - 30, 8, bh - 10);
+  label(c, degC(Te, 1), tx, by - 44, V.acc, { s: 13 });
+  label(c, "agua " + fx(ma, 2) + " kg", bx + bw / 2, by + bh + 18, V.cy, { s: 11.5, w: "500" });
+  var sx = W * 0.62, sTop = H * 0.12, sBot = H * 0.62, Tmax = Math.ceil((Math.max(Tm, Ta) + 10) / 50) * 50, Ys = function (T) { return sBot - T / Tmax * (sBot - sTop); };
+  c.strokeStyle = V.dim; c.lineWidth = 1; c.beginPath(); c.moveTo(sx, sTop); c.lineTo(sx, sBot); c.stroke();
+  for (var T = 0; T <= Tmax; T += 50) { c.beginPath(); c.moveTo(sx - 4, Ys(T)); c.lineTo(sx + 4, Ys(T)); c.stroke(); label(c, T + " °C", sx - 8, Ys(T), V.dim, { a: "right", s: 10.5, w: "500" }); }
+  [[Tm, V.or, "metal " + fx(Tm, 0) + " °C"], [Ta, V.cy, "agua " + fx(Ta, 0) + " °C"]].forEach(function (p) { c.fillStyle = p[1]; c.beginPath(); c.arc(sx, Ys(p[0]), 5, 0, Math.PI * 2); c.fill(); });
+  arrow(c, sx + 18, Ys(Tm), sx + 18, Ys(Te) - 3, V.or, 2.2); arrow(c, sx + 32, Ys(Ta), sx + 32, Ys(Te) + 3, V.cy, 2.2);
+  c.strokeStyle = V.acc; c.lineWidth = 2; c.beginPath(); c.moveTo(sx - 6, Ys(Te)); c.lineTo(sx + 44, Ys(Te)); c.stroke();
+  label(c, "metal " + fx(Tm, 0) + " °C", sx + 50, Ys(Tm), V.or, { a: "left", s: 11 });
+  label(c, (W < 520 ? "eq. " : "equilibrio ") + fx(Te, 1) + " °C", sx + 50, Ys(Te) + (Math.abs(Ys(Te) - Ys(Ta)) < 16 ? -10 : 0), V.acc, { a: "left", s: 11 });
+  if (Math.abs(Ys(Te) - Ys(Ta)) >= 16) label(c, "agua " + fx(Ta, 0) + " °C", sx + 50, Ys(Ta), V.cy, { a: "left", s: 11 });
+  else label(c, "agua " + fx(Ta, 0) + " °C", sx + 50, Ys(Ta) + 8, V.cy, { a: "left", s: 11 });
+  var yb = H * 0.74, bwid = W - sx - 30;
+  label(c, "calor que cede el metal", sx - 20, yb - 12, V.dim, { a: "left", s: 11, w: "500" }); c.fillStyle = V.or; c.fillRect(sx - 20, yb, bwid, 10);
+  label(c, "calor que gana el agua", sx - 20, yb + 30, V.dim, { a: "left", s: 11, w: "500" }); c.fillStyle = V.cy; c.fillRect(sx - 20, yb + 42, bwid, 10);
+  label(c, Jf(Q), sx - 20 + bwid, yb + 64, V.fg, { a: "right", s: 11.5 });
+}
+bind(["caMm", "caTm", "caMa", "caTa"], drawCa); $("caMet").addEventListener("change", drawCa);
+document.querySelectorAll("#caPresets button").forEach(function (b) { b.addEventListener("click", function () {
+  var p = b.dataset.p === "al" ? ["aluminio", 0.2, 100, 0.5, 20] : ["cobre", 0.3, 150, 0.4, 25];
+  $("caMet").value = p[0]; $("caMm").value = p[1]; $("caTm").value = p[2]; $("caMa").value = p[3]; $("caTa").value = p[4]; drawCa(); }); });
+
+/* =========================================================
+   05 TRANSFERENCIA
+   ========================================================= */
+var TR_MAT = { ladrillo: [0.7, "ladrillo"], vidrio: [0.8, "vidrio"], concreto: [1.4, "concreto"], madera: [0.12, "madera"], poliestireno: [0.033, "unicel"], acero: [50, "acero"], aire: [0.026, "aire quieto"] };
+var trMode = "cond";
+function wavy(c, x1, y1, x2, y2, col, w) {
+  var L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L, n = Math.max(3, Math.floor(L / 9));
+  c.strokeStyle = col; c.lineWidth = w || 1.8; c.beginPath();
+  for (var i = 0; i <= n; i++) { var t = i / n * (L - 8), a = Math.sin(i * 1.6) * 3.5; var x = x1 + ux * t - uy * a, y = y1 + uy * t + ux * a; if (i) c.lineTo(x, y); else c.moveTo(x, y); }
+  c.stroke(); arrow(c, x1 + ux * (L - 10), y1 + uy * (L - 10), x2, y2, col, w || 1.8);
+}
+function drawTr() {
+  $("trCond").hidden = trMode !== "cond"; $("trRad").hidden = trMode !== "rad"; press("[data-tr]", "data-tr", trMode);
+  if (trMode === "cond") drawTrCond(); else drawTrRad();
+}
+function drawTrCond() {
+  var key = $("trMat").value, mat = TR_MAT[key], k = mat[0], A = +$("trA").value, L = +$("trL").value, dT = +$("trT").value, P = k * A * dT / L;
+  $("trAo").textContent = fx(A, 1) + " m²"; $("trLo").textContent = L < 0.01 ? fx(L * 1000, 0) + " mm" : fx(L * 100, 1) + " cm"; $("trTo").textContent = fx(dT, 0) + " °C";
+  $("trP").textContent = Wt(P); $("trE").textContent = fx(P * 24 / 1000, 1) + " kWh"; $("trR").textContent = fx(L / (k * A), 4) + " K/W";
+  $("trHint").textContent = "el grosor del muro está dibujado a escala relativa";
+  if (key === "vidrio" && L < 0.01) note("trNote", "hot", "<b>Una ventana sencilla pierde muchísimo:</b> " + Wt(P) + " con este cálculo. En la realidad pierde menos porque en cada cara se forma una capa de aire quieto que también aísla; aun así, el doble vidrio con aire en medio reduce la pérdida a menos de la mitad.");
+  else if (key === "aire" || key === "poliestireno") note("trNote", "good", "<b>El aire quieto es de los mejores aislantes.</b> El unicel y la fibra de vidrio funcionan porque atrapan aire en celdas pequeñas para que no circule.");
+  else if (key === "acero") note("trNote", "hot", "<b>Los metales conducen muy bien el calor:</b> el acero conduce unas 70 veces más que el ladrillo. Por eso los marcos metálicos sin aislar son \"puentes térmicos\".");
+  else note("trNote", "", "<b>El calor que pasa crece con el área y con ΔT, y baja con el espesor.</b> Duplicar el espesor reduce la pérdida a la mitad; cambiar de material puede reducirla veinte veces.");
+  var S = setup($("trCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var tpx = 30 + L / 0.3 * 160, wx = W / 2 - tpx / 2, wy = H * 0.2, wh = H * 0.56;
+  var g = c.createLinearGradient(wx, 0, wx + tpx, 0); g.addColorStop(0, rgba("or", .55)); g.addColorStop(1, rgba("cy", .55));
+  c.fillStyle = g; c.fillRect(wx, wy, tpx, wh); c.strokeStyle = V.fg; c.lineWidth = 2; c.strokeRect(wx, wy, tpx, wh);
+  label(c, "lado caliente", wx / 2, wy - 12, V.or, { s: 12 }); label(c, "lado frío", wx + tpx + (W - wx - tpx) / 2, wy - 12, V.cy, { s: 12 });
+  label(c, "ΔT = " + fx(dT, 0) + " °C", W / 2, wy - 30, V.fg, { s: 12 });
+  var lw = P > 0 ? 1.5 + 8 * Math.max(0, Math.min(1, Math.log10(P) / Math.log10(30000))) : 0;
+  if (lw > 0) [0.25, 0.5, 0.75].forEach(function (f) { var y = wy + wh * f; arrow(c, 18, y, W - 18, y, rgba("or", .9), lw); });
+  label(c, Wt(P), W / 2, wy + wh + 22, V.or, { s: 16 });
+  label(c, mat[1] + " · " + (L < 0.01 ? fx(L * 1000, 0) + " mm" : fx(L * 100, 1) + " cm"), W / 2, wy + wh + 44, V.dim, { s: 11.5, w: "500" });
+}
+function drawTrRad() {
+  var Ts = +$("trTs").value + 273.15, Ta = +$("trTa").value + 273.15, A = +$("trAr").value, e = +$("trEm").value;
+  var Pe = e * SIG * A * Math.pow(Ts, 4), Pa = e * SIG * A * Math.pow(Ta, 4), Pn = Pe - Pa;
+  $("trTso").textContent = fx(Ts - 273.15, 1) + " °C"; $("trTao").textContent = fx(Ta - 273.15, 1) + " °C"; $("trAro").textContent = fx(A, 1) + " m²"; $("trEmo").textContent = fx(e, 2);
+  $("trPn").textContent = Wt(Pn); $("trPe").textContent = Wt(Pe); $("trPa").textContent = Wt(Pa);
+  $("trHint").textContent = "flechas continuas: lo que emite; punteadas: lo que absorbe";
+  note("trNote", Pn > 0 ? "" : "good", Pn > 0 ? "<b>Pierdes unos " + Wt(Pn) + " sólo por radiación,</b> más que un foco incandescente de 100 W. Lo que cuenta es T⁴ en kelvin: emites " + Wt(Pe) + " y el cuarto te devuelve " + Wt(Pa) + ". Por eso se siente frío junto a una ventana aunque el aire esté templado." : "<b>El entorno está más caliente que tu piel:</b> ganas calor por radiación, como al sol o junto a una fogata.");
+  var S = setup($("trCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var cx = W / 2, cy = H * 0.5;
+  c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2;
+  c.beginPath(); c.arc(cx, cy - 78, 22, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.beginPath(); if (c.roundRect) c.roundRect(cx - 34, cy - 50, 68, 120, 18); else c.rect(cx - 34, cy - 50, 68, 120); c.fill(); c.stroke();
+  var lo = 30 + 70 * Math.min(1.6, Pe / 1000), li = 30 + 70 * Math.min(1.6, Pa / 1000);
+  [-150, -100, -30, 30, 100, 150, 200, -200].forEach(function (deg, i) {
+    var r = deg * Math.PI / 180, dx = Math.cos(r), dy = Math.sin(r), sx = cx + dx * 62, sy = cy + dy * 70;
+    wavy(c, sx, sy, sx + dx * lo, sy + dy * lo, V.or, 1.8);
+    if (i % 2 === 0) { var ox = sx + dx * (lo + 26) + dy * 16, oy = sy + dy * (lo + 26) - dx * 16; arrow(c, ox, oy, ox - dx * li * 0.8, oy - dy * li * 0.8, V.cy, 1.5, [4, 4]); }
+  });
+  label(c, "emite " + Wt(Pe), 16, 22, V.or, { a: "left", s: 12 }); label(c, "absorbe " + Wt(Pa), 16, 42, V.cy, { a: "left", s: 12 });
+  label(c, "neto " + Wt(Pn), W - 16, 22, V.fg, { a: "right", s: 13 });
+}
+document.querySelectorAll("[data-tr]").forEach(function (b) { b.addEventListener("click", function () { trMode = b.dataset.tr; drawTr(); }); });
+bind(["trA", "trL", "trT", "trTs", "trTa", "trAr", "trEm"], drawTr); $("trMat").addEventListener("change", drawTr);
+document.querySelectorAll("#trPresets button").forEach(function (b) { b.addEventListener("click", function () {
+  var p = { ladrillo: ["ladrillo", 10, 0.15, 15], ventana: ["vidrio", 1.5, 0.004, 15], unicel: ["poliestireno", 10, 0.05, 15] }[b.dataset.p];
+  $("trMat").value = p[0]; $("trA").value = p[1]; $("trL").value = p[2]; $("trT").value = p[3]; drawTr(); }); });
+
+/* =========================================================
+   06 GAS IDEAL
+   ========================================================= */
+var gaParts = [], gaRaf = 0;
+(function () { for (var i = 0; i < 125; i++) { var a = Math.random() * Math.PI * 2; gaParts.push({ x: Math.random(), y: Math.random(), dx: Math.cos(a), dy: Math.sin(a), s: 0.7 + Math.random() * 0.6 }); } })();
+function gaCalc() {
+  var n = +$("gaN").value, T = +$("gaT").value, Vl = +$("gaV").value, P = n * R * T / Vl;
+  $("gaNo").textContent = fx(n, 1) + " mol"; $("gaTo").textContent = fx(T, 0) + " K · " + sg(T - 273.15, 0) + " °C"; $("gaVo").textContent = fx(Vl, 1) + " L";
+  $("gaP").textContent = fx(P, 1) + " kPa"; $("gaAtm").textContent = fx(P / ATM, 2) + " atm"; $("gaVr").textContent = fx(Math.sqrt(3 * R * T / 0.029), 0) + " m/s";
+  var pm = parseFloat($("llP").value), t1 = parseFloat($("llT1").value), t2 = parseFloat($("llT2").value);
+  if (isFinite(pm) && isFinite(t1) && isFinite(t2) && t1 > -273.15 && t2 > -273.15) {
+    var a1 = pm * PSI + ATM, a2 = a1 * (t2 + 273.15) / (t1 + 273.15), m2 = a2 - ATM;
+    $("llRes").textContent = fx(m2 / PSI, 1) + " psi · " + fx(m2, 1) + " kPa"; $("llAbs").textContent = fx(a1, 1) + " → " + fx(a2, 1) + " kPa";
+    note("gaNote", "", "<b>Siempre en absolutas y en kelvin:</b> el manómetro marca presión sobre la atmósfera, así que primero se suman " + fx(ATM, 1) + " kPa (" + fx(pm * PSI, 1) + " + " + fx(ATM, 1) + " ≈ " + fx(a1, 1) + " kPa). Con V constante, P₂ = P₁ T₂/T₁ = " + fx(a2, 1) + " kPa, y al restar la atmósfera quedan " + fx(m2 / PSI, 1) + " psi. Por eso las llantas se revisan en frío.");
+  } else { $("llRes").textContent = "—"; $("llAbs").textContent = "—"; note("gaNote", "hot", "<b>Revisa los datos de la llanta:</b> escribe la presión en psi y dos temperaturas en °C."); }
+  return { n: n, T: T, V: Vl, P: P };
+}
+function drawGa(stepOnly) {
+  var g = gaCalc(), S = setup($("gaCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var cx0 = W * 0.08, cw = W * 0.5, bot = H * 0.88, fullH = H * 0.72, ph = g.V / 50 * fullH, top = bot - ph;
+  c.fillStyle = rgba("line", .25); c.fillRect(cx0, top, cw, ph);
+  c.strokeStyle = V.fg; c.lineWidth = 2.5; c.beginPath(); c.moveTo(cx0, bot - fullH - 10); c.lineTo(cx0, bot); c.lineTo(cx0 + cw, bot); c.lineTo(cx0 + cw, bot - fullH - 10); c.stroke();
+  c.fillStyle = V.dim; c.fillRect(cx0 + 2, top - 12, cw - 4, 12); c.fillRect(cx0 + cw / 2 - 5, top - 12 - (H * 0.1), 10, H * 0.1);
+  var cnt = Math.min(125, Math.round(g.n * 25)), sp = 0.006 * Math.sqrt(g.T / 300), col = g.T > 500 ? V.or : g.T > 250 ? V.acc : V.cy;
+  c.fillStyle = col;
+  for (var i = 0; i < cnt; i++) {
+    var p = gaParts[i];
+    if (stepOnly) { p.x += p.dx * sp * p.s; p.y += p.dy * sp * p.s * (cw / Math.max(ph, 1)); if (p.x < 0) { p.x = -p.x; p.dx = -p.dx; } if (p.x > 1) { p.x = 2 - p.x; p.dx = -p.dx; } if (p.y < 0) { p.y = -p.y; p.dy = -p.dy; } if (p.y > 1) { p.y = 2 - p.y; p.dy = -p.dy; } }
+    c.beginPath(); c.arc(cx0 + 6 + p.x * (cw - 12), top + 6 + p.y * Math.max(0, ph - 12), 3, 0, Math.PI * 2); c.fill();
+  }
+  label(c, fx(g.V, 1) + " L", cx0 + cw + 10, (top + bot) / 2, V.dim, { a: "left", s: 11.5, w: "500" });
+  var gx = W * 0.8, gy = H * 0.34, gr = Math.min(58, W * 0.12), dmax = g.P <= 200 ? 200 : g.P <= 500 ? 500 : g.P <= 1000 ? 1000 : g.P <= 2000 ? 2000 : 10000;
+  c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.beginPath(); c.arc(gx, gy, gr, 0, Math.PI * 2); c.fill(); c.stroke();
+  var a0 = Math.PI * 0.75, a1 = Math.PI * 2.25;
+  c.strokeStyle = V.dim; c.lineWidth = 1;
+  for (var k = 0; k <= 5; k++) { var a = a0 + (a1 - a0) * k / 5; c.beginPath(); c.moveTo(gx + Math.cos(a) * (gr - 8), gy + Math.sin(a) * (gr - 8)); c.lineTo(gx + Math.cos(a) * gr, gy + Math.sin(a) * gr); c.stroke(); }
+  var an = a0 + (a1 - a0) * Math.min(1, g.P / dmax); arrow(c, gx, gy, gx + Math.cos(an) * (gr - 10), gy + Math.sin(an) * (gr - 10), V.acc, 2.5);
+  label(c, "0", gx + Math.cos(a0) * (gr + 10), gy + Math.sin(a0) * (gr + 10), V.dim, { s: 10, w: "500" }); label(c, fx(dmax, 0), gx + Math.cos(a1) * (gr + 14), gy + Math.sin(a1) * (gr + 10), V.dim, { s: 10, w: "500" });
+  label(c, fx(g.P, 1) + " kPa", gx, gy + gr + 22, V.acc, { s: 14 }); label(c, "presión", gx, gy - gr - 12, V.dim, { s: 11, w: "500" });
+  label(c, fx(g.T, 0) + " K", gx, gy + gr + 46, col, { s: 13 });
+}
+function gaLoop() { if (cur !== "gas-ideal" || REDUCED) { gaRaf = 0; return; } drawGa(true); gaRaf = requestAnimationFrame(gaLoop); }
+function drawGaEntry() { drawGa(false); if (!REDUCED && !gaRaf) gaRaf = requestAnimationFrame(gaLoop); }
+bind(["gaN", "gaT", "gaV", "llP", "llT1", "llT2"], function () { drawGa(false); });
+
+/* =========================================================
+   07 PROCESOS
+   ========================================================= */
+var prMode = "isob", GAM = 1.4;
+var PR_ASK = {
+  isob: "Un gas a 200 kPa se expande de 10 a 30 L y recibe 10 kJ. <b>¿Cuánto calor se va en trabajo y cuánto en calentar el gas?</b>",
+  isoc: "Un tanque rígido de aire se calienta. <b>¿Cuánto trabajo hace el gas si no cambia su volumen?</b>",
+  isot: "Un mol de gas a 300 K duplica su volumen sin cambiar de temperatura. <b>¿De dónde sale la energía del trabajo?</b>",
+  adia: "Un diésel comprime el aire tan rápido que no da tiempo de intercambiar calor. <b>¿A qué temperatura queda?</b>"
+};
+function prRows(w, q, u, xk, xv, yk, yv) { $("prW").textContent = w; $("prQ").textContent = q; $("prU").textContent = u; $("prXk").innerHTML = xk; $("prX").textContent = xv; $("prYk").innerHTML = yk; $("prY").textContent = yv; }
+function drawPr() {
+  press("[data-pr]", "data-pr", prMode); ["isob", "isoc", "isot", "adia"].forEach(function (m) { $("pr" + m.charAt(0).toUpperCase() + m.slice(1)).hidden = prMode !== m; });
+  $("prAsk").innerHTML = PR_ASK[prMode];
+  var pts = [], V1, V2, P1, P2, iso = [];
+  if (prMode === "isob") {
+    var P = +$("pbP").value; V1 = +$("pbV1").value; V2 = +$("pbV2").value; var Q = +$("pbQ").value, W_ = P * (V2 - V1), U = Q - W_;
+    $("pbPo").textContent = fx(P, 0) + " kPa"; $("pbV1o").textContent = fx(V1, 1) + " L"; $("pbV2o").textContent = fx(V2, 1) + " L"; $("pbQo").textContent = Jf(Q);
+    prRows(Jf(W_), Jf(Q), Jf(U), "Cambio de volumen", sg(V2 - V1, 1) + " L", "Fracción del calor que sale como trabajo", Q ? fx(W_ / Q * 100, 0) + " %" : "—");
+    note("prNote", U < 0 ? "hot" : "", U < 0 ? "<b>ΔU negativo:</b> el gas hace más trabajo del calor que recibe, así que se enfría." : "<b>W = P ΔV,</b> con kPa × L = J. De " + Jf(Q) + " de calor, " + Jf(W_) + " salen como trabajo al empujar el pistón y " + Jf(U) + " se quedan calentando el gas.");
+    P1 = P2 = P; pts = [[V1, P], [V2, P]]; iso = [P * V1, P * V2];
+  } else if (prMode === "isoc") {
+    var Vc = +$("pcV").value; P1 = +$("pcP1").value; P2 = +$("pcP2").value; var Qc = 2.5 * Vc * (P2 - P1);
+    $("pcVo").textContent = fx(Vc, 1) + " L"; $("pcP1o").textContent = fx(P1, 0) + " kPa"; $("pcP2o").textContent = fx(P2, 0) + " kPa";
+    prRows("0 J", Jf(Qc), Jf(Qc), "T₂ / T₁ &nbsp;<em>= P₂ / P₁</em>", fx(P2 / P1, 2), "Aire &nbsp;<em>ΔU = (5/2) V ΔP</em>", "C_v = 5/2 R");
+    note("prNote", "", "<b>Sin cambio de volumen no hay trabajo:</b> todo el calor (" + Jf(Qc) + ") se queda como energía interna y sube la temperatura. Es lo que pasa en una olla exprés cerrada o en el tanque de gas al sol.");
+    V1 = V2 = Vc; pts = [[Vc, P1], [Vc, P2]]; iso = [P1 * Vc, P2 * Vc];
+  } else if (prMode === "isot") {
+    var n = +$("ptN").value, T = +$("ptT").value; V1 = +$("ptV1").value; V2 = +$("ptV2").value; var Wi = n * R * T * Math.log(V2 / V1);
+    $("ptNo").textContent = fx(n, 1) + " mol"; $("ptTo").textContent = fx(T, 0) + " K"; $("ptV1o").textContent = fx(V1, 1) + " L"; $("ptV2o").textContent = fx(V2, 1) + " L";
+    P1 = n * R * T / V1; P2 = n * R * T / V2;
+    prRows(Jf(Wi), Jf(Wi), "0 J", "P₂ / P₁ &nbsp;<em>= V₁ / V₂</em>", fx(P2 / P1, 2), "P₁ → P₂", fx(P1, 1) + " → " + fx(P2, 1) + " kPa");
+    note("prNote", "good", "<b>A temperatura constante, ΔU = 0:</b> todo el calor que entra sale como trabajo, W = nRT ln(V₂/V₁) = " + Jf(Wi) + ". El gas tiene que recibir calor de un foco para no enfriarse mientras se expande.");
+    for (var i = 0; i <= 60; i++) { var v = V1 + (V2 - V1) * i / 60; pts.push([v, n * R * T / v]); } iso = [n * R * T];
+  } else {
+    var T1 = +$("paT1").value, r = +$("paR").value, Va = 0.5, Pa = 100, T2 = T1 * Math.pow(r, GAM - 1), Pr = Math.pow(r, GAM), Vb = Va / r, Pb = Pa * Pr, Wa = (Pa * Va - Pb * Vb) / (GAM - 1);
+    $("paT1o").textContent = fx(T1, 0) + " K · " + sg(T1 - 273.15, 0) + " °C"; $("paRo").textContent = fx(r, 1);
+    prRows(Jf(Wa), "0 J", Jf(-Wa), "Temperatura final &nbsp;<em>T₁ r^(γ−1)</em>", fx(T2, 0) + " K · " + fx(T2 - 273.15, 0) + " °C", "P₂ / P₁ &nbsp;<em>= r^γ</em>", fx(Pr, 1));
+    note("prNote", T2 - 273.15 > 400 ? "hot" : "", "<b>Sin intercambio de calor, el trabajo de compresión se queda en el gas</b> y la temperatura sube a " + fx(T2 - 273.15, 0) + " °C. Un diésel no necesita bujía: el combustible se enciende solo al inyectarse en ese aire caliente. Cilindro de 0.5 L a 100 kPa.");
+    V1 = Va; V2 = Vb; P1 = Pa; P2 = Pb; for (var j = 0; j <= 80; j++) { var vv = Va + (Vb - Va) * j / 80; pts.push([vv, Pa * Math.pow(Va / vv, GAM)]); } iso = [Pa * Va, Pb * Vb];
+  }
+  var S = setup($("prCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+  var vmax = Math.max(V1, V2) * 1.2, pmax = Math.max(P1, P2) * 1.18, x0 = 64, x1 = W - 24, y0 = H - 50, y1 = 30;
+  var X = function (v) { return x0 + v / vmax * (x1 - x0); }, Y = function (p) { return y0 - p / pmax * (y0 - y1); };
+  axesTicks(c, x0, y0, x1, y1, vmax, pmax, "V [L]", "P [kPa]", function (k) { return fx(k, vmax < 5 ? 2 : 0); }, function (k) { return fx(k, 0); });
+  c.save(); c.beginPath(); c.rect(x0, y1, x1 - x0, y0 - y1); c.clip();
+  iso.forEach(function (K) { c.strokeStyle = rgba("line", 1); c.setLineDash([4, 5]); c.lineWidth = 1; c.beginPath(); for (var i = 0; i <= 80; i++) { var v = vmax * (0.03 + 0.97 * i / 80), p = K / v; if (i) c.lineTo(X(v), Y(p)); else c.moveTo(X(v), Y(p)); } c.stroke(); c.setLineDash([]); });
+  if (V1 !== V2) { c.fillStyle = rgba("acc", .18); c.beginPath(); c.moveTo(X(pts[0][0]), y0); pts.forEach(function (p) { c.lineTo(X(p[0]), Y(p[1])); }); c.lineTo(X(pts[pts.length - 1][0]), y0); c.closePath(); c.fill(); }
+  c.restore();
+  c.strokeStyle = V.acc; c.lineWidth = 3; c.beginPath(); pts.forEach(function (p, i) { if (i) c.lineTo(X(p[0]), Y(p[1])); else c.moveTo(X(p[0]), Y(p[1])); }); c.stroke();
+  var mi = Math.floor(pts.length / 2), pa = pts[Math.max(0, mi - 1)], pb = pts[Math.min(pts.length - 1, mi + 1)];
+  if (pts.length === 2) { pa = pts[0]; pb = pts[1]; arrow(c, X(pa[0] + (pb[0] - pa[0]) * 0.4), Y(pa[1] + (pb[1] - pa[1]) * 0.4), X(pa[0] + (pb[0] - pa[0]) * 0.6), Y(pa[1] + (pb[1] - pa[1]) * 0.6), V.acc, 3); }
+  else arrow(c, X(pa[0]), Y(pa[1]), X(pb[0]), Y(pb[1]), V.acc, 3);
+  [[pts[0], "1"], [pts[pts.length - 1], "2"]].forEach(function (q) { var px = X(q[0][0]), py = Y(q[0][1]); c.fillStyle = V.fg; c.beginPath(); c.arc(px, py, 5, 0, Math.PI * 2); c.fill(); label(c, q[1], px + 10, py - 12, V.fg, { s: 13 }); });
+  if (V1 !== V2) {
+    var pm = pts[Math.floor(pts.length / 2)], lx = X((V1 + V2) / 2), la = "center";
+    if (pts.length > 2 && y0 - Y(pm[1]) < 44) { var best = null; pts.forEach(function (q) { if (y0 - Y(q[1]) >= 44 && (!best || q[0] > best[0])) best = q; }); if (best) { lx = X(best[0]) - 6; la = "right"; } }
+    c.font = "600 12px " + MONO; var tw = c.measureText("área = |W|").width, ly = y0 - 16;
+    if (la === "right" && lx - tw < x0 + 6) { lx = X(pm[0]) + 8; la = "left"; ly = Y(pm[1]) - 18; }
+    label(c, "área = |W|", lx, ly, V.acc, { s: 12, a: la });
+  }
+}
+document.querySelectorAll("[data-pr]").forEach(function (b) { b.addEventListener("click", function () { prMode = b.dataset.pr; drawPr(); }); });
+bind(["pbP", "pbV1", "pbV2", "pbQ", "pcV", "pcP1", "pcP2", "ptN", "ptT", "ptV1", "ptV2", "paT1", "paR"], drawPr);
+
+/* =========================================================
+   08 MÁQUINAS TÉRMICAS
+   ========================================================= */
+var cnMode = "maq";
+function band(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(x, y, w, h); }
+function reservoir(c, x, y, w, h, col, txt) { c.fillStyle = col; c.fillRect(x - w / 2, y - h / 2, w, h); c.strokeStyle = V.fg; c.lineWidth = 1.5; c.strokeRect(x - w / 2, y - h / 2, w, h); label(c, txt, x, y, V.fg, { s: 12 }); }
+function qlab(c, nm, val, x, y, col, nar) {
+  if (nar) { label(c, nm, x, y - 9, col, { a: "right", s: 12 }); label(c, val, x, y + 9, col, { a: "right", s: 12 }); }
+  else label(c, nm + " = " + val, x, y, col, { a: "right", s: 12 });
+}
+function drawCn() {
+  $("cnMaq").hidden = cnMode !== "maq"; $("cnRef").hidden = cnMode !== "ref"; press("[data-cn]", "data-cn", cnMode);
+  var S;
+  if (cnMode === "maq") {
+    var th = +$("cnTh").value, tc = +$("cnTc").value, Qh = +$("cnQ").value, rr = +$("cnR").value / 100, Th = th + 273.15, Tc = tc + 273.15, eta = 1 - Tc / Th, Wm = eta * Qh, Wr = rr * Qh, Qc = Qh - Wr, ok = rr <= eta + 1e-9;
+    $("cnTho").textContent = fx(th, 0) + " °C"; $("cnTco").textContent = fx(tc, 0) + " °C"; $("cnQo").textContent = fx(Qh, 0) + " J"; $("cnRo").textContent = fx(rr * 100, 0) + " %";
+    $("cnEta").textContent = fx(eta * 100, 1) + " %"; $("cnWm").textContent = Jf(Wm); $("cnW").textContent = Jf(Wr); $("cnQc").textContent = Jf(Qc);
+    $("cnSt").textContent = ok ? "sí" : "no: supera a Carnot"; $("cnSt").className = "v " + (ok ? "ok" : "no");
+    if (!ok) note("cnNote", "hot", "<b>Imposible:</b> ninguna máquina entre " + fx(th, 0) + " °C y " + fx(tc, 0) + " °C puede pasar de " + fx(eta * 100, 1) + " %. Afirmar " + fx(rr * 100, 0) + " % viola la segunda ley.");
+    else note("cnNote", "", "<b>Aun la máquina perfecta tira calor:</b> por lo menos " + Jf(Qh - Wm) + " de cada " + fx(Qh, 0) + " J tienen que ir al foco frío. Para subir la eficiencia hay que subir T_h o bajar T_c, siempre en kelvin. Las máquinas reales quedan muy por debajo del límite por fricción y pérdidas.");
+    S = setup($("cnCanvas")); if (!S) return; var c = S.c, W = S.w, H = S.h;
+    var nar = W < 520, ex = nar ? 132 : W * 0.36, top = 46, ey = H * 0.48, botY = H - 46, bw = nar ? 70 : 90, k = bw / Qh, wW = Wr * k, wC = Qc * k;
+    reservoir(c, ex, top, 190, 44, rgba("or", .35), "foco caliente · " + fx(th, 0) + " °C");
+    reservoir(c, ex, botY, 190, 44, rgba("cy", .35), "foco frío · " + fx(tc, 0) + " °C");
+    band(c, ex - bw / 2, top + 22, bw, ey - 30 - top - 22, rgba("or", .55));
+    band(c, ex - bw / 2 + wW, ey + 30, Math.max(0, wC), botY - 22 - ey - 30, rgba("cy", .55));
+    band(c, ex + 34, ey - bw / 2, W - 40 - ex - 34, Math.max(2, wW * 0.9), ok ? rgba("acc", .7) : rgba("no", .7));
+    c.setLineDash([5, 4]); c.strokeStyle = V.acc; c.lineWidth = 1.5; c.strokeRect(ex + 34, ey - bw / 2, W - 40 - ex - 34, Wm * k * 0.9); c.setLineDash([]);
+    c.fillStyle = V.panel; c.strokeStyle = V.fg; c.lineWidth = 2; c.beginPath(); c.arc(ex, ey, 34, 0, Math.PI * 2); c.fill(); c.stroke(); label(c, "motor", ex, ey, V.fg, { s: 12 });
+    qlab(c, "Q_h", fx(Qh, 0) + " J", ex - bw / 2 - 10, (top + ey) / 2, V.or, nar);
+    qlab(c, "Q_c", Jf(Qc), ex - bw / 2 - 10, (ey + botY) / 2, V.cy, nar);
+    label(c, "W = " + Jf(Wr), W - 44, ey - bw / 2 - 12, ok ? V.acc : V.no, { a: "right", s: 12 });
+    label(c, (nar ? "Carnot: " : "límite de Carnot: ") + Jf(Wm), W - 44, ey - bw / 2 + Wm * k * 0.9 + 14, V.dim, { a: "right", s: 11, w: "500" });
+  } else {
+    var tcf = +$("rfTc").value, thf = +$("rfTh").value, Tcf = tcf + 273.15, Thf = thf + 273.15, cop = Tcf / (Thf - Tcf);
+    $("rfTco").textContent = sg(tcf, 0) + " °C"; $("rfTho").textContent = fx(thf, 0) + " °C";
+    $("rfCop").textContent = fx(cop, 1); $("rfQc").textContent = Jf(100 * cop); $("rfQh").textContent = Jf(100 * (cop + 1));
+    note("cnNote", "", "<b>Un refrigerador no crea frío: bombea calor</b> del interior a la cocina usando trabajo. Por cada joule de electricidad puede mover hasta " + fx(cop, 1) + " J; uno real mueve 2 o 3. Por eso la parte trasera del refrigerador está caliente.");
+    S = setup($("cnCanvas")); if (!S) return; var c2 = S.c, W2 = S.w, H2 = S.h;
+    var nar2 = W2 < 520, x = nar2 ? 132 : W2 * 0.4, top2 = 46, my = H2 * 0.5, bot2 = H2 - 46, bw2 = nar2 ? 70 : 90, kq = bw2 / (cop + 1), wq = kq, cq = kq * cop;
+    reservoir(c2, x, top2, 190, 44, rgba("or", .35), "cocina · " + fx(thf, 0) + " °C");
+    reservoir(c2, x, bot2, 190, 44, rgba("cy", .35), "interior · " + sg(tcf, 0) + " °C");
+    band(c2, x - bw2 / 2, top2 + 22, bw2, my - 30 - top2 - 22, rgba("or", .55));
+    band(c2, x - bw2 / 2, my + 30, cq, bot2 - 22 - my - 30, rgba("cy", .55));
+    band(c2, x + 34, my - wq / 2, W2 - 40 - x - 34, Math.max(3, wq), rgba("acc", .7));
+    c2.fillStyle = V.panel; c2.strokeStyle = V.fg; c2.lineWidth = 2; c2.beginPath(); c2.arc(x, my, 34, 0, Math.PI * 2); c2.fill(); c2.stroke(); label(c2, "compresor", x, my, V.fg, { s: 11.5 });
+    arrow(c2, x - bw2 / 2 + cq / 2, bot2 - 26, x - bw2 / 2 + cq / 2, my + 36, V.cy, 2.2); arrow(c2, x, my - 36, x, top2 + 26, V.or, 2.2); arrow(c2, W2 - 44, my, x + 38, my, V.acc, 2.2);
+    qlab(c2, "Q_h", Jf(100 * (cop + 1)), x - bw2 / 2 - 10, (top2 + my) / 2, V.or, nar2);
+    qlab(c2, "Q_c", Jf(100 * cop), x - bw2 / 2 - 10, (my + bot2) / 2, V.cy, nar2);
+    label(c2, "W = 100 J", W2 - 44, my - wq / 2 - 14, V.acc, { a: "right", s: 12 });
+  }
+}
+document.querySelectorAll("[data-cn]").forEach(function (b) { b.addEventListener("click", function () { cnMode = b.dataset.cn; drawCn(); }); });
+bind(["cnTh", "cnTc", "cnQ", "cnR", "rfTc", "rfTh"], drawCn);
+document.querySelectorAll("#cnPresets button").forEach(function (b) { b.addEventListener("click", function () {
+  var p = { planta: [550, 30, 35], motor: [1500, 100, 25], inventor: [400, 25, 60] }[b.dataset.p];
+  $("cnTh").value = p[0]; $("cnTc").value = p[1]; $("cnR").value = p[2]; drawCn(); }); });
+
+/* =========================================================
+   AUTOEVALUACIÓN
+   ========================================================= */
+var QZ = [
+  { q: "0 K equivale a:", o: ["−273.15 °C", "0 °C", "−100 °C", "273.15 °C"], c: 0, e: "K = °C + 273.15, así que 0 K = −273.15 °C: el cero absoluto." },
+  { q: "Un aumento de 10 °C equivale a un aumento de:", o: ["10 K", "283.15 K", "18 K", "50 K"], c: 0, e: "Un grado Celsius y un kelvin tienen el mismo tamaño; sólo cambia el cero." },
+  { q: "Mientras el hielo se funde a 0 °C, su temperatura:", o: ["No cambia", "Sube poco a poco", "Baja", "Sube a 100 °C"], c: 0, e: "El calor se usa para cambiar de fase (calor latente), no para subir la temperatura." },
+  { q: "¿Qué material aísla mejor un muro?", o: ["Poliestireno (unicel)", "Vidrio", "Ladrillo", "Acero"], c: 0, e: "k = 0.033 W/(m·K), unas 20 veces menos que el ladrillo, porque atrapa aire quieto." },
+  { q: "En PV = nRT la temperatura debe ir en:", o: ["Kelvin", "Grados Celsius", "Grados Fahrenheit", "Cualquier escala"], c: 0, e: "La ley parte del cero absoluto; con °C saldrían presiones negativas por debajo de 0 °C." },
+  { q: "En un proceso isocórico (volumen constante), el trabajo del gas es:", o: ["Cero", "P ΔV", "nRT ln(V₂/V₁)", "Igual al calor"], c: 0, e: "Sin cambio de volumen no hay desplazamiento del pistón: W = 0 y ΔU = Q." },
+  { q: "En un proceso isotérmico de un gas ideal:", o: ["ΔU = 0", "Q = 0", "W = 0", "P es constante"], c: 0, e: "La energía interna de un gas ideal sólo depende de T; si T no cambia, ΔU = 0 y Q = W." },
+  { q: "Una máquina térmica con 100 % de eficiencia:", o: ["Es imposible", "Existe sin fricción", "Sólo si T_c = 0 °C", "Es un motor eléctrico"], c: 0, e: "La segunda ley obliga a tirar calor al foco frío; sólo con T_c = 0 K se llegaría a 100 %." }
+];
+var ORD = [[1,0,3,2],[2,3,0,1],[0,2,1,3],[3,1,2,0],[1,3,0,2],[2,0,3,1],[3,2,1,0],[0,3,2,1]];
+var qScore = 0, qDone = 0, qBox = $("p-autoevaluacion");
+function quizBuild() {
+  qScore = 0; qDone = 0; qBox.querySelectorAll(".qcard").forEach(function (n) { n.remove(); }); $("score").textContent = "0 de " + QZ.length + " respondidas";
+  QZ.forEach(function (it, qi) {
+    var card = document.createElement("div"); card.className = "card qcard";
+    card.innerHTML = '<span class="tag">Pregunta ' + (qi + 1) + '</span><h3>' + it.q + '</h3><div class="opts"></div><p class="fb" hidden></p>';
+    var opts = card.querySelector(".opts"), fb = card.querySelector(".fb");
+    ORD[qi].forEach(function (oi) { var b = document.createElement("button"); b.type = "button"; b.textContent = it.o[oi]; b.dataset.i = oi;
+      b.addEventListener("click", function () {
+        opts.querySelectorAll("button").forEach(function (x) { x.disabled = true; if (+x.dataset.i === it.c) x.classList.add("right"); });
+        var ok = oi === it.c; if (!ok) b.classList.add("wrong"); if (ok) qScore++; qDone++;
+        fb.hidden = false; fb.innerHTML = '<b class="' + (ok ? "ok" : "no") + '">' + (ok ? "Correcto." : "No es esa.") + "</b> " + it.e;
+        $("score").innerHTML = qDone < QZ.length ? qDone + " de " + QZ.length + " respondidas · <b>" + qScore + " correctas</b>" : "Resultado: <b>" + qScore + " de " + QZ.length + "</b>" + (qScore === QZ.length ? " · listo para hidráulica" : " · revisa los ejemplos de las que fallaste");
+      }); opts.appendChild(b); });
+    qBox.appendChild(card);
+  });
+}
+$("quizReset").addEventListener("click", quizBuild);
+quizBuild();
+
+/* =========================================================
+   PESTAÑAS
+   ========================================================= */
+var cur = "escalas";
+var DRAW = { escalas: drawEs, dilatacion: drawDl, "cambio-fase": drawCf, calorimetria: drawCa, transferencia: drawTr, "gas-ideal": drawGaEntry, procesos: drawPr, carnot: drawCn, ejemplos: function () {}, autoevaluacion: function () {} };
+var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+function nameOf(t) { return t.id.slice(2); }
+function show(name) {
+  if (!DRAW[name]) name = "escalas";
+  cur = name;
+  tabs.forEach(function (t) { var on = nameOf(t) === name; t.setAttribute("aria-selected", on ? "true" : "false"); t.tabIndex = on ? 0 : -1; $("p-" + nameOf(t)).hidden = !on; });
+  DRAW[name]();
+}
+function redibujar() { if (cur === "gas-ideal") drawGa(false); else DRAW[cur](); }
+function go(name) { if (location.hash !== "#" + name) { try { location.hash = name; } catch (e) { show(name); } } else show(name); }
+tabs.forEach(function (t, i) {
+  t.addEventListener("click", function () { go(nameOf(t)); });
+  t.addEventListener("keydown", function (e) {
+    var k = e.key, j = null;
+    if (k === "ArrowRight") j = (i + 1) % tabs.length; else if (k === "ArrowLeft") j = (i - 1 + tabs.length) % tabs.length; else if (k === "Home") j = 0; else if (k === "End") j = tabs.length - 1;
+    if (j !== null) { e.preventDefault(); go(nameOf(tabs[j])); tabs[j].focus(); }
+  });
+});
+window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+var rt; window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(redibujar, 60); });
+try { new MutationObserver(function () { leerTema(); rotulo(); redibujar(); }).observe(root, { attributes: true, attributeFilter: ["data-tema"] }); } catch (e) {}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(redibujar);
+show(location.hash.slice(1) || "escalas");
+})();
+</script>
+</body>
+</html>
